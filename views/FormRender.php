@@ -100,21 +100,31 @@ class FormRenderer
         $response = $this->api->request('GET', '/api/getCarriers');
         $carriers = ($response && is_array($response)) ? ($response['carriers'] ?? []) : [];
 
-        file_put_contents(
-            '/tmp/spedisciqui_debug.log',
-            "RESPONSE: " . print_r($response, true) . "\n" .
-                "CARRIERS: " . print_r($carriers, true) . "\n"
-        );
-        $rows = Db::getInstance()->executeS(
-            'SELECT name, value FROM `' . _DB_PREFIX_ . 'configuration` WHERE name LIKE \'SPEDISCIQUI_CARRIER_%\''
+
+        // Recupero dei mapping dal DB
+        $mappings = Db::getInstance()->executeS(
+            'SELECT m.serviceId, m.carrierReferenceId, c.id_carrier, c.name, c.active
+     FROM `' . _DB_PREFIX_ . 'spedisciqui_carrier_mapping` m
+     LEFT JOIN `' . _DB_PREFIX_ . 'carrier` c 
+         ON c.id_reference = m.carrierReferenceId AND c.deleted = 0
+     WHERE m.isActive = 1'
         );
 
-        if (!is_array($rows)) {
-            $rows = [];
+        $savedCarriers  = [];
+        $installedCodes = [];
+
+        if (is_array($mappings)) {
+            foreach ($mappings as $row) {
+                $savedCarriers[] = [
+                    'id_carrier'   => (int) $row['id_carrier'],
+                    'name'         => $row['name'],
+                    'carrier_code' => $row['serviceId'],     
+                    'active'       => (bool) $row['active'],
+                ];
+                $installedCodes[] = $row['serviceId'];
+            }
         }
 
-        $savedCarriers  = is_array($rows) ? $rows : [];
-        $installedCodes = array_column($rows, 'value') ?: [];
 
         foreach ($carriers as &$carrier) {
             $carrier['isInstalled'] = in_array($carrier['code'], $installedCodes);

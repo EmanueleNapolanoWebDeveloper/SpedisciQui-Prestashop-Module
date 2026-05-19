@@ -58,6 +58,11 @@ class ContentHandler
             $output .= $this->handleInstallcarrier();
         }
 
+        // HANDLE RIMOZIONE CORRIERE
+        if (Tools::isSubmit('submitRemoveCarrier')) {
+            $output .= $this->handleRemoveCarrier();
+        }
+
 
         return $output . $this->resolveView();
     }
@@ -169,6 +174,12 @@ class ContentHandler
 
         // creazione corriere
         $carrier = new Carrier();
+
+        if (!$carrier->id_reference) {
+            Db::getInstance()->update('carrier', ['id_reference' => (int) $carrier->id], 'id_carrier = ' . (int) $carrier->id);
+            $carrier->id_reference = $carrier->id;
+        }
+
         $carrier->name                = $serviceName;
         $carrier->active              = true;
         $carrier->deleted             = false;
@@ -213,7 +224,7 @@ class ContentHandler
                     'id_carrier' => $carrier->id,
                     'id_range_weight' => $rangeWeight->id,
                     'id_range_price' => 0,
-                    'id_zone' => $zone['id_zone'],
+                    'id_zone' => $zona['id_zone'],
                     'price' => 0,
                 ]
             );
@@ -235,6 +246,61 @@ class ContentHandler
         return $this->module->displayConfirmation(
             $this->module->l('Corriere "' . $serviceName . '"aggiunto correttamente')
         );
+    }
+
+    /*
+    ============ HANDLE PER RIMOZIONE CARRIER
+    */
+
+    private function handleRemoveCarrier()
+    {
+
+        $serviceCode = Tools::getValue('carrier_code');
+
+        if (empty($serviceCode)) {
+            return $this->module->displayError($this->module->l('Codice Corriere Mancante'));
+        }
+
+        $db = new DatabaseManager();
+
+        // recupero mapping
+        $mapping = $db->getCarrierMapping($serviceCode);
+
+        if (!$mapping) {
+            return $this->module->displayError('Corriere non trovato');
+        }
+
+        $referenceId = $mapping['carrierReferenceId'];
+
+        // ricerca di tutti i carrier con id_reference
+        $carriers = Db::getInstance()->executeS(
+            'SELECT id_carrier FROM ' . _DB_PREFIX_ . 'carrier WHERE id_reference = ' . $referenceId . ' AND deleted = 0'
+        );
+
+        // rimozione da tabelle collegate
+        if (is_array($carriers)) {
+            foreach ($carriers as $row) {
+                $idCarrier = (int) $row['id_carrier'];
+
+                // Marca come deleted — mai cancellare fisicamente
+                Db::getInstance()->update('carrier', ['deleted' => 1], 'id_carrier = ' . $idCarrier);
+
+                Db::getInstance()->execute('DELETE FROM `' . _DB_PREFIX_ . 'carrier_zone`  WHERE id_carrier = ' . $idCarrier);
+                Db::getInstance()->execute('DELETE FROM `' . _DB_PREFIX_ . 'range_weight`  WHERE id_carrier = ' . $idCarrier);
+                Db::getInstance()->execute('DELETE FROM `' . _DB_PREFIX_ . 'range_price`   WHERE id_carrier = ' . $idCarrier);
+                Db::getInstance()->execute('DELETE FROM `' . _DB_PREFIX_ . 'delivery`      WHERE id_carrier = ' . $idCarrier);
+                Db::getInstance()->execute('DELETE FROM `' . _DB_PREFIX_ . 'carrier_group` WHERE id_carrier = ' . $idCarrier);
+                Db::getInstance()->execute('DELETE FROM `' . _DB_PREFIX_ . 'carrier_shop`  WHERE id_carrier = ' . $idCarrier);
+            }
+        };
+
+        // rimuozione da configuration
+        Configuration::deleteByName('SPEDISCIQUI_CARRIER_' . strtoupper($serviceCode));
+
+        // rimozione dal mapping
+        $db->deleteCarrierMapping($serviceCode);
+
+        return $this->module->displayConfirmation('Corriere ' . $serviceCode . ' rimosso correttamente');
     }
 
     private function resolveView(): string

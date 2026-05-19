@@ -182,7 +182,6 @@
                                 <th>{l s='ID PrestaShop' mod='spedisciquishipping'}</th>
                                 <th>{l s='Nome corriere' mod='spedisciquishipping'}</th>
                                 <th>{l s='Codice API' mod='spedisciquishipping'}</th>
-                                <th>{l s='Stato' mod='spedisciquishipping'}</th>
                                 <th>{l s='Azioni' mod='spedisciquishipping'}</th>
                             </tr>
                         </thead>
@@ -199,17 +198,6 @@
                                         <span class="label label-info">
                                             {$sc.carrier_code|escape:'htmlall':'UTF-8'}
                                         </span>
-                                    </td>
-                                    <td style="vertical-align:middle;">
-                                        {if $sc.active}
-                                            <span class="label label-success">
-                                                {l s='Attivo' mod='spedisciquishipping'}
-                                            </span>
-                                        {else}
-                                            <span class="label label-danger">
-                                                {l s='Disattivo' mod='spedisciquishipping'}
-                                            </span>
-                                        {/if}
                                     </td>
                                     <td style="vertical-align:middle;">
                                         <form method="POST" action="{$action|escape:'htmlall':'UTF-8'}"
