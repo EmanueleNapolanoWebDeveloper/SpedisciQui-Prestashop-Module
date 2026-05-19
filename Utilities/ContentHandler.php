@@ -190,17 +190,47 @@ class ContentHandler
         }
 
         // associo carrier allo shop
+        $groups = Group::getGroups(true);
         $carrier->setGroups(array_column(Group::getGroups(true), 'id_group'));
+
+        // associazione corriere a range di zona
+        $zones = Zone::getZones(true);
+        foreach ($zones as $zone) {
+            $carrier->addZone($zone['id_zone']);
+        }
+
+        // creazione range di peso per ogni zona
+        $rangeWeight = new RangeWeight();
+        $rangeWeight->id_carrier = $carrier->id;
+        $rangeWeight->delimiter1 = 0;
+        $rangeWeight->delimiter2 = 999;
+        $rangeWeight->add();
+
+        foreach ($zones as $zona) {
+            Db::getInstance()->insert(
+                'delivery',
+                [
+                    'id_carrier' => $carrier->id,
+                    'id_range_weight' => $rangeWeight->id,
+                    'id_range_price' => 0,
+                    'id_zone' => $zone['id_zone'],
+                    'price' => 0,
+                ]
+            );
+        }
+
+        // associazione corriere a tutti gli shop
+        $shops = Shop::getShops(true);
+        foreach ($shops as $shop) {
+            $carrier->associateTo($shop['id_shop']);
+        }
 
         // salva carrier in mapping
         Configuration::updateValue('SPEDISCIQUI_CARRIER_' . strtoupper($serviceCode), $carrier->id_reference);
 
         // salvo nella tabella mapping
-        Db::getInstance()->insert('spedisciqui_carrier_mapping', [
-            'serviceId' => pSQL($serviceId),
-            'carrierreferenceId' => $carrier->id_reference,
-            'isActive' => 1,
-        ]);
+        $db = new DatabaseManager();
+        $db->saveCarrierMapping($serviceCode, $carrier->id_reference);
 
         return $this->module->displayConfirmation(
             $this->module->l('Corriere "' . $serviceName . '"aggiunto correttamente')
