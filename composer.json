@@ -1,0 +1,11 @@
+{
+    "name": "shiroyasha/spedisciquishipping",
+    "authors": [
+        {
+            "name": "Emanuele"
+        }
+    ],
+    "require": {
+        "guzzlehttp/guzzle": "^7.0"
+    }
+}
