@@ -184,6 +184,75 @@ class DatabaseManager
         }
     }
 
+    // pulizia dei moduli carriers
+    public function deleteAllModuleCarrier()
+    {
+
+        // recupera carriers
+        $carriers = Db::getInstance()->executeS(
+            'SELECT id_carrier 
+         FROM ' . _DB_PREFIX_ . 'carrier 
+         WHERE external_module_name = "spedisciquishipping" 
+         AND deleted = 0'
+        );
+
+        if (!is_array($carriers)) {
+            return true;
+        }
+
+        foreach ($carriers as $row) {
+            $idCarrier = $row['id_carrier'];
+
+            // marca DLETED 
+            Db::getInstance()->update('carrier', ['deleted' => 1], 'id_carrier = ' . $idCarrier);
+
+            // rimuovi associazione a zone
+            Db::getInstance()->execute(
+                'DELETE FROM ' . _DB_PREFIX_ . 'carrier_zone WHERE id_carrier = ' . $idCarrier
+            );
+
+            // rimuovere range peso
+            Db::getInstance()->execute(
+                'DELETE FROM ' . _DB_PREFIX_ . 'range_weight WHERE id_carrier = ' . $idCarrier
+            );
+
+            // rimuovere range prezzo
+            Db::getInstance()->execute(
+                'DELETE FROM ' . _DB_PREFIX_ . 'range_price WHERE id_carrier = ' . $idCarrier
+            );
+
+            // rimuovere prezzi delivery
+            Db::getInstance()->execute(
+                'DELETE FROM ' . _DB_PREFIX_ . 'delivery WHERE id_carrier = ' . $idCarrier
+            );
+
+            // rimuovere associazione a gruppi
+            Db::getInstance()->execute(
+                'DELETE FROM ' . _DB_PREFIX_ . 'carrier_group WHERE id_carrier = ' . $idCarrier
+            );
+
+            // rimuovere associazione a shop
+            Db::getInstance()->execute(
+                'DELETE FROM ' . _DB_PREFIX_ . 'carrier_shop WHERE id_carrier = ' . $idCarrier
+            );
+
+            PrestaShopLogger::addLog('[SPEDISCIQUI] Carrier id=' . $idCarrier . 'rimosso', 1);
+        }
+
+        // Rimuovi dalla configuration SPEDISCIQUI_CARRIER_*
+        Db::getInstance()->execute(
+            'DELETE FROM `' . _DB_PREFIX_ . 'configuration` 
+             WHERE name LIKE \'SPEDISCIQUI_CARRIER_%\''
+        );
+
+        // pulizia tabella mapping
+        Db::getInstance()->execute(
+            'DELETE FROM ' . _DB_PREFIX_ . 'spedisciqui_carrier_mapping WHERE 1'
+        );
+
+        return true;
+    }
+
     // drop di tutte le tabelle
     public function dropAllSpedisciQuiTables(): bool
     {
