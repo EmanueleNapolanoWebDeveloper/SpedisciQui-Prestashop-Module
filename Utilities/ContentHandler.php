@@ -241,7 +241,7 @@ class ContentHandler
 
         // salvo nella tabella mapping
         $db = new DatabaseManager();
-        $db->saveCarrierMapping($serviceCode, $carrier->id_reference);
+        $db->saveCarrierMapping($serviceCode, $carrier->id);
 
         return $this->module->displayConfirmation(
             $this->module->l('Corriere "' . $serviceName . '"aggiunto correttamente')
