@@ -174,12 +174,6 @@ class ContentHandler
 
         // creazione corriere
         $carrier = new Carrier();
-
-        if (!$carrier->id_reference) {
-            Db::getInstance()->update('carrier', ['id_reference' => (int) $carrier->id], 'id_carrier = ' . (int) $carrier->id);
-            $carrier->id_reference = $carrier->id;
-        }
-
         $carrier->name                = $serviceName;
         $carrier->active              = true;
         $carrier->deleted             = false;
@@ -201,7 +195,6 @@ class ContentHandler
         }
 
         // associo carrier allo shop
-        $groups = Group::getGroups(true);
         $carrier->setGroups(array_column(Group::getGroups(true), 'id_group'));
 
         // associazione corriere a range di zona
@@ -241,7 +234,7 @@ class ContentHandler
 
         // salvo nella tabella mapping
         $db = new DatabaseManager();
-        $db->saveCarrierMapping($serviceCode, $carrier->id);
+        $db->saveCarrierMapping($serviceCode, $carrier->id_reference);
 
         return $this->module->displayConfirmation(
             $this->module->l('Corriere "' . $serviceName . '"aggiunto correttamente')

@@ -11,7 +11,6 @@ class ShippingCostResolve
     private SenderRepository $senderRepo;
     private PackageRepository $packageRepo;
 
-    /** @var array<int, float|false> Cache per evitare chiamate API doppie */
     private array $cache = [];
 
 
@@ -31,21 +30,30 @@ class ShippingCostResolve
     // ================================================================
     // FUNZIONE PER RICAVARE ID_CARRIER
     // ================================================================
-    private function resolveCarrierId(Cart $cart): int
+    private function resolveCarrierId(Cart $cart, int $callerCarrierId = 0): int
     {
-        $id = $cart->id_carrier;
 
-        if ($id > 0) {
-            return $id;
+
+        // 1. Carrier passato direttamente dal metodo chiamante ($this->id del modulo)
+        if ($callerCarrierId > 0) {
+            return $callerCarrierId;
         }
 
-        // fallback: lo leggo da input
-        $id = Tools::getValue('id_carrier');
-        if ($id > 0) {
-            return $id;
+        // 2. Carrier già scelto dall'utente nel cart
+        $id = (int) $cart->id_carrier;
+        if ($id > 0) return $id;
+
+        // 3.l carrier corrente è nel contesto
+        $carrier = Context::getContext()->carrier ?? null;
+        if ($carrier && (int) $carrier->id > 0) {
+            return (int) $carrier->id;
         }
 
-        return false;
+        // 4. Fallback: request HTTP (backoffice nuovo ordine)
+        $id = (int) Tools::getValue('id_carrier');
+        if ($id > 0) return $id;
+
+        return 0;
     }
 
 
@@ -58,6 +66,9 @@ class ShippingCostResolve
         $carrier     = new Carrier($carrierId);
         $referenceId = (int) $carrier->id_reference;
 
+        //PrestaShopLogger::addLog('1 - reference id: ' . $referenceId);
+
+
         if ($referenceId === 0) {
             return false;
         }
@@ -67,7 +78,7 @@ class ShippingCostResolve
                 . ' WHERE carrierReferenceId = ' . $referenceId . ' AND isActive = 1'
         ) ?: false;
 
-        PrestaShopLogger::addLog('SERVICE RICHIAMATO: ' . $response);
+        //PrestaShopLogger::addLog('SERVICE RICHIAMATO: ' . $response);
 
         return $response;
     }
@@ -77,15 +88,17 @@ class ShippingCostResolve
     // ================================================================
     // FUNZIONE PER COSTRUZIONE PAYLOAD
     // ================================================================
-    private function buildPayload(Cart $cart): array
+    private function buildPayload(Cart $cart, int $carrierId): array
     {
         $address = new Address($cart->id_address_delivery);
         $country = new Country($address->id_country);
         $shopId  = Context::getContext()->shop->id;
         $package = $this->packageRepo->getPackage($shopId);
         $sender  = $this->senderRepo->getSender($shopId);
-        $carrierId = $this->resolveCarrierId($cart);
-        $insuranceKey = Context::getContext()->cookie->{$insuranceKey};
+
+
+        $insuranceKey   = 'sq_insurance_' . $carrierId;
+        $hasInsurance   = (bool) Context::getContext()->cookie->{$insuranceKey};
         $insuranceValue = $hasInsurance
             ? (float) Configuration::get('SPEDISCIQUI_INSURANCE_VALUE')
             : 0.0;
@@ -139,33 +152,36 @@ class ShippingCostResolve
     // ================================================================
     // FUNZIONE PER CREAZIONE ENTRY-POINT
     // ================================================================
-    public function resolve(Cart $cart): float|false
+    public function resolve(Cart $cart, int $callerCarrierId = 0): float|false
     {
         $cartId = (int) $cart->id;
-        if (array_key_exists($cartId, $this->cache)) {
-            return $this->cache[$cartId];
+        $carrierId = $this->resolveCarrierId($cart, $callerCarrierId);
+
+        if ($carrierId === 0) {
+            ///PrestaShopLogger::addLog('[SQ] Nessun carrier nel contesto, skip.');
+            return false;
         }
 
-        $carrierId = $this->resolveCarrierId($cart);
+        $cacheKey  = $cartId . '_' . $carrierId;
 
-        // LOG TEMPORANEO DI DEBUG
-        PrestaShopLogger::addLog('[SQ DEBUG] cart_id=' . $cartId . ' id_carrier=' . $cart->id_carrier);
-        PrestaShopLogger::addLog('[SQ DEBUG] carrierId resolved=' . $carrierId);
+
+        if (array_key_exists($cacheKey, $this->cache)) {
+            return $this->cache[$cacheKey];
+        }
 
         $carrierCode = $this->resolveCarrierCode($carrierId);
-        PrestaShopLogger::addLog('[SQ DEBUG] carrierCode=' . ($carrierCode ?: 'NULL'));
 
         if (!$carrierCode) {
-            return $this->cache[$cartId] = false;
+            return $this->cache[$cacheKey] = false;
         }
 
-        $payload  = $this->buildPayload($cart);
+        $payload  = $this->buildPayload($cart, $carrierId);
         $response = $this->api->request('POST', '/api/calculateshipping', $payload);
 
         if (!$response || !isset($response['prices']) || !is_array($response['prices'])) {
-            return $this->cache[$cartId] = false;
+            return $this->cache[$cacheKey] = false;
         }
 
-        return $this->cache[$cartId] = $this->extractPrice($response['prices'], $carrierCode);
+        return $this->cache[$cacheKey] = $this->extractPrice($response['prices'], $carrierCode);
     }
 }

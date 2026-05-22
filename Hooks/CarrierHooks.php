@@ -3,9 +3,13 @@
 class CarrierHooks
 {
 
-private CarrierModule $module;
+    private CarrierModule $module;
 
-    public function __construct()
+
+    // ================================================================
+    // COSTRUTTORE
+    // ================================================================
+    public function __construct(CarrierModule $module)
     {
         $this->module = $module;
     }
@@ -20,26 +24,38 @@ private CarrierModule $module;
     {
         $cart = $params['cart'] ?? null;
 
+        PrestaShopLogger::addLog(
+            'PARAMS IN HOOK: ' . print_r($cart, true)
+        );
+
         // shippping esistente
-        if (!$cart || (int) $cart->id_carrier > 0) {
+        if (!$cart || (int) $cart->id <= 0) {
+            return;
+        }
+
+        if ($cart->id_carrier > 0) {
             return;
         }
 
         // se non c'è associa il primo oche trovi in lista
         $firstCarrierId = (int) Db::getInstance()->getValue(
             'SELECT id_carrier FROM ' . _DB_PREFIX_ . 'carrier'
-                . ' WHERE external_module_name = "' . pSQL($this->name) . '"'
+                . ' WHERE external_module_name = "' . pSQL($this->module->name) . '"'
                 . ' AND deleted = 0 AND active = 1'
-                . ' ORDER BY position ASC'
+                . ' ORDER BY position ASC LIMIT 1'
         );
 
 
-        if ($firstCarrierId > 0) {
-            $cart->id_carrier = $firstCarrierId;
-            $cart->update();
-            CartRule::autoRemoveFromCart();
-            CartRule::autoAddToCart();
+        if ($firstCarrierId <= 0) {
+            return;
         }
+
+
+        $deliveryOption = [
+            (int)$cart->id_address_delivery => $firstCarrierId . ','
+        ];
+
+        $cart->setDeliveryOption($deliveryOption);
     }
 
 
@@ -56,7 +72,7 @@ private CarrierModule $module;
         $isOurs = Db::getInstance()->getValue(
             'SELECT COUNT(*) FROM ' . _DB_PREFIX_ . 'carrier'
                 . ' WHERE id_carrier = ' . $carrier['id']
-                . ' AND external_module_name = "' . pSQL($this->name) . '"'
+                . ' AND external_module_name = "' . pSQL($this->module->name) . '"'
         );
 
         if (!$isOurs) {
@@ -64,53 +80,61 @@ private CarrierModule $module;
         }
 
         // recupera prezzo assicurazione (testing)
-
+        $ctx = Context::getContext();
         $insurancePrice = 5.70;
-        $checked = $this->context->cookie->{'sq_insurance_' . $carrier['id']}
+        $checked = isset($ctx->cookie->{'sq_insurance_' . $carrier['id']})
+            ? $ctx->cookie->{'sq_insurance_' . $carrier['id']}
+            : false;
 
-        $this->module->context->smarty->assign([
-            'carrier' => $carrier;
-            'insurance_price' => $insurancePrice;
-            'insurance_checked' => $checked;
+            
+        $ctx->smarty->assign([
+            'carrier' => $carrier,
+            'insurance_price' => $insurancePrice,
+            'insurance_checked' => $checked,
         ]);
 
-        return $this->display(__FILE__, 'views/templates/hooks/carrier-extra-content.tpl');
+        return $this->module->display(
+            $this->module->getLocalPath() . $this->module->name . '.php',
+            'views/templates/hooks/carrier-extra-content.tpl'
+        );
     }
 
-    
+
 
     // ================================================================
     // HOOKS PER VISUALIZZARE EXTRA CONTENT
     // ================================================================
 
-    public function hookActionValidateStepComplete(array $params){
+    public function hookActionValidateStepComplete(array $params)
+    {
 
-    $stepName = $params['step_name'] ?? '';
+        $ctx = Context::getContext();
+        $stepName = $params['step_name'] ?? '';
 
-    if ($stepName !== 'delivery'){
-        return;
-    }
+        if ($stepName !== 'delivery') {
+            return;
+        }
 
-    $cart = $param['cart'];
-    $carrierId = $cart->id_carrier;
+        $cart = $params['cart'];
+        $carrierId = $cart->id_carrier;
 
-    $insuranceKey = 'spedisciqui_insurance_' . $carrierId;
-    $value = Tools::getValue($insuranceKey,false);
+        $insuranceKey = 'spedisciqui_insurance_' . $carrierId;
+        $value = Tools::getValue($insuranceKey, false);
 
-    // salva nel cookie
-    $this->context->cookie->{'sq_insurance_'.$carrierId} = $value;
-    $this->context->cookie->write();
+        // salva nel cookie
+        $ctx->cookie->{'sq_insurance_' . $carrierId} = $value;
+        $ctx->cookie->write();
 
-    // Oppure in una tabella dedicata se vuoi persistenza su DB
-    Db::getInstance()->execute(
-        'INSERT INTO ' . _DB_PREFIX_ . 'spedisciqui_cart_options
+        // Oppure in una tabella dedicata se vuoi persistenza su DB
+        Db::getInstance()->execute(
+            'INSERT INTO ' . _DB_PREFIX_ . 'spedisciqui_cart_options
          (id_cart, id_carrier, insurance, insurance_value)
          VALUES (' . (int) $cart->id . ', ' . $carrierId . ', '
-        . ($value ? 1 : 0) . ', '
-        . (float) Configuration::get('SPEDISCIQUI_INSURANCE_VALUE') . ')
+                . ($value ? 1 : 0) . ', '
+                . (float) Configuration::get('SPEDISCIQUI_INSURANCE_VALUE') . ')
          ON DUPLICATE KEY UPDATE
          insurance = VALUES(insurance),
          insurance_value = VALUES(insurance_value)'
-    );
+        );
     }
 }

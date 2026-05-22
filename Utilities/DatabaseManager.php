@@ -125,6 +125,59 @@ class DatabaseManager
     }
 
 
+    // ================================================================
+    // CREAZIONE TABELLA ESTENSIONE DI CART
+    // ================================================================
+    private function createSpedisciQuiCart(): bool
+    {
+        $sql = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'spedisciqui_cart` (
+        `id_cart` int(10) unsigned NOT NULL,
+        `is_oversized` tinyint(1) NOT NULL DEFAULT 0,
+        `is_call_before_delivery` tinyint(1) NOT NULL DEFAULT 0,
+        `is_fragile` tinyint(1) NOT NULL DEFAULT 0,
+        `packs` int(10) unsigned NOT NULL DEFAULT 1,
+        `is_cod` tinyint(1) NOT NULL DEFAULT 0,
+        `weight` decimal(10,2) DEFAULT NULL,
+        `volume` decimal(10,2) DEFAULT NULL,
+        `cod_amount` decimal(10,2) DEFAULT NULL,
+        `is_pickup` tinyint(1) NOT NULL DEFAULT 0,
+        `id_pickup_point` varchar(30) COLLATE utf8_unicode_ci DEFAULT NULL,
+        `label_number` text COLLATE utf8_unicode_ci NULL,
+        `error` text COLLATE utf8_unicode_ci DEFAULT NULL,
+        `comment` text COLLATE utf8_unicode_ci DEFAULT NULL,
+        `id_spedisciqui_manifest` int(10) unsigned DEFAULT NULL,
+        PRIMARY KEY (`id_cart`)
+    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci';
+
+        return Db::getInstance()->execute($sql);
+    }
+
+
+    // ================================================================
+    // CREAZIONE TABELLA STORE (PER MULTI STORE)
+    // ================================================================
+    private function createSpedisciQuiStores(): bool
+    {
+        $sql = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'spedisciqui_store` (
+        `id_spedisciqui_store` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+        `title` VARCHAR(255) NOT NULL,
+        `postcode` VARCHAR(255) NOT NULL,
+        `city` VARCHAR(255) NOT NULL,
+        `phone` VARCHAR(255) NOT NULL,
+        `country_code` VARCHAR(2) NOT NULL,
+        `address` VARCHAR(255) NOT NULL,
+        `pick_start` VARCHAR(255) NOT NULL,
+        `pick_finish` VARCHAR(255) NOT NULL,
+        `id_shop` INT(11) NOT NULL,
+        `is_default` TINYINT(1) NOT NULL DEFAULT 0,
+        `active` TINYINT(1) NOT NULL DEFAULT 1,
+        PRIMARY KEY (`id_spedisciqui_store`)
+    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
+
+        return Db::getInstance()->execute($sql);
+    }
+
+
 
 
     // ================================================================
@@ -148,7 +201,7 @@ class DatabaseManager
     public function getAllCarrierMapping()
     {
         $result = Db::getInstance()->executeS(
-            'SELECT * FROM ' . _DB_PREFIX_ . 'spedisciqui_carrier_mapping WHERE isActive = 1'
+            'SELECT * FROM `' . _DB_PREFIX_ . 'spedisciqui_carrier_mapping` WHERE isActive = 1'
         );
 
         return is_array($result) ? $result : [];
@@ -212,16 +265,18 @@ class DatabaseManager
                 $this->createDefaultPackage() &&
                 $this->createDefaultSender() &&
                 $this->createShipmentsTable() &&
+                $this->createSpedisciQuiCart() &&
+                $this->createSpedisciQuiStores() &&
                 $this->createCarrierMappingTable();
 
             if (!$result) {
-                PrestaShopLogger::addLog('[SPEDISCIQUI] Errore creazione tabelle DB', 3);
+                //PrestaShopLogger::addLog('[SPEDISCIQUI] Errore creazione tabelle DB', 3);
                 return false;
             }
 
             return true;
         } catch (Exception $e) {
-            PrestaShopLogger::addLog('[SPEDISCIQUI] DB Installation Error: ' . $e->getMessage(), 3);
+            //PrestaShopLogger::addLog('[SPEDISCIQUI] DB Installation Error: ' . $e->getMessage(), 3);
             return false;
         }
     }
@@ -282,7 +337,7 @@ class DatabaseManager
                 'DELETE FROM ' . _DB_PREFIX_ . 'carrier_shop WHERE id_carrier = ' . $idCarrier
             );
 
-            PrestaShopLogger::addLog('[SPEDISCIQUI] Carrier id=' . $idCarrier . 'rimosso', 1);
+            //PrestaShopLogger::addLog('[SPEDISCIQUI] Carrier id=' . $idCarrier . 'rimosso', 1);
         }
 
         // Rimuovi dalla configuration SPEDISCIQUI_CARRIER_*
@@ -313,6 +368,8 @@ class DatabaseManager
             'spedisciqui_sender',
             'spedisciqui_shipments',
             'spedisciqui_carrier_mapping',
+            'spedisciqui_store',
+            'spedisciqui_cart'
         ];
 
         foreach ($tables as $table) {
@@ -321,7 +378,7 @@ class DatabaseManager
             );
 
             if (!$result) {
-                PrestaShopLogger::addLog('[SPEDISCIQUI] Errore DROP tabella: ' . $table, 3);
+                //PrestaShopLogger::addLog('[SPEDISCIQUI] Errore DROP tabella: ' . $table, 3);
                 return false;
             }
         }

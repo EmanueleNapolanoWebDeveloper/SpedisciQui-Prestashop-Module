@@ -17,6 +17,7 @@ require __DIR__ . '/Repositories/SenderRepository.php';
 require __DIR__ . '/views/FormRender.php';
 require __DIR__ . '/Utilities/ContentHandler.php';
 require __DIR__ . '/Utilities/ShippingCostResolve.php';
+require __DIR__ . '/Hooks/CarrierHooks.php';
 
 class spedisciquishipping extends CarrierModule
 {
@@ -36,7 +37,10 @@ class spedisciquishipping extends CarrierModule
         $this->version = '1.0.0';
         $this->author = 'Emanuele';
         $this->need_instance = 0;
+        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
         $this->bootstrap = true;
+        $this->confirmUninstall = $this->l('Sei sicuro di voler disinstallare?');
+
 
         parent::__construct();
 
@@ -60,6 +64,7 @@ class spedisciquishipping extends CarrierModule
             $dbResult = $this->db->createAllTableOnInstallation();
 
             return $parentInstall && $dbResult
+                && $this->registerHook('actionCartSave')
                 && $this->registerHook('displayCarrierExtraContent')
                 && $this->registerHook('actionValidateStepComplete')
                 && Configuration::updateValue('SPEDISCIQUI_ACCESS_TOKEN', null)
@@ -105,13 +110,37 @@ class spedisciquishipping extends CarrierModule
 
 
     // ================================================================
+    // HOOK: CARRIER DEFAULT SUL CART
+    // ================================================================
+    public function hookActionCartSave(array $params): void
+    {
+        PrestaShopLogger::addLog('[SQ] hookActionCartSave CHIAMATO - ' . date('H:i:s'));
+        (new CarrierHooks($this))->hookActionCarrierProcess($params);
+    }
+
+    // ================================================================
+    // HOOK: EXTRA CONTENT (CHECKBOX ASSICURAZIONE)
+    // ================================================================
+    public function hookDisplayCarrierExtraContent(array $params): string
+    {
+        return (new CarrierHooks($this))->hookDisplayCarrierExtraContent($params);
+    }
+
+    // ================================================================
+    // HOOK: SALVATAGGIO SCELTA ASSICURAZIONE
+    // ================================================================
+    public function hookActionValidateStepComplete(array $params): void
+    {
+        (new CarrierHooks($this))->hookActionValidateStepComplete($params);
+    }
+
+
+    // ================================================================
     // FUNZIONE PER PREZZO FINALE SPEDIZIONE (ABSTRACT METHOD DI CARRIERMODULO)
     // ================================================================
     public function getOrderShippingCost($params, $shippingCost): float|false
     {
-        $resolver = new ShippingCostResolve($this);
-
-        return $resolver->resolve($params);
+        return $shippingCost > 0 ? $shippingCost : 5.0;
     }
 
 
