@@ -6,6 +6,11 @@ if (!defined('_PS_VERSION_')) {
 
 class DatabaseManager
 {
+
+
+    // ================================================================
+    // CREAZIONE TABELLA CONFIGURAZIONE
+    // ================================================================
     private function createConfigTable(): bool
     {
         $sql = 'CREATE TABLE IF NOT EXISTS ' . bqSQL(_DB_PREFIX_ . 'spedisciqui_config') . ' (
@@ -22,7 +27,12 @@ class DatabaseManager
         return (bool) Db::getInstance()->execute($sql);
     }
 
-    // creazioen tabella default package
+
+
+
+    // ================================================================
+    // CREAZIONE TABELLA PER DEFAULT PACKAGE
+    // ================================================================
     private function createDefaultPackage(): bool
     {
         $sql = 'CREATE TABLE IF NOT EXISTS ' . bqSQL(_DB_PREFIX_ . 'spedisciqui_package') . ' (
@@ -30,7 +40,7 @@ class DatabaseManager
             `id_shop`  INT UNSIGNED NOT NULL DEFAULT 1,
             `height`   DECIMAL(8,2) NOT NULL,
             `depth`    DECIMAL(8,2) NOT NULL,
-            `length`   DECIMAL(8,2) NOT NULL,
+            `width`   DECIMAL(8,2) NOT NULL,
             `weight`   DECIMAL(8,2) NOT NULL,
             `date_add` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `date_upd` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -41,7 +51,11 @@ class DatabaseManager
         return (bool) Db::getInstance()->execute($sql);
     }
 
-    // creazioen tabella defualt sender
+
+
+    // ================================================================
+    // CREAZIOEN TABELLA PER SENDERS
+    // ================================================================
     private function createDefaultSender(): bool
     {
         $sql = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'spedisciqui_sender` (
@@ -64,6 +78,11 @@ class DatabaseManager
         return (bool) Db::getInstance()->execute($sql);
     }
 
+
+
+    // ================================================================
+    // TABELLA SHIPMENTS
+    // ================================================================
     private function createShipmentsTable(): bool
     {
         $sql = 'CREATE TABLE IF NOT EXISTS ' . bqSQL(_DB_PREFIX_ . 'spedisciqui_shipments') . ' (
@@ -84,7 +103,9 @@ class DatabaseManager
     }
 
 
-    // CREAZIONE TABELLA CARRIER MAPPING
+    // ================================================================
+    // CREAZIONE TABELLA DI MAPPING
+    // ================================================================
     private function createCarrierMappingTable(): bool
     {
         $sql = 'CREATE TABLE IF NOT EXISTS ' . bqSQL(_DB_PREFIX_ . 'spedisciqui_carrier_mapping') . ' (
@@ -103,7 +124,12 @@ class DatabaseManager
         return (bool) Db::getInstance()->execute($sql);
     }
 
-    // GET DI CARRIER MAPPING
+
+
+
+    // ================================================================
+    // PRELEVA CARRIER_MAPPING
+    // ================================================================
     public function getCarrierMapping($serviceId)
     {
         $result = Db::getInstance()->getRow(
@@ -114,7 +140,11 @@ class DatabaseManager
         return $result ?: null;
     }
 
-    // get di tutte le carrier mapping
+
+
+    // ================================================================
+    // PRELEVA TUTTI I CARRIER_MAPPING
+    // ================================================================
     public function getAllCarrierMapping()
     {
         $result = Db::getInstance()->executeS(
@@ -124,7 +154,12 @@ class DatabaseManager
         return is_array($result) ? $result : [];
     }
 
+
+
+
+    // ================================================================
     // SALVATAGGIO MAPPING TRA SHIPPING E CARRIER
+    // ================================================================
     public function saveCarrierMapping($serviceId, $carrierReferenceId)
     {
 
@@ -151,7 +186,11 @@ class DatabaseManager
         ]);
     }
 
-    // cancella mapping carrier
+
+
+    // ================================================================
+    // CANCELLA SERVIZIO CARRIER DA CARRIER_MAPPING
+    // ================================================================
     public function deleteCarrierMapping($serviceId)
     {
         return Db::getInstance()->delete(
@@ -161,7 +200,10 @@ class DatabaseManager
     }
 
 
-    // CREAZIONE DI TUTTE LE TABELLA ALL'INSTALLAZIONE
+
+    // ================================================================
+    // CREAZIONE DI TUTTE LE TABELLE ALL'INSTALL
+    // ================================================================
     public function createAllTableOnInstallation(): bool
     {
         try {
@@ -184,7 +226,11 @@ class DatabaseManager
         }
     }
 
-    // pulizia dei moduli carriers
+
+
+    // ================================================================
+    // PULIZIA DA TUTTE LE TABELLE PER UN CARRIER
+    // ================================================================
     public function deleteAllModuleCarrier()
     {
 
@@ -253,7 +299,12 @@ class DatabaseManager
         return true;
     }
 
-    // drop di tutte le tabelle
+
+
+
+    // ================================================================
+    // DROP DI TUTTE LE TABELLE
+    // ================================================================
     public function dropAllSpedisciQuiTables(): bool
     {
         $tables = [

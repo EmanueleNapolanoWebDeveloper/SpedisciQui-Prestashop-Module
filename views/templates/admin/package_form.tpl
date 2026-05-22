@@ -11,8 +11,8 @@
         <label>Altezza (cm)</label>
         <input type="number" name="package_height" class="form-control" value="{$package.height|escape:'htmlall':'UTF-8'}" required>
 
-        <label>Lunghezza (cm)</label>
-        <input type="number" name="package_length" class="form-control" value="{$package.length|escape:'htmlall':'UTF-8'}" required>
+        <label>Larghezza (cm)</label>
+        <input type="number" name="package_width" class="form-control" value="{$package.width|escape:'htmlall':'UTF-8'}" required>
 
         <label>Profondità (cm)</label>
         <input type="number" name="package_depth" class="form-control" value="{$package.depth|escape:'htmlall':'UTF-8'}" required>

@@ -10,6 +10,10 @@ class PackageRepository
 
     const TABLE_NAME = 'spedisciqui_package';
 
+
+    // ================================================================
+    // SALVA DATI PACKAGE DEFAULT
+    // ================================================================
     public function savePackage(int $id_shop, array $data)
     {
 
@@ -19,11 +23,12 @@ class PackageRepository
         $row = [
             'height' => (float)$data['height'],
             'depth'  => (float)$data['depth'],
-            'length' => (float)$data['length'],
+            'width'  => (float)$data['width'],
             'weight' => (float)$data['weight']
         ];
 
-        $exists = $db->getRow("
+        $exists = $db->getRow(
+            "
             SELECT id FROM `{$pfx}spedisciqui_package`
             WHERE id_shop = " . (int)$id_shop
         );
@@ -43,12 +48,17 @@ class PackageRepository
     }
 
 
+
+    // ================================================================
+    // PRENDI DATI DI PACKAGE DEFAULT
+    // ================================================================
     public function getPackage($id_shop = null)
     {
         $id_shop = $id_shop !== null ? (int)$id_shop : (int)Context::getContext()->shop->id;
 
-        $result = Db::getInstance()->getRow("
-            SELECT height, depth, length, weight
+        $result = Db::getInstance()->getRow(
+            "
+            SELECT height, depth, width, weight
             FROM `" . _DB_PREFIX_ . "spedisciqui_package`
             WHERE id_shop = " . (int)$id_shop
         );

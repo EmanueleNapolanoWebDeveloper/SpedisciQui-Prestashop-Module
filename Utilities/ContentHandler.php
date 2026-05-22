@@ -100,7 +100,7 @@ class ContentHandler
         $this->packageRepo->savePackage(Context::getContext()->shop->id, [
             'weight' => Tools::getValue('package_weight'),
             'height' => Tools::getValue('package_height'),
-            'length' => Tools::getValue('package_length'),
+            'width' => Tools::getValue('package_width'),
             'depth'  => Tools::getValue('package_depth'),
         ]);
 

@@ -14,6 +14,10 @@ class ShippingCostResolve
     /** @var array<int, float|false> Cache per evitare chiamate API doppie */
     private array $cache = [];
 
+
+    // ================================================================
+    // COSTRUTTORE
+    // ================================================================
     public function __construct(CarrierModule $module)
     {
         $this->module = $module;
@@ -22,36 +26,33 @@ class ShippingCostResolve
         $this->packageRepo = new PackageRepository();
     }
 
-    // ricavo Carrier Id
+
+
+    // ================================================================
+    // FUNZIONE PER RICAVARE ID_CARRIER
+    // ================================================================
     private function resolveCarrierId(Cart $cart): int
     {
-        // 1. Recupera l'id_carrier dalla tabella PS tramite external_module_name
-        $id = (int) Db::getInstance()->getValue(
-            'SELECT id_carrier FROM ' . _DB_PREFIX_ . 'carrier'
-                . ' WHERE external_module_name = "' . pSQL($this->module->name) . '"'
-                . ' AND deleted = 0 AND active = 1'
-        );
+        $id = $cart->id_carrier;
 
         if ($id > 0) {
-            PrestaShopLogger::addLog('Id Entrrato: ' . $id);
             return $id;
         }
 
-        // 2. Fallback: carrier salvato nel cart
-        $id = (int) Db::getInstance()->getValue(
-            'SELECT id_carrier FROM ' . _DB_PREFIX_ . 'cart'
-                . ' WHERE id_cart = ' . (int) $cart->id
-        );
-
+        // fallback: lo leggo da input
+        $id = Tools::getValue('id_carrier');
         if ($id > 0) {
-            PrestaShopLogger::addLog('[SQ] DB fallback carrier dal cart: ' . $id);
             return $id;
         }
 
-        return 0;
+        return false;
     }
 
-    // ricavo CarrierCode dal mapping
+
+
+    // ================================================================
+    // FUNZIONE PER RICAVARE CODICE CARRIER DAL MAPPING
+    // ================================================================
     private function resolveCarrierCode(int $carrierId): string|false
     {
         $carrier     = new Carrier($carrierId);
@@ -71,7 +72,11 @@ class ShippingCostResolve
         return $response;
     }
 
-    // costruzione payload
+
+
+    // ================================================================
+    // FUNZIONE PER COSTRUZIONE PAYLOAD
+    // ================================================================
     private function buildPayload(Cart $cart): array
     {
         $address = new Address($cart->id_address_delivery);
@@ -79,6 +84,11 @@ class ShippingCostResolve
         $shopId  = Context::getContext()->shop->id;
         $package = $this->packageRepo->getPackage($shopId);
         $sender  = $this->senderRepo->getSender($shopId);
+        $carrierId = $this->resolveCarrierId($cart);
+        $insuranceKey = Context::getContext()->cookie->{$insuranceKey};
+        $insuranceValue = $hasInsurance
+            ? (float) Configuration::get('SPEDISCIQUI_INSURANCE_VALUE')
+            : 0.0;
 
         return [
             'sender'    => $sender,
@@ -97,17 +107,22 @@ class ShippingCostResolve
             'package' => [
                 'weight' => (float) $cart->getTotalWeight(),
                 'height' => (float) ($package['height'] ?? 0),
-                'length' => (float) ($package['length'] ?? 0),
+                'width' => (float) ($package['width'] ?? 0),
                 'depth'  => (float) ($package['depth']  ?? 0),
             ],
-            'insurance'              => false,
-            'insurance_value'        => 0.0,
+            'insurance'              => $hasInsurance,
+            'insurance_value'        => $insuranceValue,
             'cash_on_delivery'       => false,
             'cash_on_delivery_value' => 0.0,
         ];
     }
 
-    // filtro ed estrazione prezzo corriere
+
+
+
+    // ================================================================
+    // ESTRAZIONE PREZZO CORRIER
+    // ================================================================
     private function extractPrice(array $prices, string $carrierCode): float|false
     {
         foreach ($prices as $price) {
@@ -119,7 +134,11 @@ class ShippingCostResolve
         return false;
     }
 
-    // entry point
+
+
+    // ================================================================
+    // FUNZIONE PER CREAZIONE ENTRY-POINT
+    // ================================================================
     public function resolve(Cart $cart): float|false
     {
         $cartId = (int) $cart->id;

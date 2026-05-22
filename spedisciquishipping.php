@@ -25,6 +25,9 @@ class spedisciquishipping extends CarrierModule
     protected PackageRepository $packageRepo;
     protected DatabaseManager $db;
 
+    // ================================================================
+    // COSTRUTTORE
+    // ================================================================
 
     public function __construct()
     {
@@ -45,6 +48,10 @@ class spedisciquishipping extends CarrierModule
         $this->db = new DatabaseManager();
     }
 
+
+    // ================================================================
+    // INSTALLAZIONE MODULO
+    // ================================================================
     public function install(): bool
     {
         try {
@@ -53,6 +60,8 @@ class spedisciquishipping extends CarrierModule
             $dbResult = $this->db->createAllTableOnInstallation();
 
             return $parentInstall && $dbResult
+                && $this->registerHook('displayCarrierExtraContent')
+                && $this->registerHook('actionValidateStepComplete')
                 && Configuration::updateValue('SPEDISCIQUI_ACCESS_TOKEN', null)
                 && Configuration::updateValue('SPEDISCIQUI_SETUP_STEP', null);
         } catch (\Exception $e) {
@@ -61,6 +70,10 @@ class spedisciquishipping extends CarrierModule
         }
     }
 
+
+    // ================================================================
+    // DISINSTALLAZIONE MDOULO
+    // ================================================================
     public function uninstall(): bool
     {
         return parent::uninstall()
@@ -70,18 +83,31 @@ class spedisciquishipping extends CarrierModule
             && Configuration::deleteByName('SPEDISCIQUI_SETUP_STEP');
     }
 
+
+    // ================================================================
+    // FUNZIONE PER PRELEVARE SMARTY 
+    // ================================================================
     public function getSmarty(): Smarty
     {
         return $this->context->smarty;
     }
 
+
+    // ================================================================
+    // CONTENT DEL MODULO
+    // ================================================================
     public function getContent()
     {
         $handler = new ContentHandler($this);
         return $handler->handle();
     }
 
-    public function getOrderShippingCost($params, $shippingCost)
+
+
+    // ================================================================
+    // FUNZIONE PER PREZZO FINALE SPEDIZIONE (ABSTRACT METHOD DI CARRIERMODULO)
+    // ================================================================
+    public function getOrderShippingCost($params, $shippingCost): float|false
     {
         $resolver = new ShippingCostResolve($this);
 
@@ -89,6 +115,10 @@ class spedisciquishipping extends CarrierModule
     }
 
 
+
+    // ================================================================
+    // FUNZIONE PER PREZZO FINALE SPEDIZIONE (ABSTRACT METHOD DI CARRIERMODULO)
+    // ================================================================
     public function getOrderShippingCostExternal($params): float|false
     {
         return $this->getOrderShippingCost($params, 0);

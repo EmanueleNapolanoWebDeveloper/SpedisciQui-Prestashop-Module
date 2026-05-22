@@ -406,7 +406,7 @@ public function getPackage(?int $id_shop = null): ?array
 ```
 
 - `savePackage()` effettua un upsert: se esiste un record per lo `id_shop`, viene aggiornato; altrimenti viene inserito un nuovo record.
-- `getPackage()` restituisce `height`, `depth`, `length`, `weight` o `null` se non esiste.
+- `getPackage()` restituisce `height`, `depth`, `width`, `weight` o `null` se non esiste.
 
 ---
 
@@ -455,7 +455,7 @@ CREATE TABLE `spedisciqui_package` (
     id_shop   INT UNSIGNED NOT NULL DEFAULT 1,
     height    DECIMAL(8,2) NOT NULL,
     depth     DECIMAL(8,2) NOT NULL,
-    length    DECIMAL(8,2) NOT NULL,
+    width     DECIMAL(8,2) NOT NULL,
     weight    DECIMAL(8,2) NOT NULL,
     date_add  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     date_upd  TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
