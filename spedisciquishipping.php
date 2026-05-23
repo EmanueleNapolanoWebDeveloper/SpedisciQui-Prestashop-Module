@@ -16,6 +16,11 @@ require __DIR__ . '/classes/Repositories/CredentialsRepositories.php';
 require __DIR__ . '/classes/Handlers/ContentHandler.php';
 require __DIR__ . '/classes/Handlers/CredentialsHandlers.php';
 require __DIR__ . '/classes/Renderers/CredentialsRenderer.php';
+require __DIR__ . '/classes/Renderers/SenderRenderer.php';
+require __DIR__ . '/classes/Repositories/SenderRepository.php';
+require __DIR__ . '/classes/Core/SetupManage.php';
+require __DIR__ . '/classes/Core/SetupSteps.php';
+require __DIR__ . '/classes/Handlers/SendersHandler.php';
 
 
 class spedisciquishipping extends CarrierModule

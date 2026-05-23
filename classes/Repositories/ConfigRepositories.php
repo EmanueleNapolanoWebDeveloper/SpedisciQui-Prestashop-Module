@@ -49,7 +49,7 @@ class ConfigRepositories
     // SETTAGGIO CHIAVE VALORE CONFIGURAZIONE
     //=================================================
 
-    public function set(string $key, $value)
+    public static function set(string $key, $value)
     {
 
         $db = Db::getInstance();

@@ -1,67 +1,93 @@
 <?php
-// ContentHandler.php
+
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
 class ContentHandler
 {
-    private spedisciquishipping  $module;
+    private spedisciquishipping     $module;
+    private Context                 $context;
+    private SetupManager            $setupManager;
     private CredentialsRepositories $credentialsRepo;
-    private CredentialsHandlers  $credentialsHandler;
-    private CredentialsRenderer  $credentialsRenderer;
-     private Context                 $context;
+    private SenderRepository        $senderRepo;
+    private CredentialsHandlers     $credentialsHandler;
+    private SenderHandler           $senderHandler;
+    private CredentialsRenderer     $credentialsRenderer;
+    private SenderRenderer          $senderRenderer;
 
     public function __construct(spedisciquishipping $module)
     {
-        $this->module = $module;
-
-        // costruzione dipendenze in ordine
-        $configRepo   = new ConfigRepositories(Context::getContext());
-        $apiClient    = new ApiClient($configRepo);
-
-        // unica istanza condivisa tra handler e renderer
-        $this->credentialsRepo    = new CredentialsRepositories(Context::getContext(), $apiClient);
-        $this->credentialsHandler = new CredentialsHandlers($module, $this->credentialsRepo);
-        $this->credentialsRenderer = new CredentialsRenderer($module, $this->credentialsRepo);
+        $this->module  = $module;
         $this->context = Context::getContext();
+
+        $configRepo    = new ConfigRepositories($this->context);
+        $apiClient     = new ApiClient($configRepo);
+
+        $this->credentialsRepo = new CredentialsRepositories($this->context, $apiClient);
+        $this->senderRepo      = new SenderRepository($this->context);
+        $this->setupManager    = new SetupManager($configRepo, $this->credentialsRepo);
+
+        $this->credentialsHandler  = new CredentialsHandlers($module, $this->credentialsRepo, $this->setupManager);
+        $this->senderHandler       = new SenderHandler($module, $this->senderRepo, $this->setupManager);
+
+        $this->credentialsRenderer = new CredentialsRenderer($module, $this->credentialsRepo);
+        $this->senderRenderer      = new SenderRenderer($module, $this->senderRepo);
     }
 
+    //========================================================
+    // HANDLE
+    //========================================================
     public function handle(): string
     {
-        $output = '';
-
-        //========================================================
-        //ACCESS_TOKEN SUBMIT
-        //========================================================
-
-        if (Tools::isSubmit('submitSpedisciQuiCredentials')) {
-            $output .= $this->credentialsHandler->handleSubmit();
-        }
+        $this->handleSubmits();
 
         $this->context->smarty->assign('content', $this->resolveView());
+
+        $output = $this->credentialsHandler->getOutput()
+                . $this->senderHandler->getOutput();
 
         return $output . $this->module->display(
             $this->module->getLocalPath(),
             'views/templates/admin/config.tpl'
         );
-
-
-        //========================================================
-        //PACKAGE SUBMIT
-        //========================================================
     }
 
-    private function resolveView(): string
+    //========================================================
+    // SUBMIT
+    //========================================================
+    private function handleSubmits(): void
     {
-        // ✅ usa il repo già istanziato — nessuna seconda istanza
-        $credentials = $this->credentialsRepo->get();
-
-        if (!$credentials) {
-            return $this->credentialsRenderer->renderCredentialsForm();
+        if (Tools::isSubmit('submitSpedisciQuiCredentials')) {
+            $this->credentialsHandler->handleSubmit();
         }
 
-        // placeholder → qui aggiungerai dashboard, step pacco, step mittente ecc.
-        return $this->credentialsRenderer->renderCredentialsForm();
+        if (Tools::isSubmit('submitSpedisciQuiSender')) {
+            $this->senderHandler->handleSubmit();
+        }
+    }
+
+    //========================================================
+    // RESOLVE VIEW
+    //========================================================
+    private function resolveView(): string
+    {
+        switch ($this->setupManager->current()) {
+
+            case SetupSteps::TOKEN:
+                return $this->credentialsRenderer->renderCredentialsForm();
+
+            case SetupSteps::SENDER:
+                return $this->senderRenderer->renderSenderForm();
+
+            case SetupSteps::DONE:
+                // return $this->dashboardRenderer->renderDashboard();
+                return $this->senderRenderer->renderSenderForm(); // placeholder
+
+            default:
+                $this->setupManager->reset();
+                return $this->credentialsRenderer->renderCredentialsForm();
+        }
     }
 }

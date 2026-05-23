@@ -5,11 +5,25 @@ class CredentialsHandlers
 
     private spedisciquishipping $module;
     private CredentialsRepositories $credentialsRepo;
+    private SetupManager            $setupManager;
+    private string $output = '';
 
-    public function __construct(spedisciquishipping $module, CredentialsRepositories $credentialsRepo)
-    {
+    public function __construct(
+        spedisciquishipping $module,
+        CredentialsRepositories $credentialsRepo,
+        SetupManager $setupManager
+    ) {
         $this->module = $module;
         $this->credentialsRepo = $credentialsRepo;
+        $this->setupManager    = $setupManager;
+    }
+
+    //===========================================
+    // OUTPUT ACCUMULATO
+    //===========================================
+    public function getOutput(): string
+    {
+        return $this->output;
     }
 
 
@@ -40,6 +54,9 @@ class CredentialsHandlers
                 $this->module->l('Errore durante il salvataggio del token.')
             );
         }
+
+        // passa a step successivo
+        $this->setupManager->advance();
 
         return $this->module->displayConfirmation(
             $this->module->l('Token salvato correttamente. Scadenza: ') .
