@@ -22,40 +22,60 @@ class CarrierHooks
 
     public function hookActionCarrierProcess(array $params): void
     {
+        /** @var Cart|null $cart */
         $cart = $params['cart'] ?? null;
 
-        PrestaShopLogger::addLog(
-            'PARAMS IN HOOK: ' . print_r($cart, true)
-        );
-
-        // shippping esistente
-        if (!$cart || (int) $cart->id <= 0) {
+        if (
+            !$cart ||
+            !Validate::isLoadedObject($cart) ||
+            !(int)$cart->id
+        ) {
             return;
         }
 
-        if ($cart->id_carrier > 0) {
+        // evita loop inutili
+        if ((int)$cart->id_carrier > 0) {
             return;
         }
 
-        // se non c'è associa il primo oche trovi in lista
+        // indirizzo obbligatorio
+        if (!(int)$cart->id_address_delivery) {
+            return;
+        }
+
+        // prodotti obbligatori
+        $products = $cart->getProducts();
+
+        if (empty($products)) {
+            return;
+        }
+
+        // recupera primo carrier del modulo
         $firstCarrierId = (int) Db::getInstance()->getValue(
-            'SELECT id_carrier FROM ' . _DB_PREFIX_ . 'carrier'
-                . ' WHERE external_module_name = "' . pSQL($this->module->name) . '"'
-                . ' AND deleted = 0 AND active = 1'
-                . ' ORDER BY position ASC LIMIT 1'
+            'SELECT id_carrier
+        FROM ' . _DB_PREFIX_ . 'carrier
+        WHERE external_module_name = "' . pSQL($this->module->name) . '"
+        AND deleted = 0
+        AND active = 1
+        ORDER BY position ASC'
         );
-
 
         if ($firstCarrierId <= 0) {
             return;
         }
 
-
         $deliveryOption = [
             (int)$cart->id_address_delivery => $firstCarrierId . ','
         ];
 
+        PrestaShopLogger::addLog(
+            'SET DELIVERY OPTION: ' . print_r($deliveryOption, true)
+        );
+
         $cart->setDeliveryOption($deliveryOption);
+
+        // salva
+        $cart->update();
     }
 
 
@@ -86,7 +106,7 @@ class CarrierHooks
             ? $ctx->cookie->{'sq_insurance_' . $carrier['id']}
             : false;
 
-            
+
         $ctx->smarty->assign([
             'carrier' => $carrier,
             'insurance_price' => $insurancePrice,

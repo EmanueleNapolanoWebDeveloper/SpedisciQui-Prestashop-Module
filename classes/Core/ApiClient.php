@@ -4,19 +4,25 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
 
-class SpedisciQuiApi
+class ApiClient
 {
     private string $baseUrl;
     private Client $client;
+    private ConfigRepositories $config;
 
-    public function __construct()
+
+    //============================================
+    // COSTRUTTORE
+    //============================================
+    public function __construct(ConfigRepositories $config)
     {
-        $this->baseUrl = (string) Configuration::get('SPEDISCIQUI_API_BASE_URL') ?: 'http://127.0.0.1:8000';
+        $this->baseUrl = $config->get('SPEDISCIQUI_API_BASE_URL', 'http://127.0.0.1:8000');
 
         $this->client = new Client([
             'base_uri' => rtrim($this->baseUrl, '/') . '/',
@@ -28,6 +34,10 @@ class SpedisciQuiApi
         ]);
     }
 
+
+    //============================================
+    // VALIDAZIONE TOKEN
+    //============================================
     public function validateToken(string $token): bool
     {
         try {
@@ -39,24 +49,33 @@ class SpedisciQuiApi
 
             return $response->getStatusCode() === 200;
         } catch (ClientException $e) {
-            //PrestaShopLogger::addLog('[SPEDISCIQUI] validateToken ClientException: ' . $e->getMessage(), 2);
+            PrestaShopLogger::addLog('[SPEDISCIQUI] validateToken ClientException: ' . $e->getMessage(), 2);
             return false;
         } catch (ConnectException $e) {
-            //PrestaShopLogger::addLog('[SPEDISCIQUI] validateToken - server non raggiungibile: ' . $e->getMessage(), 3);
+            PrestaShopLogger::addLog('[SPEDISCIQUI] validateToken - server non raggiungibile: ' . $e->getMessage(), 3);
             return false;
         }
     }
 
-    public function request(string $method, string $endpoint, array $payload = []): mixed
-    {
-        $token = Configuration::get('SPEDISCIQUI_ACCESS_TOKEN');
 
-        if (!$token) {
-            //PrestaShopLogger::addLog('[SPEDISCIQUI] Access token non configurato', 3);
+    //============================================
+    // REQUESTS
+    //============================================
+    public function request(
+        string $method,
+        string $endpoint,
+        string $token,
+        array $payload = []
+    ): mixed {
+
+        // controllo token vuoto
+        if (empty($token)) {
+            PrestaShopLogger::addLog('[SPEDISCIQUI] request() — token vuoto', 3);
             return null;
         }
 
         try {
+
             $options = [
                 'headers' => [
                     'Authorization' => "Bearer {$token}",
@@ -87,13 +106,13 @@ class SpedisciQuiApi
                 //PrestaShopLogger::addLog('[SPEDISCIQUI] Token scaduto o non valido (401): ' . $body, 2);
             }
 
-            // PrestaShopLogger::addLog('[SPEDISCIQUI] ClientException (HTTP ' . $statusCode . '): ' . $e->getMessage(), 3);
+            PrestaShopLogger::addLog('[SPEDISCIQUI] ClientException (HTTP ' . $statusCode . '): ' . $e->getMessage(), 3);
             return null;
         } catch (ConnectException $e) {
-            // PrestaShopLogger::addLog('[SPEDISCIQUI] Server non raggiungibile: ' . $e->getMessage(), 3);
+            PrestaShopLogger::addLog('[SPEDISCIQUI] Server non raggiungibile: ' . $e->getMessage(), 3);
             return null;
         } catch (RequestException $e) {
-            // PrestaShopLogger::addLog('[SPEDISCIQUI] RequestException: ' . $e->getMessage(), 3);
+            PrestaShopLogger::addLog('[SPEDISCIQUI] RequestException: ' . $e->getMessage(), 3);
             return null;
         }
     }

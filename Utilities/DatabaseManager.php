@@ -254,32 +254,6 @@ class DatabaseManager
 
 
 
-    // ================================================================
-    // CREAZIONE DI TUTTE LE TABELLE ALL'INSTALL
-    // ================================================================
-    public function createAllTableOnInstallation(): bool
-    {
-        try {
-            $result =
-                $this->createConfigTable() &&
-                $this->createDefaultPackage() &&
-                $this->createDefaultSender() &&
-                $this->createShipmentsTable() &&
-                $this->createSpedisciQuiCart() &&
-                $this->createSpedisciQuiStores() &&
-                $this->createCarrierMappingTable();
-
-            if (!$result) {
-                //PrestaShopLogger::addLog('[SPEDISCIQUI] Errore creazione tabelle DB', 3);
-                return false;
-            }
-
-            return true;
-        } catch (Exception $e) {
-            //PrestaShopLogger::addLog('[SPEDISCIQUI] DB Installation Error: ' . $e->getMessage(), 3);
-            return false;
-        }
-    }
 
 
 

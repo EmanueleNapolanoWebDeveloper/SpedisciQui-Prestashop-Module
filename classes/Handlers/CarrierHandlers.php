@@ -4,164 +4,24 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-class ContentHandler
+class CarrierHandlers
 {
 
     private spedisciquishipping $module;
-    private SpedisciQuiApi $api;
-    private PackageRepository $packageRepo;
-    private SenderRepository $senderRepo;
 
+    //==========================================
+    // COSTRUTTORE
+    //==========================================
     public function __construct(spedisciquishipping $module)
     {
         $this->module = $module;
-        $this->api = new SpedisciQuiApi();
-        $this->packageRepo = new PackageRepository();
-        $this->senderRepo = new SenderRepository();
     }
 
 
-    // FUNZIONE DI HANDLERS
 
-    public function handle()
-    {
-
-        $output = '';
-
-        // INSERIMENTO TOKEN
-        if (Tools::isSubmit('submitSpedisciQuiShipping')) {
-            $output .= $this->handleTokenSubmit();
-        }
-
-        // INSERIMENTO DATI PACCHI
-        if (Tools::isSubmit('submitPackageForm')) {
-            $output .= $this->handlePackageSubmit();
-        }
-
-        // INSERIMENTO MITTENTE DEFAULT
-        if (Tools::isSubmit('submitSenderForm')) {
-            $output .= $this->handleSenderSubmit();
-        }
-
-        // TESTING API
-        if (Tools::isSubmit('submitTestApi')) {
-            $output .= $this->handleTestApi();
-        }
-
-        // HANDLE RESET TOKEN
-        if (Tools::isSubmit('submitResetToken')) {
-            $this->handleResetToken();
-        }
-
-        // HANDLE AGGIUNTA CORRIERE
-        if (Tools::isSubmit('submitInstallCarrier')) {
-            $output .= $this->handleInstallcarrier();
-        }
-
-        // HANDLE RIMOZIONE CORRIERE
-        if (Tools::isSubmit('submitRemoveCarrier')) {
-            $output .= $this->handleRemoveCarrier();
-        }
-
-
-        return $output . $this->resolveView();
-    }
-
-    /*
-    ============== HANDLE PER INSERIMENTO ACCESS_TOKEN===================
-    */
-    private function handleTokenSubmit()
-    {
-        $token = trim(Tools::getValue('SPEDISCIQUI_ACCESS_TOKEN'));
-
-        // controllo token vuoto
-        if (empty($token)) {
-            return $this->module->displayError($this->module->l('Client Token obbligatorio!'));
-        }
-
-        // controllo token errato/scaduto
-        if (!$this->api->validateToken($token)) {
-            return $this->module->displayError($this->module->l('Client Token non valido!'));
-        }
-
-        // salvataggio token e avanzamaneto step setup
-        Configuration::updateValue('SPEDISCIQUI_ACCESS_TOKEN', $token);
-        Configuration::updateValue('SPEDISCIQUI_SETUP_STEP', 1);
-
-        return $this->module->displayConfirmation($this->module->l('Token Configurato correttamnte!'));
-    }
-
-    /*
-    ============== HANDLE PER INSERIMENTO DATI PACKAGE===================
-    */
-
-    private function handlePackageSubmit()
-    {
-        $this->packageRepo->savePackage(Context::getContext()->shop->id, [
-            'weight' => Tools::getValue('package_weight'),
-            'height' => Tools::getValue('package_height'),
-            'width' => Tools::getValue('package_width'),
-            'depth'  => Tools::getValue('package_depth'),
-        ]);
-
-        Configuration::updateValue('SPEDISCIQUI_SETUP_STEP', 2);
-        return $this->module->displayConfirmation($this->module->l('Dimensiona Pacco inserito correttamnte!'));
-    }
-
-    /*
-    ============== HANDLE PER INSERIMENTO DATI SENDER (MITTENTE)===================
-    */
-
-    private function handleSenderSubmit()
-    {
-        $this->senderRepo->saveSender([
-            'name'    => Tools::getValue('sender_name'),
-            'surname' => Tools::getValue('sender_surname'),
-            'address' => Tools::getValue('sender_address'),
-            'phone'   => Tools::getValue('sender_phone'),
-            'city'    => Tools::getValue('sender_city'),
-            'zip'     => Tools::getValue('sender_zip'),
-            'country' => Tools::getValue('sender_country'),
-            'prov'    => Tools::getValue('sender_prov'),
-        ]);
-
-        Configuration::updateValue('SPEDISCIQUI_SETUP_STEP', 'DONE');
-        return $this->module->displayConfirmation($this->module->l('Mittente inserito con successo'));
-    }
-
-    /*
-    ============ HANDLE PER TEST CONNESSIONE API
-    */
-
-    private function handleTestApi()
-    {
-        $response = $this->api->request('GET', '/api/testing');
-
-        if ($response) {
-            return '<div class="alert alert-success"><h4>✅ Risposta da Laravel:</h4><pre>'
-                . htmlspecialchars(json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))
-                . '</pre></div>';
-        }
-
-        return $this->module->displayError($this->module->l('Nessuna risposta dal server.'));
-    }
-
-    /*
-    ============ HANDLE PER RESET TOKEN
-    */
-
-    private function handleResetToken()
-    {
-        Configuration::deleteByName('SPEDISCIQUI_ACCESS_TOKEN');
-        Configuration::deleteByName('SPEDISCIQUI_SETUP_STEP');
-        Tools::redirectAdmin(
-            Context::getContext()->link->getAdminLink('AdminModules', true) . '&configure=' . $this->module->name
-        );
-    }
-
-    /*
-    ============ HANDLE PER AGGIUNTA CARRIER
-    */
+    //==========================================
+    // INSTALLAZIONE CARRIER IN PS_CARRIER E TABELLA CUSTON spedisciqui_carrier
+    //==========================================
     private function handleInstallcarrier()
     {
         $serviceId = Tools::getValue('service_code');

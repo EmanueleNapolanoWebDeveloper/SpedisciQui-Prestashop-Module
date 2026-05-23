@@ -1,7 +1,5 @@
 <?php
 
-error_log('__DIR__ = ' . __DIR__);
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -10,21 +8,21 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require __DIR__ . '/../vendor/autoload.php';
 }
 
-require __DIR__ . '/Utilities/SpedisciQuiApi.php';
-require __DIR__ . '/Utilities/DatabaseManager.php';
-require __DIR__ . '/Repositories/PackageRepository.php';
-require __DIR__ . '/Repositories/SenderRepository.php';
-require __DIR__ . '/views/FormRender.php';
-require __DIR__ . '/Utilities/ContentHandler.php';
-require __DIR__ . '/Utilities/ShippingCostResolve.php';
-require __DIR__ . '/Hooks/CarrierHooks.php';
+require __DIR__ . '/classes/Migrations/SQMigrations.php';
+require __DIR__ . '/classes/Core/ApiClient.php';
+require __DIR__ . '/classes/Core/Installation.php';
+require __DIR__ . '/classes/Repositories/ConfigRepositories.php';
+require __DIR__ . '/classes/Repositories/CredentialsRepositories.php';
+require __DIR__ . '/classes/Handlers/ContentHandler.php';
+require __DIR__ . '/classes/Handlers/CredentialsHandlers.php';
+require __DIR__ . '/classes/Renderers/CredentialsRenderer.php';
+
 
 class spedisciquishipping extends CarrierModule
 {
-    protected SpedisciQuiApi $api;
-    protected SenderRepository $senderRepo;
-    protected PackageRepository $packageRepo;
-    protected DatabaseManager $db;
+
+    protected SQMigrations $SQMigrations;
+    protected ConfigRepositories $config;
 
     // ================================================================
     // COSTRUTTORE
@@ -35,21 +33,19 @@ class spedisciquishipping extends CarrierModule
         $this->name = 'spedisciquishipping';
         $this->tab = 'shipping_logistics';
         $this->version = '1.0.0';
-        $this->author = 'Emanuele';
+        $this->author = 'SpedisciQui';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
         $this->bootstrap = true;
         $this->confirmUninstall = $this->l('Sei sicuro di voler disinstallare?');
+        $this->displayName = 'SpedisciQui Shipping Primo';
+        $this->description = 'Modulo spedizioni customizzato';
 
 
         parent::__construct();
 
-        $this->displayName = 'SpedisciQui Shipping Primo';
-        $this->description = 'Modulo spedizioni customizzato';
-        $this->api = new SpedisciQuiApi();
-        $this->packageRepo = new PackageRepository();
-        $this->senderRepo = new SenderRepository();
-        $this->db = new DatabaseManager();
+        $this->SQMigrations = new SQMigrations();
+        $this->config       = new ConfigRepositories(Context::getContext());
     }
 
 
@@ -58,21 +54,18 @@ class spedisciquishipping extends CarrierModule
     // ================================================================
     public function install(): bool
     {
-        try {
-            $parentInstall = parent::install();
 
-            $dbResult = $this->db->createAllTableOnInstallation();
-
-            return $parentInstall && $dbResult
-                && $this->registerHook('actionCartSave')
-                && $this->registerHook('displayCarrierExtraContent')
-                && $this->registerHook('actionValidateStepComplete')
-                && Configuration::updateValue('SPEDISCIQUI_ACCESS_TOKEN', null)
-                && Configuration::updateValue('SPEDISCIQUI_SETUP_STEP', null);
-        } catch (\Exception $e) {
-            error_log('INSTALL ERROR: ' . $e->getMessage());
+        if (!parent::install()) {
             return false;
         }
+
+        $installation = new Installation(
+            $this,
+            $this->SQMigrations,
+            $this->config,
+        );
+
+        return $installation->install();
     }
 
 
@@ -81,11 +74,17 @@ class spedisciquishipping extends CarrierModule
     // ================================================================
     public function uninstall(): bool
     {
-        return parent::uninstall()
-            && $this->db->deleteAllModuleCarrier()
-            && $this->db->dropAllSpedisciQuiTables()
-            && Configuration::deleteByName('SPEDISCIQUI_ACCESS_TOKEN')
-            && Configuration::deleteByName('SPEDISCIQUI_SETUP_STEP');
+        if (!parent::uninstall()) {
+            return false;
+        }
+
+        $uninstallation = new Installation(
+            $this,
+            $this->SQMigrations,
+            $this->config,
+        );
+
+        return $uninstallation->uninstall();
     }
 
 
@@ -105,33 +104,6 @@ class spedisciquishipping extends CarrierModule
     {
         $handler = new ContentHandler($this);
         return $handler->handle();
-    }
-
-
-
-    // ================================================================
-    // HOOK: CARRIER DEFAULT SUL CART
-    // ================================================================
-    public function hookActionCartSave(array $params): void
-    {
-        PrestaShopLogger::addLog('[SQ] hookActionCartSave CHIAMATO - ' . date('H:i:s'));
-        (new CarrierHooks($this))->hookActionCarrierProcess($params);
-    }
-
-    // ================================================================
-    // HOOK: EXTRA CONTENT (CHECKBOX ASSICURAZIONE)
-    // ================================================================
-    public function hookDisplayCarrierExtraContent(array $params): string
-    {
-        return (new CarrierHooks($this))->hookDisplayCarrierExtraContent($params);
-    }
-
-    // ================================================================
-    // HOOK: SALVATAGGIO SCELTA ASSICURAZIONE
-    // ================================================================
-    public function hookActionValidateStepComplete(array $params): void
-    {
-        (new CarrierHooks($this))->hookActionValidateStepComplete($params);
     }
 
 
