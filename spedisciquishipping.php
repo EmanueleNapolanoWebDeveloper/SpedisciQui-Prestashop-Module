@@ -8,7 +8,7 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require __DIR__ . '/../vendor/autoload.php';
 }
 
-require __DIR__ . '/classes/Migrations/SQMigrations.php';
+require __DIR__ . '/classes/Core/Database/SQMigrations.php';
 require __DIR__ . '/classes/Core/ApiClient.php';
 require __DIR__ . '/classes/Core/Installation.php';
 require __DIR__ . '/classes/Repositories/ConfigRepositories.php';

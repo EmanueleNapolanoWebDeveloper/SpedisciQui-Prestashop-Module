@@ -47,9 +47,9 @@ class SQMigrations
     //==========================================
     // DIMENSIONI DEFAULT PACCO
     //==========================================
-    private function createDefaultParcelTable(): bool
+    private function creatSpedisciQuiPackageTable(): bool
     {
-        $sql = 'CREATE TABLE IF NOT EXISTS ' . bqSQL(_DB_PREFIX_ . 'spedisciqui_default_parcel') . ' (
+        $sql = 'CREATE TABLE IF NOT EXISTS ' . bqSQL(_DB_PREFIX_ . 'spedisciqui_package') . ' (
             `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
             `id_shop`       INT UNSIGNED NOT NULL DEFAULT 1,
             `name`          VARCHAR(100) NOT NULL DEFAULT "Default",
@@ -166,7 +166,7 @@ class SQMigrations
         try {
             $result =  $this->createConfigTable()
                 && $this->createApiCredentialsTable()
-                && $this->createDefaultParcelTable()
+                && $this->creatSpedisciQuiPackageTable()
                 && $this->createSenderAddressTable()
                 && $this->createSpedisciQuiCarriers()
                 && $this->createSpedisciQuiShipments();
@@ -193,7 +193,7 @@ class SQMigrations
             $tables = [
                 'spedisciqui_config',
                 'spedisciqui_api_credentials',
-                'spedisciqui_default_parcel',
+                'spedisciqui_package',
                 'spedisciqui_sender_address',
                 'spedisciqui_carrier',
                 'spedisciqui_shipments'

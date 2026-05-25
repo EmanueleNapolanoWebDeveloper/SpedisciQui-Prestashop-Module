@@ -5,6 +5,14 @@
             "name": "Emanuele"
         }
     ],
+    "autoload": {
+        "psr-4": {
+            "SpedisciQui\\": "classes/"
+        },
+        "classmap": [
+            "classes/"
+        ]
+    },
     "require": {
         "guzzlehttp/guzzle": "^7.0"
     }

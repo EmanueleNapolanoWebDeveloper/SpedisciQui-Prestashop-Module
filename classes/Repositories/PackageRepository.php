@@ -11,39 +11,66 @@ class PackageRepository
     const TABLE_NAME = 'spedisciqui_package';
 
 
-    // ================================================================
-    // SALVA DATI PACKAGE DEFAULT
-    // ================================================================
-    public function savePackage(int $id_shop, array $data)
+    //=============================================
+    // RECUPERO PACKAGE DEFAULT
+    //=============================================
+    public function getDefault(?int $idShop = null): ?array
     {
 
-        $db = Db::getInstance();
+        $idShop = $idShop ?? (int) Context::getContext()->shop->id;
+
+        $row = Db::getInstance()->getRow(
+            'SELECT * FROM `' . _DB_PREFIX_ . self::TABLE_NAME . '`
+         WHERE `id_shop` = ' . (int) $idShop . '
+         AND `is_default` = 1'
+        );
+
+        return $row ?: null;
+    }
+
+
+    // ================================================================
+    // SALVA DATI PACKAGE DEFAULT (INSERT O UPDATE)
+    // ================================================================
+    public function savePackage(?int $idShop, array $data): bool
+    {
+        $idShop = $idShop ?: (int) Context::getContext()->shop->id;
+
+        $db  = Db::getInstance();
         $pfx = _DB_PREFIX_;
 
         $row = [
-            'height' => (float)$data['height'],
-            'depth'  => (float)$data['depth'],
-            'width'  => (float)$data['width'],
-            'weight' => (float)$data['weight']
+            'name'       => pSQL(trim($data['name'] ?? 'Default')),
+            'height'     => (float) ($data['height'] ?? 1.0),
+            'length'      => (float) ($data['length'] ?? 30.0),
+            'width'      => (float) ($data['width'] ?? 20.0),
+            'weight'     => (float) ($data['weight'] ?? 10.0),
+            'is_default' => (int) ($data['is_default'] ?? 0),
         ];
 
         $exists = $db->getRow(
-            "
-            SELECT id FROM `{$pfx}spedisciqui_package`
-            WHERE id_shop = " . (int)$id_shop
+            '
+        SELECT `id`
+        FROM `' . $pfx . self::TABLE_NAME . '`
+        WHERE `id_shop` = ' . (int) $idShop . '
+        AND `is_default` = 1
+        '
         );
 
         if ($exists) {
-            return $db->update(
-                'spedisciqui_package',
+            return (bool) $db->update(
+                self::TABLE_NAME,
                 $row,
-                "id_shop = " . (int)$id_shop
+                '`id_shop` = ' . (int) $idShop
             );
         }
 
-        return $db->insert(
-            "spedisciqui_package",
-            array_merge(['id_shop' => (int)$id_shop], $row)
+        return (bool) $db->insert(
+            self::TABLE_NAME,
+            array_merge(
+                ['id_shop' => (int) $idShop],
+                $row
+            )
         );
     }
 
@@ -52,17 +79,46 @@ class PackageRepository
     // ================================================================
     // PRENDI DATI DI PACKAGE DEFAULT
     // ================================================================
-    public function getPackage($id_shop = null)
+    public function getPackage(?int $idShop = null): ?array
     {
-        $id_shop = $id_shop !== null ? (int)$id_shop : (int)Context::getContext()->shop->id;
+        $idShop = $idShop ?? (int) Context::getContext()->shop->id;
 
         $result = Db::getInstance()->getRow(
-            "
-            SELECT height, depth, width, weight
-            FROM `" . _DB_PREFIX_ . "spedisciqui_package`
-            WHERE id_shop = " . (int)$id_shop
+            '
+        SELECT `height`, `length`, `width`, `weight`
+        FROM `' . _DB_PREFIX_ . self::TABLE_NAME . '`
+        WHERE `id_shop` = ' . (int) $idShop
         );
 
         return $result ?: null;
+    }
+
+
+
+
+    // ================================================================
+    // VALIDAZIONE
+    // ================================================================
+    public function validate(array $data): array
+    {
+        $errors = [];
+
+        if (empty(trim($data['name'] ?? ''))) {
+            $errors[] = 'Il nome profilo è obbligatorio.';
+        }
+        if (empty($data['weight']) || (float) $data['weight'] <= 0) {
+            $errors[] = 'Il peso deve essere maggiore di 0.';
+        }
+        if (empty($data['length']) || (float) $data['length'] <= 0) {
+            $errors[] = 'La lunghezza deve essere maggiore di 0.';
+        }
+        if (empty($data['width']) || (float) $data['width'] <= 0) {
+            $errors[] = 'La larghezza deve essere maggiore di 0.';
+        }
+        if (empty($data['height']) || (float) $data['height'] <= 0) {
+            $errors[] = 'L\'altezza deve essere maggiore di 0.';
+        }
+
+        return $errors;
     }
 }

@@ -20,13 +20,19 @@ class SenderHandler
         $this->setupManager = $setupManager;
     }
 
+
+
+    //=============================================
+    // RITORNA OUTPUT
+    //=============================================
     public function getOutput(): string
     {
         return $this->output;
     }
 
+    
     //=============================================
-    // SUBMIT SENDER
+    // SUBMIT DEFUALT/MAIN SENDER
     //=============================================
     public function handleSubmit(): void
     {

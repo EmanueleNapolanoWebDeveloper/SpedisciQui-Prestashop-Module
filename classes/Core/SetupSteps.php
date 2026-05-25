@@ -6,7 +6,8 @@ if (!defined('_PS_VERSION_')) {
 class SetupSteps
 {
     const TOKEN  = 0;
-    const PARCEL = 1;
-    const SENDER = 2;
-    const DONE   = 3;
+    const SENDER = 1;
+    const PACKAGE = 2;
+    const CARRIER = 3;
+    const DONE   = 4;
 }

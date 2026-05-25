@@ -116,4 +116,20 @@ class ApiClient
             return null;
         }
     }
+
+
+
+    //============================================
+    // RICHIAMO CORRIERI DA PIATTAFORM
+    //============================================
+    public function getCarriers(string $token): ?array
+    {
+        $data = $this->request('GET', '/api/getCarriers', $token);
+
+        if (!$data || empty($data['success'])) {
+            return null;
+        }
+
+        return $data['carriers'] ?? null;
+    }
 }

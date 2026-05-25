@@ -12,7 +12,7 @@ class SetupManager
     private CredentialsRepositories $credentialsRepo;
 
     //=============================================
-    // COSTRUTTORE — mancava completamente
+    // COSTRUTTORE
     //=============================================
     public function __construct(
         ConfigRepositories      $config,
@@ -36,7 +36,19 @@ class SetupManager
     public function advance(): void
     {
         $next = min($this->current() + 1, SetupSteps::DONE);
-        $this->config->set(self::CONFIG_KEY, (string) $next);
+        $result = $this->config->set(self::CONFIG_KEY, (string) $next);
+
+        if (!$result) {
+            PrestaShopLogger::addLog(
+                '[SpedisciQui] advance() FALLITO — set() ha restituito false. Step rimasto: ' . $this->current(),
+                3
+            );
+        } else {
+            PrestaShopLogger::addLog(
+                '[SpedisciQui] advance() OK — nuovo step: ' . $next,
+                1
+            );
+        }
     }
 
     //=============================================
