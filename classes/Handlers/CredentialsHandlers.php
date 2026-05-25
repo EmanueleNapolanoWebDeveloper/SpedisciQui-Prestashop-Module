@@ -1,19 +1,17 @@
 <?php
-
 class CredentialsHandlers
 {
-
-    private spedisciquishipping $module;
+    private spedisciquishipping     $module;
     private CredentialsRepositories $credentialsRepo;
     private SetupManager            $setupManager;
-    private string $output = '';
+    private string                  $output = '';
 
     public function __construct(
-        spedisciquishipping $module,
+        spedisciquishipping     $module,
         CredentialsRepositories $credentialsRepo,
-        SetupManager $setupManager
+        SetupManager            $setupManager
     ) {
-        $this->module = $module;
+        $this->module          = $module;
         $this->credentialsRepo = $credentialsRepo;
         $this->setupManager    = $setupManager;
     }
@@ -26,39 +24,37 @@ class CredentialsHandlers
         return $this->output;
     }
 
-
-
     //===========================================
-    //SUBMIT TOKEN
+    // SUBMIT TOKEN
     //===========================================
-    public function handleSubmit(): string
+    public function handleSubmit(): void
     {
         $token = trim(Tools::getValue('SPEDISCIQUI_ACCESS_TOKEN', ''));
 
         if (empty($token)) {
-            return $this->module->displayError(
+            $this->output = $this->module->displayError(
                 $this->module->l('Il token non può essere vuoto.')
             );
+            return; // ← stop, non avanza
         }
 
-        // VALIDAZIONE TOKEN
         if (!$this->credentialsRepo->validateToken($token)) {
-            return $this->module->displayError(
+            $this->output = $this->module->displayError(
                 $this->module->l('Token non valido o formato errato.')
             );
+            return; // ← stop
         }
 
-        // Salva nel repository → scadenza automatica +1 mese
         if (!$this->credentialsRepo->save($token)) {
-            return $this->module->displayError(
+            $this->output = $this->module->displayError(
                 $this->module->l('Errore durante il salvataggio del token.')
             );
+            return; // ← stop
         }
 
-        // passa a step successivo
+        // Solo se tutto OK: avanza e mostra conferma
         $this->setupManager->advance();
-
-        return $this->module->displayConfirmation(
+        $this->output = $this->module->displayConfirmation(
             $this->module->l('Token salvato correttamente. Scadenza: ') .
                 date('d/m/Y', strtotime('+1 month'))
         );

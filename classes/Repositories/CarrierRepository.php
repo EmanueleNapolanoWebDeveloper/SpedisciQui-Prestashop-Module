@@ -27,8 +27,10 @@ class CarrierRepository
     // ==========================================
     public function getCarriers(): ?array
     {
-        $credentials = $this->credentials->get();
+        $credentials = $this->credentials->getToken();
+
         $token       = $credentials['access_token'] ?? '';
+        PrestaShopLogger::addLog('Token recuperato: ' . $token);
 
         if (empty($token)) {
             PrestaShopLogger::addLog('[SpedisciQui] getCarriers — token mancante', 3);
@@ -196,5 +198,47 @@ class CarrierRepository
         );
 
         return true;
+    }
+
+
+    // ==========================================
+    // RECUPERO DI CARRIER INSTALLATI
+    // ==========================================
+    public function getSavedCarriers(): array
+    {
+        $db = Db::getInstance();
+
+        $result = $db->executeS(
+            'SELECT c.*, sc.carrier_code, sc.service_name, sc.logo, sc.delay, sc.is_pickup_point
+        FROM `' . _DB_PREFIX_ . 'carrier` c
+        LEFT JOIN `' . _DB_PREFIX_ . 'spedisciqui_carrier` sc ON c.id = sc.id_carrier
+        WHERE c.`external_module_name` = "' . pSQL($this->module->name) . '"
+        AND c.`active` = 1
+        AND c.`deleted` = 0'
+        );
+
+        // Query fallita
+        if ($result === false) {
+
+            PrestaShopLogger::addLog(
+                '[SPEDISCIQUI] Errore recupero corrieri salvati',
+                3
+            );
+
+            return [];
+        }
+
+        // Nessun corriere trovato
+        if (empty($result)) {
+
+            PrestaShopLogger::addLog(
+                '[SPEDISCIQUI] Nessun corriere salvato trovato',
+                1
+            );
+
+            return [];
+        }
+
+        return $result;
     }
 }

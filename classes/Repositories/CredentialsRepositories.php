@@ -18,12 +18,12 @@ class CredentialsRepositories
     //=================================================
     // RECUPERO ACCESS_TOKEN
     //=================================================
-    public function get(): ?array
+    public function getToken(): ?array
     {
         $idShop = (int)$this->context->shop->id;
 
         $row = Db::getInstance()->getRow(
-            'SELECT * FROM `' . _DB_PREFIX_ . 'spedisciqui_api_credentials`
+            'SELECT `access_token` FROM `' . _DB_PREFIX_ . 'spedisciqui_api_credentials`
              WHERE `id_shop` = ' . $idShop . '
              AND `is_active` = 1
              '
@@ -61,7 +61,7 @@ class CredentialsRepositories
         }
 
         // 2. recupero credenziali salvate
-        $credentials = $this->get();
+        $credentials = $this->getToken();
 
         if (!$credentials || empty($credentials['access_token'])) {
             return true; // primo inserimento, quindi valido
@@ -133,7 +133,7 @@ class CredentialsRepositories
     //==========================================
     public function daysUntilExpiry(): ?int
     {
-        $credentials = $this->get();
+        $credentials = $this->getToken();
 
         if (!$credentials || empty($credentials['expires_at'])) {
             return null;

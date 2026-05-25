@@ -23,7 +23,7 @@ class CredentialsRenderer
     //==========================================
     public function renderCredentialsForm(): string
     {
-        $credentials = $this->credentialsRepo->get();
+        $credentials = $this->credentialsRepo->getToken();
         $currentToken = $credentials['access_token'] ?? '';
         $expiresAt    = $credentials['expires_at']    ?? null;
         $daysLeft     = $this->credentialsRepo->daysUntilExpiry();

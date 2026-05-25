@@ -14,17 +14,20 @@ class ApiClient
 {
     private string $baseUrl;
     private Client $client;
+    private ?CredentialsRepositories $credentialRepo = null;
     private ConfigRepositories $config;
 
 
     //============================================
     // COSTRUTTORE
     //============================================
-    public function __construct(ConfigRepositories $config)
-    {
-        $this->config = $config;
+    public function __construct(
+        ConfigRepositories $config
+    ) {
 
+        $this->config = $config;
         $this->baseUrl = $config->get('SPEDISCIQUI_API_BASE_URL', 'http://127.0.0.1:8000');
+
 
         $this->client = new Client([
             'base_uri' => rtrim($this->baseUrl, '/') . '/',
@@ -36,12 +39,35 @@ class ApiClient
         ]);
     }
 
+
+
+    //============================================
+    // SETTER — iniettato dopo la costruzione
+    //============================================
+    public function setCredentialsRepo(CredentialsRepositories $repo): void
+    {
+        $this->credentialRepo = $repo;
+    }
+
+
+    //============================================
+    // GUARD — evita errori se il setter non è stato chiamato
+    //============================================
+    private function getCredentialsRepo(): CredentialsRepositories
+    {
+        if ($this->credentialRepo === null) {
+            throw new \RuntimeException('[SPEDISCIQUI] CredentialsRepositories non iniettato in ApiClient.');
+        }
+        return $this->credentialRepo;
+    }
+
+
     //============================================
     // RECUPERO TOKEN
     //============================================
-    public function getToken(): ?string
+    public function getToken(): ?array
     {
-        return $this->config->getToken();
+        return $this->credentialRepo->getToken();
     }
 
     //============================================
@@ -73,18 +99,11 @@ class ApiClient
     public function request(
         string $method,
         string $endpoint,
+        string $token,
         array $payload = []
     ): mixed {
 
-        // controllo token vuoto
-        if (empty($token)) {
-            PrestaShopLogger::addLog('[SPEDISCIQUI] request() — token vuoto', 3);
-            return null;
-        }
-
         try {
-
-            $token = $this->getToken();
 
             $options = [
                 'headers' => [
@@ -134,7 +153,7 @@ class ApiClient
     //============================================
     public function getCarriers(string $token): ?array
     {
-        $data = $this->request('GET', '/api/getCarriers');
+        $data = $this->request('GET', '/api/getCarriers', $token);
 
         if (!$data || empty($data['success'])) {
             return null;

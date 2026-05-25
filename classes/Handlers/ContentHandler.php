@@ -10,6 +10,7 @@ class ContentHandler
     private spedisciquishipping     $module;
     private Context                 $context;
     private SetupManager            $setupManager;
+
     // repositories
     private CredentialsRepositories $credentialsRepo;
     private SenderRepository        $senderRepo;
@@ -33,21 +34,24 @@ class ContentHandler
         $this->module  = $module;
         $this->context = Context::getContext();
 
+
         $configRepo    = new ConfigRepositories($this->context);
         $apiClient     = new ApiClient($configRepo);
+        $this->credentialsRepo = new CredentialsRepositories($this->context, $apiClient);
+        $apiClient->setCredentialsRepo($this->credentialsRepo);
 
         // repositories
         $this->credentialsRepo = new CredentialsRepositories($this->context, $apiClient);
         $this->setupManager    = new SetupManager($configRepo, $this->credentialsRepo);
         $this->senderRepo      = new SenderRepository($this->context);
-        $this->packRepo = new PackageRepository($this->context);
-        $this->carrierRepo = new CarrierRepository($apiClient, $this->credentialsRepo, $this->module);
+        $this->packRepo        = new PackageRepository($this->context);
+        $this->carrierRepo     = new CarrierRepository($apiClient, $this->credentialsRepo, $this->module);
 
         // handlers
         $this->credentialsHandler  = new CredentialsHandlers($module, $this->credentialsRepo, $this->setupManager);
         $this->senderHandler       = new SenderHandler($module, $this->senderRepo, $this->setupManager);
-        $this->packHandler = new PackageHandler($module, $this->packRepo, $this->setupManager);
-        $this->carrierHandler = new CarrierHandlers($this->module, $this->carrierRepo, $this->setupManager);
+        $this->packHandler         = new PackageHandler($module, $this->packRepo, $this->setupManager);
+        $this->carrierHandler      = new CarrierHandlers($this->module, $this->carrierRepo, $this->setupManager);
 
         // renderers
         $this->credentialsRenderer = new CredentialsRenderer($module, $this->credentialsRepo);
@@ -145,7 +149,7 @@ class ContentHandler
             case SetupSteps::DONE:
                 return $this->module->display(
                     $this->module->getLocalPath(),
-                    'views/templates/admin/dashboard.tpl'
+                    'views/templates/admin/dashboard_layout.tpl'
                 );
 
             default:

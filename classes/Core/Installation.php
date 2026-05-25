@@ -30,9 +30,9 @@ class Installation
     {
         try {
             // va chiamato sul modulo
-            // if (!$this->module->registerHook('actionCarrierProcess')) {
-            //     throw new Exception('Registrazione hook fallita');
-            // }
+            if (!$this->module->registerHook('displayCarrierExtraContent')) {
+                throw new Exception('Registrazione hook fallita');
+            }
 
             if (!$this->SQMigrations->runAll()) {
                 throw new Exception('Migrazioni tabelle fallite!');
@@ -58,9 +58,9 @@ class Installation
     private function registerModuleHooks(): void
     {
         $hooks = [
-            'actionCarrierProcess',
-            'actionValidateStepComplete',
-            'actionCartSave',
+            // 'actionCarrierProcess',
+            // 'actionValidateStepComplete',
+            // 'actionCartSave',
             'displayCarrierExtraContent',
         ];
 

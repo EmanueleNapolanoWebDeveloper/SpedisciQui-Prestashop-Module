@@ -24,6 +24,8 @@ require __DIR__ . '/classes/Handlers/SendersHandler.php';
 require __DIR__ . '/classes/Repositories/CarrierRepository.php';
 require __DIR__ . '/classes/Handlers/CarrierHandlers.php';
 require __DIR__ . '/classes/Renderers/CarrierRenderer.php';
+require __DIR__ . '/classes/Hooks/checkout/CarrierChoise.php';
+
 
 
 class spedisciquishipping extends CarrierModule
@@ -131,5 +133,12 @@ class spedisciquishipping extends CarrierModule
     public function getOrderShippingCostExternal($params): float|false
     {
         return $this->getOrderShippingCost($params, 0);
+    }
+
+
+    public function hookDisplayCarrierExtraContent($params)
+    {
+        return (new CarrierChoise($this))
+            ->hookDisplayCarrierExtraContent($params);
     }
 }
