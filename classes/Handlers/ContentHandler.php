@@ -14,6 +14,7 @@ class ContentHandler
     private CredentialsRepositories $credentialsRepo;
     private SenderRepository        $senderRepo;
     private PackageRepository       $packRepo;
+    private CarrierRepository       $carrierRepo;
 
     // handlers
     private CredentialsHandlers     $credentialsHandler;
@@ -34,19 +35,25 @@ class ContentHandler
 
         $configRepo    = new ConfigRepositories($this->context);
         $apiClient     = new ApiClient($configRepo);
+
+        // repositories
         $this->credentialsRepo = new CredentialsRepositories($this->context, $apiClient);
         $this->setupManager    = new SetupManager($configRepo, $this->credentialsRepo);
         $this->senderRepo      = new SenderRepository($this->context);
         $this->packRepo = new PackageRepository($this->context);
+        $this->carrierRepo = new CarrierRepository($apiClient, $this->credentialsRepo, $this->module);
 
+        // handlers
         $this->credentialsHandler  = new CredentialsHandlers($module, $this->credentialsRepo, $this->setupManager);
         $this->senderHandler       = new SenderHandler($module, $this->senderRepo, $this->setupManager);
         $this->packHandler = new PackageHandler($module, $this->packRepo, $this->setupManager);
+        $this->carrierHandler = new CarrierHandlers($this->module, $this->carrierRepo, $this->setupManager);
 
-
+        // renderers
         $this->credentialsRenderer = new CredentialsRenderer($module, $this->credentialsRepo);
         $this->senderRenderer      = new SenderRenderer($module, $this->senderRepo);
         $this->packageRenderer = new PackageRenderer($this->module, $this->packRepo);
+        $this->carrierRenderer = new CarrierRenderer($this->module, $this->carrierRepo);
     }
 
     //========================================================
@@ -56,15 +63,20 @@ class ContentHandler
     {
         $this->handleSubmits();
 
-        $this->context->smarty->assign('content', $this->resolveView());
+        $this->context->smarty->assign([
+            'content'    => $this->resolveView(),
+            'setup_step' => $this->setupManager->current(),
+            'module_dir' => $this->module->getLocalPath(),
+        ]);
 
         $output = $this->credentialsHandler->getOutput()
             . $this->senderHandler->getOutput()
-            . $this->packHandler->getOutput();
+            . $this->packHandler->getOutput()
+            . $this->carrierHandler->getOutput();
 
         return $output . $this->module->display(
             $this->module->getLocalPath(),
-            'views/templates/admin/token_config.tpl'
+            'views/templates/admin/layout.tpl'
         );
     }
 
@@ -103,7 +115,7 @@ class ContentHandler
 
         // submit rimozione carrier
         if (Tools::isSubmit('removeSpedisciQuiCarriers')) {
-            $this->carrierHandler->handleSubmit();
+            $this->carrierHandler->handleRemove();
         }
     }
 

@@ -45,16 +45,6 @@ class CarrierRepository
     public function saveCarrierInPS(array $carrierData): bool
     {
 
-        $serviceId = Tools::getValue('service_code');
-        $serviceName = Tools::getValue('service_name');
-        $serviceCode = Tools::getValue('service_code');
-
-        if (!$serviceId || !$serviceName) {
-            return $this->module->displayError($this->module->l('Dari Corriere mancanti'));
-        }
-
-        // impostazioni per tabella ps_carrier
-
         $carrier                    = new Carrier();
         $carrier->name              = pSQL($carrierData['name']);
         $carrier->active            = true;
@@ -113,10 +103,6 @@ class CarrierRepository
 
         // salva anche in mapping
         $this->saveCarrierMapping($carrier, $carrierData);
-
-        $this->module->displayConfirmation(
-            $this->module->l('Corriere "' . $serviceName . '"aggiunto correttamente')
-        );
 
         return true;
     }

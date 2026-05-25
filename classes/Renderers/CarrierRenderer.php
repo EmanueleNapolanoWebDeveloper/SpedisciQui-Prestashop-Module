@@ -35,7 +35,7 @@ class CarrierRenderer
 
         return $this->module->display(
             $this->module->getLocalPath(),
-            'views/templates/admin/carrier_list.tpl'
+            'views/templates/admin/_partials/carrier_list.tpl'
         );
     }
 }

@@ -44,6 +44,7 @@ class CarrierHandlers
 
         // recupera lista completa dall'API
         $allCarriers = $this->carrierRepo->getCarriers();
+        
         if (empty($allCarriers)) {
             $this->output = $this->module->displayError(
                 $this->module->l('Impossibile recuperare i corrieri dalla piattaforma.')
