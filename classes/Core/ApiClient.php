@@ -47,12 +47,9 @@ class ApiClient
     //============================================
     // VALIDAZIONE TOKEN
     //============================================
-    public function validateToken(): bool
+    public function validateToken(string $token): bool
     {
         try {
-
-            $token = $this->getToken();
-
             $response = $this->client->get('/api/auth/verify', [
                 'headers' => [
                     'Authorization' => "Bearer {$token}",
