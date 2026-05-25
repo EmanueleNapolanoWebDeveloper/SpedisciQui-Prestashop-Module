@@ -74,9 +74,13 @@ class ContentHandler
             . $this->packHandler->getOutput()
             . $this->carrierHandler->getOutput();
 
+        $layoutTemplate = $this->setupManager->current() == SetupSteps::DONE
+            ? 'views/templates/admin/dashboard_layout.tpl'
+            : 'views/templates/admin/initial_config_layout.tpl';
+
         return $output . $this->module->display(
             $this->module->getLocalPath(),
-            'views/templates/admin/layout.tpl'
+            $layoutTemplate
         );
     }
 
@@ -133,10 +137,16 @@ class ContentHandler
                 return $this->senderRenderer->renderSenderForm();
 
             case SetupSteps::PACKAGE:
-                return $this->packageRenderer->renderPackageForm(); // placeholder
+                return $this->packageRenderer->renderPackageForm();
 
             case SetupSteps::CARRIER:
-                return $this->carrierRenderer->renderCarrierForm(); // placeholder
+                return $this->carrierRenderer->renderCarrierForm();
+
+            case SetupSteps::DONE:
+                return $this->module->display(
+                    $this->module->getLocalPath(),
+                    'views/templates/admin/dashboard.tpl'
+                );
 
             default:
                 $this->setupManager->reset();

@@ -22,6 +22,8 @@ class ApiClient
     //============================================
     public function __construct(ConfigRepositories $config)
     {
+        $this->config = $config;
+
         $this->baseUrl = $config->get('SPEDISCIQUI_API_BASE_URL', 'http://127.0.0.1:8000');
 
         $this->client = new Client([
@@ -34,13 +36,23 @@ class ApiClient
         ]);
     }
 
+    //============================================
+    // RECUPERO TOKEN
+    //============================================
+    public function getToken(): ?string
+    {
+        return $this->config->getToken();
+    }
 
     //============================================
     // VALIDAZIONE TOKEN
     //============================================
-    public function validateToken(string $token): bool
+    public function validateToken(): bool
     {
         try {
+
+            $token = $this->getToken();
+
             $response = $this->client->get('/api/auth/verify', [
                 'headers' => [
                     'Authorization' => "Bearer {$token}",
@@ -64,7 +76,6 @@ class ApiClient
     public function request(
         string $method,
         string $endpoint,
-        string $token,
         array $payload = []
     ): mixed {
 
@@ -75,6 +86,8 @@ class ApiClient
         }
 
         try {
+
+            $token = $this->getToken();
 
             $options = [
                 'headers' => [
@@ -124,7 +137,7 @@ class ApiClient
     //============================================
     public function getCarriers(string $token): ?array
     {
-        $data = $this->request('GET', '/api/getCarriers', $token);
+        $data = $this->request('GET', '/api/getCarriers');
 
         if (!$data || empty($data['success'])) {
             return null;

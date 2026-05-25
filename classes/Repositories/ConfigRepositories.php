@@ -101,4 +101,13 @@ class ConfigRepositories
             return false;
         }
     }
+
+
+    //=================================================
+    // RECUPERO TOKEN
+    //=================================================
+    public function getToken(): ?string
+    {
+        return $this->get('SPEDISCIQUI_ACCESS_TOKEN', null);
+    }
 }
