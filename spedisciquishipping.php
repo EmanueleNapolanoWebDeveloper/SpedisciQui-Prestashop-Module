@@ -9,22 +9,44 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
 }
 
 require __DIR__ . '/classes/Core/Database/SQMigrations.php';
-require __DIR__ . '/classes/Core/ApiClient.php';
-require __DIR__ . '/classes/Core/Installation.php';
+require __DIR__ . '/classes/Core/API/ApiClient.php';
+require __DIR__ . '/classes/Core/API/CarrierApi.php';
+
+
+// utilities
+require __DIR__ . '/classes/Core/Utilities/Installation.php';
+require __DIR__ . '/classes/Core/Utilities/Uninstallation.php';
+require __DIR__ . '/classes/Core/Utilities/SetupManage.php';
+require __DIR__ . '/classes/Core/Utilities/SetupSteps.php';
+
+// repositories
 require __DIR__ . '/classes/Repositories/ConfigRepositories.php';
 require __DIR__ . '/classes/Repositories/CredentialsRepositories.php';
-require __DIR__ . '/classes/Handlers/ContentHandler.php';
-require __DIR__ . '/classes/Handlers/CredentialsHandlers.php';
+require __DIR__ . '/classes/Repositories/SenderRepository.php';
+require __DIR__ . '/classes/Repositories/CarrierRepository.php';
+
+// services
+require __DIR__ . '/classes/Service/CredentialServices.php';
+require __DIR__ . '/classes/Service/PackageServices.php';
+require __DIR__ . '/classes/Service/CarrierServices.php';
+require __DIR__ . '/classes/Service/SenderServices.php';
+
+
+
+
+// renderets
 require __DIR__ . '/classes/Renderers/CredentialsRenderer.php';
 require __DIR__ . '/classes/Renderers/SenderRenderer.php';
-require __DIR__ . '/classes/Repositories/SenderRepository.php';
-require __DIR__ . '/classes/Core/SetupManage.php';
-require __DIR__ . '/classes/Core/SetupSteps.php';
-require __DIR__ . '/classes/Handlers/SendersHandler.php';
-require __DIR__ . '/classes/Repositories/CarrierRepository.php';
-require __DIR__ . '/classes/Handlers/CarrierHandlers.php';
 require __DIR__ . '/classes/Renderers/CarrierRenderer.php';
-require __DIR__ . '/classes/Hooks/checkout/CarrierChoise.php';
+
+// handlers
+require __DIR__ . '/classes/Handlers/ContentHandler.php';
+require __DIR__ . '/classes/Handlers/CredentialsHandlers.php';
+require __DIR__ . '/classes/Handlers/SendersHandler.php';
+require __DIR__ . '/classes/Handlers/CarrierHandlers.php';
+
+// hooks
+require __DIR__ . '/classes/Hooks/checkout/CustomCheckout.php';
 
 
 
@@ -33,6 +55,7 @@ class spedisciquishipping extends CarrierModule
 
     protected SQMigrations $SQMigrations;
     protected ConfigRepositories $config;
+    protected $customCheckout;
 
     // ================================================================
     // COSTRUTTORE
@@ -54,8 +77,25 @@ class spedisciquishipping extends CarrierModule
 
         parent::__construct();
 
-        $this->SQMigrations = new SQMigrations();
-        $this->config       = new ConfigRepositories(Context::getContext());
+        try {
+            $context     = Context::getContext();
+            $config      = new ConfigRepositories($context);
+            $credentials = new CredentialsRepositories($context, new ApiClient($config));
+            $apiClient   = new ApiClient($config);
+
+            $this->SQMigrations = new SQMigrations();
+            $this->config       = $config;
+            $this->customCheckout = new CustomCheckout(
+                $this,
+                new CarrierRepository(new CarrierApi($apiClient), $credentials, $this)
+            );
+        } catch (Exception $e) {
+            PrestaShopLogger::addLog(
+                '[SpedisciQui] COSTRUTTORE CRASH: ' . $e->getMessage()
+                    . ' in ' . $e->getFile() . ':' . $e->getLine(),
+                3
+            );
+        };
     }
 
 
@@ -88,10 +128,9 @@ class spedisciquishipping extends CarrierModule
             return false;
         }
 
-        $uninstallation = new Installation(
+        $uninstallation = new Uninstallation(
             $this,
             $this->SQMigrations,
-            $this->config,
         );
 
         return $uninstallation->uninstall();
@@ -135,10 +174,34 @@ class spedisciquishipping extends CarrierModule
         return $this->getOrderShippingCost($params, 0);
     }
 
+    
+
+
+    // ================================================================
+    // ================================================================
+    // HOOKS
+    // ================================================================
+    // ================================================================
+
 
     public function hookDisplayCarrierExtraContent($params)
     {
-        return (new CarrierChoise($this))
-            ->hookDisplayCarrierExtraContent($params);
+        if (!$this->customCheckout) {
+            PrestaShopLogger::addLog('[SpedisciQui] customCheckout è NULL', 3);
+            return '';
+        }
+
+        return $this->customCheckout->hookDisplayCarrierExtraContent($params);
     }
+
+     public function hookactionCheckoutRender($params)
+    {
+        if (!$this->customCheckout) {
+            PrestaShopLogger::addLog('[SpedisciQui] customCheckout è NULL', 3);
+            return '';
+        }
+
+        return $this->customCheckout->hookactionCheckoutRender($params);
+    }
+
 }

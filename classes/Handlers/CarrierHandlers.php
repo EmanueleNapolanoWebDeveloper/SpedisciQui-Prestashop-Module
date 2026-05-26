@@ -20,6 +20,22 @@ class CarrierHandlers
         $this->setupManager = $setupManager;
     }
 
+    //==========================================
+    // ENTRY POINT
+    //==========================================
+    public function handle(): string
+    {
+        if (Tools::isSubmit('submit_carriers')) {
+            $this->handleSubmit();
+        }
+
+        if (Tools::isSubmit('remove_carrier')) {
+            $this->handleRemove();
+        }
+
+        return $this->output;
+    }
+
     // ==========================================
     // OUTPUT
     // ==========================================
@@ -44,7 +60,7 @@ class CarrierHandlers
 
         // recupera lista completa dall'API
         $allCarriers = $this->carrierRepo->getCarriers();
-        
+
         if (empty($allCarriers)) {
             $this->output = $this->module->displayError(
                 $this->module->l('Impossibile recuperare i corrieri dalla piattaforma.')
@@ -53,10 +69,17 @@ class CarrierHandlers
         }
 
         // filtra solo i corrieri selezionati
-        $toSave = array_filter(
+        $toSave = array_values(array_filter(
             $allCarriers,
             fn($c) => in_array($c['code'], $selectedCodes, true)
-        );
+        ));
+
+        if (empty($toSave)) {
+            $this->output = $this->module->displayError(
+                $this->module->l('Nessun corriere selezionato trovato nella piattaforma.')
+            );
+            return;
+        }
 
         $saved  = 0;
         $errors = 0;
@@ -82,7 +105,19 @@ class CarrierHandlers
             );
         }
 
-        if ($saved > 0) {
+        // Successo parziale — non avanzare
+        if ($saved > 0 && $errors > 0) {
+            $this->output .= $this->module->displayWarning(
+                sprintf(
+                    $this->module->l('%d attivato/i, %d fallito/i. Riprova per i corrieri mancanti.'),
+                    $saved,
+                    $errors
+                )
+            );
+        }
+
+        // Feedback successo — avanza solo se zero errori
+        if ($saved > 0 && $errors === 0) {
             $this->setupManager->advance();
             $this->output .= $this->module->displayConfirmation(
                 sprintf(
@@ -90,6 +125,7 @@ class CarrierHandlers
                     $saved
                 )
             );
+            return;
         }
     }
 

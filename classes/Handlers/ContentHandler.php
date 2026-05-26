@@ -38,14 +38,13 @@ class ContentHandler
         $configRepo    = new ConfigRepositories($this->context);
         $apiClient     = new ApiClient($configRepo);
         $this->credentialsRepo = new CredentialsRepositories($this->context, $apiClient);
-        $apiClient->setCredentialsRepo($this->credentialsRepo);
 
         // repositories
         $this->credentialsRepo = new CredentialsRepositories($this->context, $apiClient);
         $this->setupManager    = new SetupManager($configRepo, $this->credentialsRepo);
         $this->senderRepo      = new SenderRepository($this->context);
         $this->packRepo        = new PackageRepository($this->context);
-        $this->carrierRepo     = new CarrierRepository($apiClient, $this->credentialsRepo, $this->module);
+        $this->carrierRepo     = new CarrierRepository(new CarrierApi($apiClient), $this->credentialsRepo, $this->module);
 
         // handlers
         $this->credentialsHandler  = new CredentialsHandlers($module, $this->credentialsRepo, $this->setupManager);

@@ -28,7 +28,7 @@ class PackageRenderer
         $context = Context::getContext();
 
         // Recupera il pacco default (o valori vuoti se non esiste)
-        $package = $this->packRepo->getDefault() ?? [
+        $package = new PackageServices()->getDefault() ?? [
             'name'       => 'Default',
             'weight'     => '1.000',
             'length'     => '30.00',

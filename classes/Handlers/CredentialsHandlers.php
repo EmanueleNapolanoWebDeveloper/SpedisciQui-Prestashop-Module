@@ -38,7 +38,7 @@ class CredentialsHandlers
             return; // ← stop, non avanza
         }
 
-        if (!$this->credentialsRepo->validateToken($token)) {
+        if (!new CredentialServices()->validateToken($token)) {
             $this->output = $this->module->displayError(
                 $this->module->l('Token non valido o formato errato.')
             );

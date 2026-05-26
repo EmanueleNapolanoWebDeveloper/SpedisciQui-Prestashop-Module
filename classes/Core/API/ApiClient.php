@@ -15,7 +15,6 @@ class ApiClient
     private string $baseUrl;
     private Client $client;
     private ?CredentialsRepositories $credentialRepo = null;
-    private ConfigRepositories $config;
 
 
     //============================================
@@ -25,9 +24,7 @@ class ApiClient
         ConfigRepositories $config
     ) {
 
-        $this->config = $config;
-        $this->baseUrl = $config->get('SPEDISCIQUI_API_BASE_URL', 'http://127.0.0.1:8000');
-
+        $this->baseUrl = 'http://127.0.0.1:8000';
 
         $this->client = new Client([
             'base_uri' => rtrim($this->baseUrl, '/') . '/',
@@ -39,41 +36,10 @@ class ApiClient
         ]);
     }
 
-
-
-    //============================================
-    // SETTER — iniettato dopo la costruzione
-    //============================================
-    public function setCredentialsRepo(CredentialsRepositories $repo): void
-    {
-        $this->credentialRepo = $repo;
-    }
-
-
-    //============================================
-    // GUARD — evita errori se il setter non è stato chiamato
-    //============================================
-    private function getCredentialsRepo(): CredentialsRepositories
-    {
-        if ($this->credentialRepo === null) {
-            throw new \RuntimeException('[SPEDISCIQUI] CredentialsRepositories non iniettato in ApiClient.');
-        }
-        return $this->credentialRepo;
-    }
-
-
-    //============================================
-    // RECUPERO TOKEN
-    //============================================
-    public function getToken(): ?array
-    {
-        return $this->credentialRepo->getToken();
-    }
-
     //============================================
     // VALIDAZIONE TOKEN
     //============================================
-    public function validateToken(string $token): bool
+    public function validateTokenFromApi(string $token): bool
     {
         try {
             $response = $this->client->get('/api/auth/verify', [
@@ -144,21 +110,5 @@ class ApiClient
             PrestaShopLogger::addLog('[SPEDISCIQUI] RequestException: ' . $e->getMessage(), 3);
             return null;
         }
-    }
-
-
-
-    //============================================
-    // RICHIAMO CORRIERI DA PIATTAFORM
-    //============================================
-    public function getCarriers(string $token): ?array
-    {
-        $data = $this->request('GET', '/api/getCarriers', $token);
-
-        if (!$data || empty($data['success'])) {
-            return null;
-        }
-
-        return $data['carriers'] ?? null;
     }
 }

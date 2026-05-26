@@ -40,7 +40,7 @@ class PackageHandler
         ];
 
         // Validazione
-        $errors = $this->packRepo->validate($data);
+        $errors = new PackageServices()->validate($data);
         if (!empty($errors)) {
             foreach ($errors as $error) {
                 $this->output .= $this->module->displayError($error);

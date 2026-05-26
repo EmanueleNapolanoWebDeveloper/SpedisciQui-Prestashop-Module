@@ -55,7 +55,7 @@ class SenderHandler
         ];
 
         // validazione
-        $errors = $this->senderRepo->validate($data);
+        $errors = new SenderServices()->validate($data);
 
         if (!empty($errors)) {
             foreach ($errors as $error) {
