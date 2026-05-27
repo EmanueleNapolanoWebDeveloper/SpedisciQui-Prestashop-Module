@@ -4,7 +4,7 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-class DashboardHandlers {
+class DashboardRenderer {
 
 
 }

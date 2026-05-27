@@ -1,5 +1,8 @@
 <?php
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
@@ -36,28 +39,26 @@ class CarrierApi
     public function getPriceFromApi(): array
     {
         $token = (new CredentialServices())->getToken()['access_token'];
-
         $payload = [
-            "recipient" => [
-                "name"    => "John Smith",
-                "address" => "221B Baker Street",
-                "city"    => "London",
-                "zip"     => "NW1 6XE",
-                "country" => "UK"
+            'recipient' => [
+                'name'    => 'John Smith',
+                'address' => '221B Baker Street',
+                'city'    => 'London',
+                'zip'     => 'NW1 6XE',
+                'country' => 'UK',
             ],
-            "package" => [
-                "weight" => 2.5,
-                "height" => 30,
-                "length" => 40,
-                "depth"  => 20
+            'package' => [
+                'weight' => 2.5,
+                'height' => 30,
+                'length' => 40,
+                'depth'  => 20,
             ],
-            "insurance"              => true,
-            "insurance_value"        => 100,
-            "cash_on_delivery"       => true,
-            "cash_on_delivery_value" => 50
+            'insurance'              => true,
+            'insurance_value'        => 100,
+            'cash_on_delivery'       => true,
+            'cash_on_delivery_value' => 50,
         ];
 
-        // ✅ ApiClient ritorna già array - niente getBody(), niente json_decode
         $data = $this->apiClient->request('POST', '/api/calculateshipping', $token, $payload);
 
         if (!$data || !isset($data['prices'])) {
@@ -70,7 +71,14 @@ class CarrierApi
             if (!isset($priceRow['carrier_code'], $priceRow['price'])) {
                 continue;
             }
-            $mapped[$priceRow['carrier_code']] = (float) $priceRow['price'];
+
+            $mapped[$priceRow['carrier_code']] = [
+                'price'              => (float) $priceRow['price'],
+                'insurance'          => isset($priceRow['insurance_price'])
+                    ? (float) $priceRow['insurance_price']
+                    : null,
+                'insurance_required' => (bool) ($priceRow['insurance_required'] ?? false),
+            ];
         }
 
         return $mapped;

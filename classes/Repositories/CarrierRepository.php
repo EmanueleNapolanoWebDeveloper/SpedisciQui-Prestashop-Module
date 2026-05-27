@@ -1,5 +1,9 @@
 <?php
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 class CarrierRepository
 {
 
@@ -363,6 +367,12 @@ class CarrierRepository
 
             return [];
         }
+
+         PrestaShopLogger::addLog(
+                '[SPEDISCIQUI] result di recupero corrieri salvati',
+                print_r($result,true),
+                3
+            );
 
         return $result;
     }

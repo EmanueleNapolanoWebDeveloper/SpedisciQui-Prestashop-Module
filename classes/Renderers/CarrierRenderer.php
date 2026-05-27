@@ -1,4 +1,6 @@
 <?php
+
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -7,6 +9,7 @@ class CarrierRenderer
 {
     private spedisciquishipping $module;
     private CarrierRepository   $carrierRepo;
+    private $context;
 
     public function __construct(
         spedisciquishipping $module,
@@ -14,6 +17,7 @@ class CarrierRenderer
     ) {
         $this->module      = $module;
         $this->carrierRepo = $carrierRepo;
+        $this->context = Context::getContext();
     }
 
     // =============================================
@@ -21,14 +25,13 @@ class CarrierRenderer
     // =============================================
     public function renderCarrierForm(): string
     {
-        $context  = Context::getContext();
         $carriers = $this->carrierRepo->getCarriers();
 
         $action = AdminController::$currentIndex
             . '&configure=' . $this->module->name
             . '&token='     . Tools::getAdminTokenLite('AdminModules');
 
-        $context->smarty->assign([
+        $this->context->smarty->assign([
             'carriers' => $carriers ?? [],
             'action'   => $action,
         ]);
@@ -46,21 +49,28 @@ class CarrierRenderer
     // =============================================
     public function renderCarrierDash(): string
     {
-        $context = Context::getContext();
+        // die('OK FUNZIONE CHIAMATA');
+        PrestaShopLogger::addLog('Inizio renderCarrierDash');
 
         $carriers       = $this->carrierRepo->getCarriers();
         $savedCarriers  = $this->carrierRepo->getSavedCarriers();
 
         $action = $_SERVER['REQUEST_URI'];
 
-        $context->smarty->assign([
-            'carriers' => $carriers,
-            'savedCarriers' => $savedCarriers,
+        $this->context->smarty->assign([
+            'carriers' => $carriers ?? [],
+            'savedCarriers' => $savedCarriers ?? [],
+            'message' => 'che palle',
             'action' => $action,
         ]);
 
-        return $this->module->fetch(
-            'module:spedisciquishipping/views/templates/admin/carrier_panel.tpl'
+        PrestaShopLogger::addLog('carriers debug: ' . json_encode($carriers));
+        PrestaShopLogger::addLog('saved debug: ' . json_encode($savedCarriers));
+
+
+        return $this->module->display(
+            $this->module->getLocalPath(),
+            'views/templates/admin/_partials/carrier_panel.tpl'
         );
     }
 }

@@ -146,10 +146,8 @@ class ContentHandler
                 return $this->carrierRenderer->renderCarrierForm();
 
             case SetupSteps::DONE:
-                return $this->module->display(
-                    $this->module->getLocalPath(),
-                    'views/templates/admin/dashboard_layout.tpl'
-                );
+                return $this->carrierRenderer->renderCarrierDash();
+
 
             default:
                 $this->setupManager->reset();

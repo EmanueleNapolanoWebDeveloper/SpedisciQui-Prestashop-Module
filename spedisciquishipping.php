@@ -194,14 +194,5 @@ class spedisciquishipping extends CarrierModule
         return $this->customCheckout->hookDisplayCarrierExtraContent($params);
     }
 
-     public function hookactionCheckoutRender($params)
-    {
-        if (!$this->customCheckout) {
-            PrestaShopLogger::addLog('[SpedisciQui] customCheckout è NULL', 3);
-            return '';
-        }
-
-        return $this->customCheckout->hookactionCheckoutRender($params);
-    }
 
 }
