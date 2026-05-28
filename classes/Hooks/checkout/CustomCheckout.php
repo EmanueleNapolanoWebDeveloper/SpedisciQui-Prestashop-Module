@@ -116,16 +116,45 @@ class CustomCheckout
     public function hookActionValidateOrder(array $params): void
     {
         try {
-            /** @var Order    $order    */
-            /** @var Cart     $cart     */
-            /** @var Carrier  $carrier  */
-            /** @var Customer $customer */
-            $order    = $params['order'];
-            $cart     = $params['cart'];
-            $carrier  = $params['carrier'];
+            /** @var Order     $order  */
+            /** @var Cart      $cart   */
+            /** @var Customer  $customer */
+            $order    = $params['order']    ?? null;
+            $cart     = $params['cart']     ?? null;
+
+            // Guard — params obbligatori
+            if (!$order instanceof Order || !$cart instanceof Cart) {
+                PrestaShopLogger::addLog(
+                    '[SpedisciQui] hookActionValidateOrder — params order/cart mancanti',
+                    3,
+                    null,
+                    'Order',
+                    0,
+                    true
+                );
+                return;
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // Carrier va recuperato dall'ordine, NON da $params['carrier']
+            // che non esiste in questo hook.
+            // ─────────────────────────────────────────────────────────────────
+            $idCarrier = (int) $order->id_carrier;
+
+            if ($idCarrier <= 0) {
+                PrestaShopLogger::addLog(
+                    sprintf('[SpedisciQui] hookActionValidateOrder — id_carrier non valido | Order #%d', $order->id),
+                    3,
+                    null,
+                    'Order',
+                    (int) $order->id,
+                    true
+                );
+                return;
+            }
 
             // Verifica che il carrier appartenga a questo modulo
-            $carrierData = $this->carrierRepo->getCarrierById((int) $carrier->id);
+            $carrierData = $this->carrierRepo->getCarrierById($idCarrier);
 
             if (empty($carrierData)) {
                 // Carrier non gestito da SpedisciQui — skip silenzioso
@@ -138,27 +167,52 @@ class CustomCheckout
 
             $shipmentRepo = new ShipmentRepository();
 
+            PrestaShopLogger::addLog(
+                sprintf(
+                    '[SpedisciQui] carrierData dump | id_carrier: %d | data: %s',
+                    $idCarrier,
+                    json_encode($carrierData)
+                ),
+                1,
+                null,
+                'Order',
+                (int) $order->id,
+                true
+            );
+
+            // dimensiona pacchi default
+            $packageRepo    = new PackageServices();
+            $defaultPackage = $packageRepo->getDefault((int) $order->id_shop);
+
+            // calcolo dimensioni carrello
+            $dimensions = new ShippingServices($this->carrierRepo, new CarrierServices($this->carrierRepo))->calculatePackageDimensions($cart, $defaultPackage);
+
             $idShipment = $shipmentRepo->createShipment([
-                'id_order'               => (int)   $order->id,
-                'id_shop'                => (int)   $order->id_shop,
-                'id_spedisciqui_carrier' => (int)   ($carrierData['id_spedisciqui_carrier'] ?? null),
+                'id_order'               => (int)    $order->id,
+                'id_shop'                => (int)    $order->id_shop,
+                'id_spedisciqui_carrier' => !empty($carrierData['id_spedisciqui_carrier'])
+                    ? (int) $carrierData['id_spedisciqui_carrier']
+                    : null,
                 'shipment_type'          => 'outbound',
                 'carrier_code'           => (string) ($carrierData['carrier_code'] ?? ''),
                 'service_code'           => (string) ($carrierData['service_code'] ?? ''),
                 'status'                 => 'pending',
 
                 // Indirizzo di consegna
-                'delivery_firstname'   => $address->firstname,
-                'delivery_lastname'    => $address->lastname,
-                'delivery_address1'    => $address->address1,
-                'delivery_address2'    => $address->address2 ?? '',
-                'delivery_postcode'    => $address->postcode,
-                'delivery_city'        => $address->city,
-                'delivery_country_iso' => $country->iso_code,
+                'delivery_firstname'    => (string) ($address->firstname ?? ''),
+                'delivery_lastname'     => (string) ($address->lastname  ?? ''),
+                'delivery_address1'     => (string) ($address->address1  ?? ''),
+                'delivery_address2'     => (string) ($address->address2  ?? ''),
+                'delivery_postcode'     => (string) ($address->postcode  ?? ''),
+                'delivery_city'         => (string) ($address->city      ?? ''),
+                'delivery_country_iso'  => (string) ($country->iso_code  ?? ''),
 
                 // Peso e costo
-                'weight'           => (float) $cart->getTotalWeight(),
-                'shipping_cost'    => (float) $order->total_shipping,
+                'weight'            => (float) $cart->getTotalWeight(),
+                'length' => $dimensions['length'],
+                'width'  => $dimensions['width'],
+                'height' => $dimensions['height'],
+                'shipping_cost'     => (float) $order->total_shipping,
                 'shipping_currency' => $this->getCurrencyIso((int) $order->id_currency),
             ]);
 

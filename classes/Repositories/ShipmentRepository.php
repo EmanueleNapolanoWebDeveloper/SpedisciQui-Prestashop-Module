@@ -28,6 +28,9 @@ class ShipmentRepository
             'delivery_city'          => pSQL($data['delivery_city'] ?? ''),
             'delivery_country_iso'   => pSQL($data['delivery_country_iso'] ?? ''),
             'weight'                 => (float) ($data['weight'] ?? 0),
+            'length'                 => (float) ($data['length'] ?? 0),
+            'width'                 => (float) ($data['width'] ?? 0),
+            'height'                 => (float) ($data['height'] ?? 0),
             'shipping_cost'          => (float) ($data['shipping_cost'] ?? 0),
             'shipping_currency'      => pSQL($data['shipping_currency'] ?? 'EUR'),
         ];

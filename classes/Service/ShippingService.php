@@ -24,7 +24,7 @@ class ShippingServices
     //=================================================
     // CLACOLA COSTO DI SPEDIZIONE TRAMITE PESO
     //=================================================
-    
+
     public function getRateShippingCost(Cart $cart, int $idCarrier): float|false
     {
         try {
@@ -97,4 +97,62 @@ class ShippingServices
             return false;
         }
     }
+
+
+    // ==============================================
+    // CALCOLO DIMENSIONI PACCO
+    // ============================================
+    public function calculatePackageDimensions(Cart $cart, array $defaultPackage): array
+    {
+        $products = $cart->getProducts();
+
+        $totalLength = 0.0;
+        $totalWidth  = 0.0;
+        $totalHeight = 0.0;
+
+        if (empty($products)) {
+            return [
+                'length' => (float) ($defaultPackage['length'] ?? 0),
+                'width'  => (float) ($defaultPackage['width']  ?? 0),
+                'height' => (float) ($defaultPackage['height'] ?? 0),
+            ];
+        }
+
+        foreach ($products as $product) {
+            $qty = (int) ($product['cart_quantity'] ?? 1);
+
+            // PS salva le dimensioni in ps_product come width, height, depth
+            // depth in PS = lunghezza fisica del pacco
+            $pLength = (float) ($product['depth']  ?? 0); // PS chiama "depth" la lunghezza
+            $pWidth  = (float) ($product['width']  ?? 0);
+            $pHeight = (float) ($product['height'] ?? 0);
+
+            // Fallback al package default se il prodotto non ha dimensioni
+            if ($pLength <= 0) {
+                $pLength = (float) ($defaultPackage['length'] ?? 0);
+            }
+            if ($pWidth <= 0) {
+                $pWidth = (float) ($defaultPackage['width'] ?? 0);
+            }
+            if ($pHeight <= 0) {
+                $pHeight = (float) ($defaultPackage['height'] ?? 0);
+            }
+
+            // length/width: prendo il massimo (il pacco deve contenere il prodotto più grande)
+            $totalLength = max($totalLength, $pLength);
+            $totalWidth  = max($totalWidth,  $pWidth);
+
+            // height: sommo per la quantità (prodotti impilati)
+            $totalHeight += $pHeight * $qty;
+        }
+
+        return [
+            'length' => round($totalLength, 2),
+            'width'  => round($totalWidth,  2),
+            'height' => round($totalHeight, 2),
+        ];
+    }
+
+
+    
 }

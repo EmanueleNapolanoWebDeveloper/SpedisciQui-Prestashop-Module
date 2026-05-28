@@ -49,7 +49,7 @@ class CarrierRepository
     public function getCarrierById(int $carrierId): array
     {
         $row = Db::getInstance()->getRow(
-            'SELECT id_carrier, carrier_code, service_code, carrier_name
+            'SELECT id_carrier, carrier_code, service_code, carrier_name,id_spedisciqui_carrier
          FROM `' . _DB_PREFIX_ . 'spedisciqui_carrier`
          WHERE id_carrier = ' . (int)$carrierId
         );
