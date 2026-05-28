@@ -56,6 +56,8 @@ class spedisciquishipping extends CarrierModule
     protected SQMigrations $SQMigrations;
     protected ConfigRepositories $config;
     protected $customCheckout;
+    protected ApiClient $apiClient;
+    protected CredentialsRepositories $credentials;
 
     // ================================================================
     // COSTRUTTORE
@@ -78,16 +80,26 @@ class spedisciquishipping extends CarrierModule
         parent::__construct();
 
         try {
-            $context     = Context::getContext();
-            $config      = new ConfigRepositories($context);
-            $credentials = new CredentialsRepositories($context, new ApiClient($config));
-            $apiClient   = new ApiClient($config);
+            $context = Context::getContext();
+
+            $this->config = new ConfigRepositories($context);
+
+            $this->apiClient = new ApiClient($this->config);
+
+            $this->credentials = new CredentialsRepositories(
+                $context,
+                $this->apiClient
+            );
 
             $this->SQMigrations = new SQMigrations();
-            $this->config       = $config;
+
             $this->customCheckout = new CustomCheckout(
                 $this,
-                new CarrierRepository(new CarrierApi($apiClient), $credentials, $this)
+                new CarrierRepository(
+                    new CarrierApi($this->apiClient),
+                    $this->credentials,
+                    $this
+                )
             );
         } catch (Exception $e) {
             PrestaShopLogger::addLog(
@@ -131,6 +143,7 @@ class spedisciquishipping extends CarrierModule
         $uninstallation = new Uninstallation(
             $this,
             $this->SQMigrations,
+            new CarrierRepository(new CarrierApi($this->apiClient), $this->credentials, $this)
         );
 
         return $uninstallation->uninstall();
@@ -151,6 +164,7 @@ class spedisciquishipping extends CarrierModule
     // ================================================================
     public function getContent()
     {
+
         $handler = new ContentHandler($this);
         return $handler->handle();
     }
@@ -161,7 +175,25 @@ class spedisciquishipping extends CarrierModule
     // ================================================================
     public function getOrderShippingCost($params, $shippingCost): float|false
     {
-        return $shippingCost > 0 ? $shippingCost : 5.0;
+        $cart = $params;
+
+        $carrier = new CarrierRepository(new CarrierApi(new ApiClient(new ConfigRepositories())))->getCarrierById((int)$this->id_carrier);
+
+        if (empty($carrier)) {
+            return false;
+        }
+
+        $carrierCode = $carrier['carrier_code'];
+
+        $shippingServices = new ShippingServices(
+            $this->carrierRepo,
+            $this->carrierService
+        );
+
+        return $shippingServices->getRateShippingCost(
+            $cart,
+            $carrierCode
+        );
     }
 
 
@@ -171,10 +203,11 @@ class spedisciquishipping extends CarrierModule
     // ================================================================
     public function getOrderShippingCostExternal($params): float|false
     {
+
         return $this->getOrderShippingCost($params, 0);
     }
 
-    
+
 
 
     // ================================================================
@@ -184,15 +217,33 @@ class spedisciquishipping extends CarrierModule
     // ================================================================
 
 
-    public function hookDisplayCarrierExtraContent($params)
-    {
-        if (!$this->customCheckout) {
-            PrestaShopLogger::addLog('[SpedisciQui] customCheckout è NULL', 3);
-            return '';
-        }
+    // public function hookDisplayCarrierExtraContent($params)
+    // {
+    //     if (!$this->customCheckout) {
+    //         PrestaShopLogger::addLog('[SpedisciQui] customCheckout è NULL', 3);
+    //         return '';
+    //     }
 
-        return $this->customCheckout->hookDisplayCarrierExtraContent($params);
-    }
+    //     return $this->customCheckout->hookDisplayCarrierExtraContent($params);
+    // }
 
+    // public function hookActionCarrierProcess($params)
+    // {
+    //     if (!$this->customCheckout) {
+    //         PrestaShopLogger::addLog('[SpedisciQui] hookActionCarrierProcess è NULL', 3);
+    //         return '';
+    //     }
 
+    //     return $this->customCheckout->hookActionCarrierProcess($params);
+    // }
+
+    // // public function hookactionFilterDeliveryOptionList($params)
+    // // {
+    // //     if (!$this->customCheckout) {
+    // //         PrestaShopLogger::addLog('[SpedisciQui] hookActionCarrierProcess è NULL', 3);
+    // //         return '';
+    // //     }
+
+    // //     return $this->customCheckout->hookActionFilterDeliveryOptionList($params);
+    // // }
 }

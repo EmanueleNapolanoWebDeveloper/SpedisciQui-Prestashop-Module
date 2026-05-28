@@ -1,5 +1,5 @@
 {* carrier_list.tpl *}
-<div class="panel" style="max-width:860px; margin:30px auto;">
+<div class="panel" style="full-width; margin:30px auto;">
 
     <div class="panel-heading">
         <i class="icon-truck"></i>

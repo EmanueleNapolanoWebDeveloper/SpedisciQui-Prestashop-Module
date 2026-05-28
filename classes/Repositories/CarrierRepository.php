@@ -43,33 +43,35 @@ class CarrierRepository
         return $this->api->getCarriers($token);
     }
 
+    // ==========================================
+    // CHECK DUPLICATO PER CARRIER id
+    // ==========================================
+    public function getCarrierById(int $carrierId): array
+    {
+        $row = Db::getInstance()->getRow(
+            'SELECT id_carrier, carrier_code, service_code, carrier_name
+         FROM `' . _DB_PREFIX_ . 'spedisciqui_carrier`
+         WHERE id_carrier = ' . (int)$carrierId
+        );
+
+        return is_array($row) ? $row : [];
+    }
+
 
 
     // ==========================================
     // CHECK DUPLICATO PER CARRIER CODE
     // ==========================================
-    private function getCarrierIdByCode(string $carrierCode): int
+    public function getCarrierByCode(string $carrierCode): array
     {
-        $fromMapping = Db::getInstance()->getValue(
-            'SELECT id_carrier FROM `' . _DB_PREFIX_ . 'spedisciqui_carrier`
-             WHERE carrier_code = \'' . pSQL($carrierCode) . '\''
+        $row = Db::getInstance()->getRow(
+            'SELECT id_carrier, carrier_code, service_code, carrier_name
+         FROM `' . _DB_PREFIX_ . 'spedisciqui_carrier`
+         WHERE carrier_code = \'' . pSQL($carrierCode) . '\'
+        '
         );
 
-        if ($fromMapping) {
-            return (int)$fromMapping;
-        }
-
-        // Check 2 — mapping tramite service_code (campo alternativo)
-        $fromService = Db::getInstance()->getValue(
-            'SELECT id_carrier FROM `' . _DB_PREFIX_ . 'spedisciqui_carrier`
-         WHERE service_code = \'' . pSQL($carrierCode) . '\''
-        );
-
-        if ($fromService) {
-            return (int)$fromService;
-        }
-
-        return 0;
+        return is_array($row) ? $row : [];
     }
 
 
@@ -80,7 +82,7 @@ class CarrierRepository
     {
 
         // Evita duplicati
-        if ($this->getCarrierIdByCode($carrierData['code'])) {
+        if ($this->getCarrierByCode($carrierData['code'])) {
             PrestaShopLogger::addLog(
                 '[SpedisciQui] Carrier già esistente, skip: ' . $carrierData['code'],
                 1
@@ -291,8 +293,8 @@ class CarrierRepository
         // recupero mapping da spedisciqui_carrier
         $mapping = $db->getRow(
             'SELECT `id_carrier`
-        FROM `' . _DB_PREFIX_ . 'spedisciqui_carrier`
-        WHERE `carrier_code` = "' . pSQL($carrierCode) . '"'
+        FROM `' . _DB_PREFIX_ . 'spedisciqui_carrier` ' .
+                ' WHERE `carrier_code` = "' . pSQL($carrierCode) . '"'
         );
 
         // controllo
@@ -302,6 +304,8 @@ class CarrierRepository
         }
 
         $idCarrier = (int) $mapping['id_carrier'];
+        //$idCarrierReference = (int) $mapping['id_reference'];
+
 
         // update a delete 1 invece di eliminarlo 
         $db->update(
@@ -311,15 +315,28 @@ class CarrierRepository
         );
 
 
-        // pulizia corriere da gruppi,zone,range,ecc.
-        $db->execute('DELETE FROM `' . _DB_PREFIX_ . 'carrier_zone`  WHERE `id_carrier` = ' . $idCarrier);
-        $db->execute('DELETE FROM `' . _DB_PREFIX_ . 'range_weight`  WHERE `id_carrier` = ' . $idCarrier);
-        $db->execute('DELETE FROM `' . _DB_PREFIX_ . 'range_price`   WHERE `id_carrier` = ' . $idCarrier);
-        $db->execute('DELETE FROM `' . _DB_PREFIX_ . 'delivery`      WHERE `id_carrier` = ' . $idCarrier);
-        $db->execute('DELETE FROM `' . _DB_PREFIX_ . 'carrier_group` WHERE `id_carrier` = ' . $idCarrier);
-        $db->execute('DELETE FROM `' . _DB_PREFIX_ . 'carrier_shop`  WHERE `id_carrier` = ' . $idCarrier);
-        $db->execute('DELETE FROM `' . _DB_PREFIX_ . 'module_carrier` WHERE `id_carrier` = ' . $idCarrier);
-        $db->execute('DELETE FROM `' . _DB_PREFIX_ . 'carrier_tax_rules_group_shop` WHERE `id_carrier` = ' . $idCarrier);
+        //  array tabelle da pulire
+        $tables = [
+            'carrier_zone',
+            'range_weight',
+            'range_price',
+            'carrier_group',
+            'carrier_shop',
+            'carrier_tax_rules_group_shop',
+        ];
+
+        foreach ($tables as $table) {
+            $db->execute(
+                'DELETE FROM `' . _DB_PREFIX_ . $table . '`
+             WHERE id_carrier = ' . (int) $idCarrier
+            );
+        }
+
+        // // eliminazione di module_carrier
+        // $db->execute(
+        //     'DELETE FROM `' . _DB_PREFIX_ . 'module_carrier`
+        //  WHERE `id_reference` = ' . (int) $idCarrierReference
+        // );
 
         // rimozione dal mapping
         $db->delete(
@@ -328,6 +345,33 @@ class CarrierRepository
         );
 
         return true;
+    }
+
+
+    // ==========================================
+    // RIMOZIONE DI TUTTI I CARRIER PER UNINSTALL
+    // ==========================================
+    public function removeAllCarriers(): void
+    {
+        $db = Db::getInstance();
+
+        $carriers = $db->executeS(
+            'SELECT `carrier_code`
+         FROM `' . _DB_PREFIX_ . 'spedisciqui_carrier`'
+        );
+
+        if (!$carriers) {
+            return;
+        }
+
+        foreach ($carriers as $carrier) {
+
+            if (!isset($carrier['carrier_code'])) {
+                continue;
+            }
+
+            $this->removeCarrier($carrier['carrier_code']);
+        }
     }
 
 
@@ -368,11 +412,11 @@ class CarrierRepository
             return [];
         }
 
-         PrestaShopLogger::addLog(
-                '[SPEDISCIQUI] result di recupero corrieri salvati',
-                print_r($result,true),
-                3
-            );
+        PrestaShopLogger::addLog(
+            '[SPEDISCIQUI] result di recupero corrieri salvati',
+            print_r($result, true),
+            3
+        );
 
         return $result;
     }

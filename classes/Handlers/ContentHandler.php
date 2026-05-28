@@ -50,13 +50,13 @@ class ContentHandler
         $this->credentialsHandler  = new CredentialsHandlers($module, $this->credentialsRepo, $this->setupManager);
         $this->senderHandler       = new SenderHandler($module, $this->senderRepo, $this->setupManager);
         $this->packHandler         = new PackageHandler($module, $this->packRepo, $this->setupManager);
-        $this->carrierHandler      = new CarrierHandlers($this->module, $this->carrierRepo, $this->setupManager);
+        $this->carrierHandler      = new CarrierHandlers($this->module, $this->carrierRepo, $this->setupManager, new CarrierServices($this->carrierRepo));
 
         // renderers
         $this->credentialsRenderer = new CredentialsRenderer($module, $this->credentialsRepo);
         $this->senderRenderer      = new SenderRenderer($module, $this->senderRepo);
         $this->packageRenderer = new PackageRenderer($this->module, $this->packRepo);
-        $this->carrierRenderer = new CarrierRenderer($this->module, $this->carrierRepo);
+        $this->carrierRenderer = new CarrierRenderer($this->module, $this->carrierRepo, new CarrierServices($this->carrierRepo));
     }
 
     //========================================================
@@ -93,7 +93,7 @@ class ContentHandler
     private function handleSubmits(): void
     {
 
-        //===========> ACCESS TOKEN <======================
+        //===========> CREDENTIALS<======================
         if (Tools::isSubmit('submitSpedisciQuiCredentials')) {
             $this->credentialsHandler->handleSubmit();
         }
@@ -124,6 +124,11 @@ class ContentHandler
         if (Tools::isSubmit('removeSpedisciQuiCarriers')) {
             $this->carrierHandler->handleRemove();
         }
+
+        // submit salvataggio Peso/tariffa
+        if (Tools::isSubmit('saveTariffConfig')) {
+            $this->carrierHandler->handleConfigureTariff();
+        }
     }
 
     //========================================================
@@ -131,6 +136,14 @@ class ContentHandler
     //========================================================
     private function resolveView(): string
     {
+
+        // ── Routing config tariffe ────────────────────────────────────────
+        $carrierCode = Tools::getValue('carrier_code', '');
+
+        if ($carrierCode !== '') {
+            return $this->carrierRenderer->renderCarrierTariffConfig($carrierCode);
+        }
+
         switch ($this->setupManager->current()) {
 
             case SetupSteps::TOKEN:

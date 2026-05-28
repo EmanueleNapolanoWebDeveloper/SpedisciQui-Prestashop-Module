@@ -9,14 +9,16 @@ class Uninstallation
 
     private spedisciquishipping $module;
     private SQMigrations $SQMigrations;
+    private CarrierRepository $carrierRepo;
 
     public function __construct(
         spedisciquishipping $module,
-        SQMigrations $SQMigrations
+        SQMigrations $SQMigrations,
+        CarrierRepository $carrierRepo
     ) {
         $this->module = $module;
         $this->SQMigrations = $SQMigrations;
-
+        $this->carrierRepo = $carrierRepo;
     }
 
     //=============================================
@@ -26,8 +28,11 @@ class Uninstallation
     {
         try {
 
+            // rimozione dati carrier da tabelle
+            $this->carrierRepo->removeAllCarriers();
+
             // rimuovi hook (non obbligatorio ma pulito)
-            $this->unregisterModuleHooks();
+            //$this->unregisterModuleHooks();
 
             // elimina dati DB modulo
             $this->SQMigrations->deleteAll();
@@ -56,10 +61,11 @@ class Uninstallation
     private function unregisterModuleHooks(): void
     {
         $hooks = [
-            // 'actionCarrierProcess',
+            //'actionCarrierProcess',
+            //'ActionFilterDeliveryOptionList',
             // 'actionValidateStepComplete',
             // 'actionCartSave',
-            'displayCarrierExtraContent',
+            //'displayCarrierExtraContent',
         ];
 
         foreach ($hooks as $hook) {

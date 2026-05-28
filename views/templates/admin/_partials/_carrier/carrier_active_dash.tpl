@@ -1,51 +1,536 @@
-<div class="panel" style="margin-top:20px;">
-    <div class="panel-heading">
-        <i class="icon-check"></i>
-        {l s='Corrieri attivi sul negozio' mod='spedisciquishipping'}
+<style>
+    .sq-dashboard {
+        font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .sq-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 24px;
+        background: #fff;
+        border-bottom: 1px solid #e8ecef;
+        border-radius: 4px 4px 0 0;
+    }
+
+    .sq-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .sq-header-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .sq-header-subtitle {
+        font-size: 12px;
+        color: #8a9ab0;
+        margin: 2px 0 0 0;
+    }
+
+    .sq-count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 26px;
+        height: 26px;
+        padding: 0 8px;
+        background: #1a6fc4;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        border-radius: 13px;
+    }
+
+    .sq-panel {
+        background: #fff;
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
+        margin-top: 20px;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    }
+
+    .sq-table-wrap {
+        overflow-x: auto;
+    }
+
+    .sq-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 760px;
+    }
+
+    .sq-table thead tr {
+        background: #f5f7fa;
+        border-bottom: 2px solid #dde3ea;
+    }
+
+    .sq-table thead th {
+        padding: 11px 16px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: #7a8a9a;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .sq-table tbody tr {
+        border-bottom: 1px solid #f0f3f6;
+        transition: background 0.15s;
+    }
+
+    .sq-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .sq-table tbody tr:hover {
+        background: #f7f9fc;
+    }
+
+    .sq-table td {
+        padding: 14px 16px;
+        vertical-align: middle;
+        color: #2c3e50;
+        font-size: 13px;
+    }
+
+    /* Logo cell */
+    .sq-logo-cell {
+        width: 56px;
+    }
+
+    .sq-logo-wrap {
+        width: 44px;
+        height: 44px;
+        border-radius: 6px;
+        border: 1px solid #e4e9f0;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .sq-logo-wrap img {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+    }
+
+    .sq-logo-placeholder {
+        width: 44px;
+        height: 44px;
+        border-radius: 6px;
+        border: 1px dashed #c8d0db;
+        background: #f5f7fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #b0bbc8;
+        font-size: 18px;
+    }
+
+    /* Carrier name cell */
+    .sq-carrier-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1a2535;
+        margin: 0 0 2px 0;
+        white-space: nowrap;
+    }
+
+    .sq-carrier-service {
+        font-size: 12px;
+        color: #7a8a9a;
+        margin: 0;
+    }
+
+    /* Code badges */
+    .sq-code {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        font-family: 'Courier New', monospace;
+        background: #eef2f7;
+        color: #3a5276;
+        border: 1px solid #d5dfe9;
+        white-space: nowrap;
+    }
+
+    .sq-code-small {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-family: 'Courier New', monospace;
+        background: #f0f4f8;
+        color: #5a6a7a;
+        border: 1px solid #dde3ea;
+        margin-top: 3px;
+        white-space: nowrap;
+    }
+
+    .sq-id-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 9px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: 'Courier New', monospace;
+        background: #e8f0fb;
+        color: #1a6fc4;
+        border: 1px solid #c2d6f0;
+    }
+
+    /* Status/type badges */
+    .sq-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        white-space: nowrap;
+    }
+
+    .sq-badge-active {
+        background: #e6f9ee;
+        color: #1e7e34;
+        border: 1px solid #b8e8c8;
+    }
+
+    .sq-badge-inactive {
+        background: #fdecea;
+        color: #c0392b;
+        border: 1px solid #f5c0ba;
+    }
+
+    .sq-badge-pickup {
+        background: #fff4e5;
+        color: #d46b08;
+        border: 1px solid #fcd4a0;
+    }
+
+    .sq-badge-courier {
+        background: #e8f0fb;
+        color: #1a6fc4;
+        border: 1px solid #bdd4f0;
+    }
+
+    .sq-badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+
+    .sq-badge-active .sq-badge-dot {
+        background: #1e7e34;
+    }
+
+    .sq-badge-inactive .sq-badge-dot {
+        background: #c0392b;
+    }
+
+    .sq-badge-pickup .sq-badge-dot {
+        background: #d46b08;
+    }
+
+    .sq-badge-courier .sq-badge-dot {
+        background: #1a6fc4;
+    }
+
+    /* Meta dates */
+    .sq-meta {
+        font-size: 11px;
+        color: #9aabb8;
+        line-height: 1.6;
+        white-space: nowrap;
+    }
+
+    .sq-meta-label {
+        font-weight: 600;
+        color: #b0bbc8;
+        margin-right: 3px;
+    }
+
+    /* Actions */
+    .sq-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: nowrap;
+    }
+
+    .sq-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 13px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+        white-space: nowrap;
+        text-decoration: none;
+        line-height: 1;
+        vertical-align: middle;
+    }
+
+    .sq-btn:active {
+        transform: scale(0.97);
+    }
+
+    .sq-btn-configure {
+        background: #1a6fc4;
+        color: #fff;
+        box-shadow: 0 1px 3px rgba(26, 111, 196, 0.18);
+    }
+
+    .sq-btn-configure:hover {
+        background: #155da0;
+        color: #fff;
+        box-shadow: 0 2px 6px rgba(26, 111, 196, 0.28);
+        text-decoration: none;
+    }
+
+    .sq-btn-remove {
+        background: #fff;
+        color: #c0392b;
+        border: 1px solid #e8b4af;
+        box-shadow: none;
+    }
+
+    .sq-btn-remove:hover {
+        background: #fdecea;
+        color: #a93226;
+        border-color: #c0392b;
+        text-decoration: none;
+    }
+
+    .sq-btn i {
+        font-size: 12px;
+    }
+
+    /* Empty state */
+    .sq-empty {
+        padding: 60px 20px;
+        text-align: center;
+    }
+
+    .sq-empty-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: #f0f4f8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px auto;
+        font-size: 28px;
+        color: #b0bbc8;
+    }
+
+    .sq-empty-title {
+        font-size: 17px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0 0 8px 0;
+    }
+
+    .sq-empty-desc {
+        font-size: 13px;
+        color: #8a9ab0;
+        margin: 0;
+        max-width: 340px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Divider line in codes column */
+    .sq-codes-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .sq-badges-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        align-items: flex-start;
+    }
+</style>
+
+<div class="sq-dashboard sq-panel">
+
+    <div class="sq-header">
+        <div class="sq-header-left">
+            <i class="icon-truck" style="font-size:20px;color:#1a6fc4;"></i>
+            <div>
+                <p class="sq-header-title">{l s='Corrieri SpedisciQui' mod='spedisciquishipping'}</p>
+                <p class="sq-header-subtitle">
+                    {l s='Gestione e configurazione dei corrieri attivi' mod='spedisciquishipping'}</p>
+            </div>
+        </div>
         {if $savedCarriers}
-            <span class="badge" style="margin-left:8px; background:#1e7e34;">{$savedCarriers|count}</span>
+            <span class="sq-count-badge">{$savedCarriers|count}</span>
         {/if}
     </div>
-    <div class="panel-body">
 
-        {if !$savedCarriers}
-            <p class="text-muted text-center" style="padding:20px 0;">
-                <i class="icon-warning-sign" style="font-size:20px;"></i><br>
-                {l s='Nessun corriere ancora aggiunto.' mod='spedisciquishipping'}
+    {if !$savedCarriers}
+
+        <div class="sq-empty">
+            <div class="sq-empty-icon">
+                <i class="icon-truck"></i>
+            </div>
+            <p class="sq-empty-title">{l s='Nessun corriere configurato' mod='spedisciquishipping'}</p>
+            <p class="sq-empty-desc">
+                {l s='Non hai ancora aggiunto nessun corriere SpedisciQui. Importa i corrieri disponibili per iniziare a configurare le spedizioni.' mod='spedisciquishipping'}
             </p>
-        {else}
-            <table class="table">
+        </div>
+
+    {else}
+
+        <div class="sq-table-wrap">
+            <table class="sq-table">
                 <thead>
                     <tr>
-                        <th>{l s='ID PS' mod='spedisciquishipping'}</th>
-                        <th>{l s='Nome' mod='spedisciquishipping'}</th>
-                        <th>{l s='Codice API' mod='spedisciquishipping'}</th>
+                        <th class="sq-logo-cell"></th>
+                        <th>{l s='Corriere' mod='spedisciquishipping'}</th>
+                        <th>{l s='Codici' mod='spedisciquishipping'}</th>
+                        <th>{l s='ID Carrier' mod='spedisciquishipping'}</th>
+                        <th>{l s='Tipo / Stato' mod='spedisciquishipping'}</th>
+                        <th>{l s='Date' mod='spedisciquishipping'}</th>
                         <th>{l s='Azioni' mod='spedisciquishipping'}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {foreach from=$savedCarriers item=sc}
                         <tr>
-                            <td style="vertical-align:middle;"><code>#{$sc.id_carrier|intval}</code></td>
-                            <td style="vertical-align:middle;"><strong>{$sc.carrier_name|escape:'htmlall':'UTF-8'}</strong></td>
-                            <td style="vertical-align:middle;">
-                                <span class="label label-info">{$sc.carrier_code|escape:'htmlall':'UTF-8'}</span>
+
+                            <td class="sq-logo-cell">
+                                {if $sc.logo}
+                                    <div class="sq-logo-wrap">
+                                        <img src="{$sc.logo|escape:'htmlall':'UTF-8'}"
+                                            alt="{$sc.carrier_name|escape:'htmlall':'UTF-8'}">
+                                    </div>
+                                {else}
+                                    <div class="sq-logo-placeholder">
+                                        <i class="icon-truck"></i>
+                                    </div>
+                                {/if}
                             </td>
-                            <td style="vertical-align:middle;">
-                                <form method="POST" action="{$action|escape:'htmlall':'UTF-8'}">
-                                    <input type="hidden" name="carrier_code"
-                                        value="{$sc.carrier_code|escape:'htmlall':'UTF-8'}">
-                                    <button type="submit" name="removeSpedisciQuiCarriers"
-                                        class="btn btn-danger btn-sm"
-                                        onclick="return confirm('{l s='Rimuovere il corriere?' mod='spedisciquishipping' js=1}');">
-                                        <i class="icon-trash"></i> {l s='Rimuovi' mod='spedisciquishipping'}
-                                    </button>
-                                </form>
+
+                            <td>
+                                <p class="sq-carrier-name">{$sc.carrier_name|escape:'htmlall':'UTF-8'}</p>
+                                {if $sc.service_name}
+                                    <p class="sq-carrier-service">{$sc.service_name|escape:'htmlall':'UTF-8'}</p>
+                                {/if}
                             </td>
+
+                            <td>
+                                <div class="sq-codes-stack">
+                                    <span class="sq-code">{$sc.carrier_code|escape:'htmlall':'UTF-8'}</span>
+                                    {if $sc.service_code}
+                                        <span class="sq-code-small">{$sc.service_code|escape:'htmlall':'UTF-8'}</span>
+                                    {/if}
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="sq-id-badge">
+                                    <i class="icon-tag" style="font-size:10px;"></i>
+                                    #{$sc.id_carrier|intval}
+                                </span>
+                            </td>
+
+                            <td>
+                                <div class="sq-badges-stack">
+                                    {if $sc.is_pickup_point}
+                                        <span class="sq-badge sq-badge-pickup">
+                                            <span class="sq-badge-dot"></span>
+                                            {l s='Pickup Point' mod='spedisciquishipping'}
+                                        </span>
+                                    {else}
+                                        <span class="sq-badge sq-badge-courier">
+                                            <span class="sq-badge-dot"></span>
+                                            {l s='Corriere' mod='spedisciquishipping'}
+                                        </span>
+                                    {/if}
+                                    {if $sc.is_active}
+                                        <span class="sq-badge sq-badge-active">
+                                            <span class="sq-badge-dot"></span>
+                                            {l s='Attivo' mod='spedisciquishipping'}
+                                        </span>
+                                    {else}
+                                        <span class="sq-badge sq-badge-inactive">
+                                            <span class="sq-badge-dot"></span>
+                                            {l s='Disattivato' mod='spedisciquishipping'}
+                                        </span>
+                                    {/if}
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="sq-meta">
+                                    <div><span
+                                            class="sq-meta-label">{l s='Aggiunto:' mod='spedisciquishipping'}</span>{$sc.date_add|escape:'htmlall':'UTF-8'|truncate:10:''}
+                                    </div>
+                                    <div><span
+                                            class="sq-meta-label">{l s='Aggiornato:' mod='spedisciquishipping'}</span>{$sc.date_upd|escape:'htmlall':'UTF-8'|truncate:10:''}
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="sq-actions">
+
+
+                                    {* configura *}
+                                    <a href="{$sc.configure_url|escape:'htmlall':'UTF-8'}"
+                                        class="sq-btn sq-btn-configure">
+                                        <i class="icon-cog"></i>
+                                        {l s='Configura' mod='spedisciquishipping'}
+                                    </a>
+
+                                    {* rimuovi *}
+                                    <form method="POST" action="{$action|escape:'htmlall':'UTF-8'}">
+                                        <input type="hidden" name="carrier_code"
+                                            value="{$sc.carrier_code|escape:'htmlall':'UTF-8'}">
+                                        <button type="submit" name="removeSpedisciQuiCarriers" class="sq-btn sq-btn-remove"
+                                            onclick="return confirm('{l s='Rimuovere il corriere?' mod='spedisciquishipping' js=1}');">
+                                            <i class="icon-trash"></i>
+                                            {l s='Rimuovi' mod='spedisciquishipping'}
+                                        </button>
+                                    </form>
+
+                                </div>
+                            </td>
+
                         </tr>
                     {/foreach}
                 </tbody>
             </table>
-        {/if}
-    </div>
+        </div>
+
+    {/if}
+
 </div>

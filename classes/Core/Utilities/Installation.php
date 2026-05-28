@@ -34,7 +34,7 @@ class Installation
                 throw new Exception('Migrazioni tabelle fallite!');
             }
 
-            $this->registerModuleHooks();
+            //$this->registerModuleHooks();
 
             // 3. Config default
             $this->installDefaultConfig();
@@ -55,22 +55,23 @@ class Installation
     private function registerModuleHooks(): void
     {
         $hooks = [
-            // 'actionCarrierProcess',
+            //'actionCarrierProcess',
+            //'ActionFilterDeliveryOptionList',
             // 'actionValidateStepComplete',
             // 'actionCartSave',
-            'actionCheckoutRender',
-            'displayCarrierExtraContent',
+            //'actionCheckoutRender',
+            //'displayCarrierExtraContent',
         ];
 
         foreach ($hooks as $hook) {
             if (!$this->module->registerHook($hook)) {
                 PrestaShopLogger::addLog(
                     '[SpedisciQui] Hook registration failed: ' . $hook,
-                    2 // 2 = warning, 3 = error
+                    2
                 );
             }
         }
-    }    
+    }
 
     //=============================================
     // CONFIGURAZIONE DEFAULT
@@ -81,6 +82,7 @@ class Installation
             'SPEDISCIQUI_DEFAULT_CURRENCY' => 'EUR',
             'SPEDISCIQUI_TIMEOUT'          => 30,
             'SPEDISCIQUI_SETUP_STEP'       => 0,
+            'SPEDISCIQUI_API_URL' => '',
         ];
 
         foreach ($defaults as $key => $value) {
@@ -100,8 +102,4 @@ class Installation
             }
         }
     }
-
-
-
-    
 }

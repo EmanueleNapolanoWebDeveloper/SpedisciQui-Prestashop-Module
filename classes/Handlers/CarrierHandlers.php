@@ -8,16 +8,19 @@ class CarrierHandlers
     private spedisciquishipping $module;
     private CarrierRepository   $carrierRepo;
     private SetupManager        $setupManager;
+    private CarrierServices $carrierService;
     private string $output = '';
 
     public function __construct(
         spedisciquishipping $module,
         CarrierRepository   $carrierRepo,
-        SetupManager        $setupManager
+        SetupManager        $setupManager,
+        CarrierServices $carrierService
     ) {
         $this->module       = $module;
         $this->carrierRepo  = $carrierRepo;
         $this->setupManager = $setupManager;
+        $this->carrierService = $carrierService;
     }
 
     //==========================================
@@ -153,5 +156,54 @@ class CarrierHandlers
         $this->output = $this->module->displayConfirmation(
             sprintf($this->module->l('Corriere %s rimosso correttamente.'), $code)
         );
+    }
+
+    // ==========================================
+    // CONFIGURA CORRIERE
+    // ==========================================
+    public function handleConfigureTariff(): void
+    {
+        $carrierCode = Tools::getValue('carrier_code', '');
+
+
+        if (empty($carrierCode)) {
+            $this->output = $this->module->displayError(
+                $this->module->l('Codice corriere mancante.')
+            );
+            return;
+        }
+
+        $weightFromArr = Tools::getValue('weight_from', []);
+        $weightToArr = Tools::getValue('weight_to', []);
+        $priceArr = Tools::getValue('price', []);
+        $activeArr = Tools::getValue('active', []);
+
+        if (!is_array($weightFromArr)) {
+            $weightFromArr = [];
+        }
+
+
+        $rows = [];
+
+        foreach (array_keys($weightFromArr) as $i) {
+            $rows[] = [
+                'weight_from' => $weightFromArr[$i] ?? '0',
+                'weight_to' => $weightToArr[$i] ?? '0',
+                'tariff' => $priceArr[$i] ?? '0',
+                'active' => isset($activeArr[$i]) ? 1 : 0,
+            ];
+        }
+
+        $success = $this->carrierService->saveTariffs($carrierCode, $rows);
+
+        if ($success) {
+            $this->output .= $this->module->displayConfirmation(
+                $this->module->l('Tariffe salvate con successo.')
+            );
+        } else {
+            $this->output .= $this->module->displayError(
+                $this->module->l('Errore durante il salvataggio delle tariffe.')
+            );
+        }
     }
 }
