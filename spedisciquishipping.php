@@ -24,15 +24,15 @@ require __DIR__ . '/classes/Repositories/ConfigRepositories.php';
 require __DIR__ . '/classes/Repositories/CredentialsRepositories.php';
 require __DIR__ . '/classes/Repositories/SenderRepository.php';
 require __DIR__ . '/classes/Repositories/CarrierRepository.php';
+require __DIR__ . '/classes/Repositories/ShipmentRepository.php';
+
 
 // services
 require __DIR__ . '/classes/Service/CredentialServices.php';
 require __DIR__ . '/classes/Service/PackageServices.php';
 require __DIR__ . '/classes/Service/CarrierServices.php';
 require __DIR__ . '/classes/Service/SenderServices.php';
-
-
-
+require __DIR__ . '/classes/Service/ShippingService.php';
 
 // renderets
 require __DIR__ . '/classes/Renderers/CredentialsRenderer.php';
@@ -58,6 +58,9 @@ class spedisciquishipping extends CarrierModule
     protected $customCheckout;
     protected ApiClient $apiClient;
     protected CredentialsRepositories $credentials;
+    protected CarrierRepository $carrierRepo;
+    protected CarrierServices $carrierService;
+    public int $id_carrier = 0;
 
     // ================================================================
     // COSTRUTTORE
@@ -93,13 +96,24 @@ class spedisciquishipping extends CarrierModule
 
             $this->SQMigrations = new SQMigrations();
 
+            $this->carrierRepo = new CarrierRepository(
+                new CarrierApi($this->apiClient),
+                $this->credentials,
+                $this
+            );
+
             $this->customCheckout = new CustomCheckout(
                 $this,
-                new CarrierRepository(
-                    new CarrierApi($this->apiClient),
-                    $this->credentials,
-                    $this
-                )
+                $this->carrierRepo
+            );
+
+            $this->carrierRepo = new CarrierRepository(
+                new CarrierApi(new ApiClient(new ConfigRepositories())),
+                new CredentialsRepositories($this->context, new ApiClient(new ConfigRepositories())),
+                $this,
+            );
+            $this->carrierService = new CarrierServices(
+                $this->carrierRepo
             );
         } catch (Exception $e) {
             PrestaShopLogger::addLog(
@@ -177,23 +191,24 @@ class spedisciquishipping extends CarrierModule
     {
         $cart = $params;
 
-        $carrier = new CarrierRepository(new CarrierApi(new ApiClient(new ConfigRepositories())))->getCarrierById((int)$this->id_carrier);
+        $carrierId = (int) $this->id_carrier;
 
-        if (empty($carrier)) {
+        if ($carrierId <= 0) {
+            PrestaShopLogger::addLog(
+                sprintf('[SpedisciQui] getOrderShippingCost — id_carrier non disponibile | Cart #%d', (int) $cart->id),
+                3,
+                null,
+                'Cart',
+                (int) $cart->id,
+                true
+            );
             return false;
         }
 
-        $carrierCode = $carrier['carrier_code'];
-
-        $shippingServices = new ShippingServices(
+        return (new ShippingServices(
             $this->carrierRepo,
-            $this->carrierService
-        );
-
-        return $shippingServices->getRateShippingCost(
-            $cart,
-            $carrierCode
-        );
+            new CarrierServices($this->carrierRepo)
+        ))->getRateShippingCost($cart, $carrierId);
     }
 
 
@@ -227,23 +242,13 @@ class spedisciquishipping extends CarrierModule
     //     return $this->customCheckout->hookDisplayCarrierExtraContent($params);
     // }
 
-    // public function hookActionCarrierProcess($params)
-    // {
-    //     if (!$this->customCheckout) {
-    //         PrestaShopLogger::addLog('[SpedisciQui] hookActionCarrierProcess è NULL', 3);
-    //         return '';
-    //     }
+    public function hookActionValidateOrder($params)
+    {
+        if (!$this->customCheckout) {
+            PrestaShopLogger::addLog('[SpedisciQui] customCheckout è NULL', 3);
+            return '';
+        }
 
-    //     return $this->customCheckout->hookActionCarrierProcess($params);
-    // }
-
-    // // public function hookactionFilterDeliveryOptionList($params)
-    // // {
-    // //     if (!$this->customCheckout) {
-    // //         PrestaShopLogger::addLog('[SpedisciQui] hookActionCarrierProcess è NULL', 3);
-    // //         return '';
-    // //     }
-
-    // //     return $this->customCheckout->hookActionFilterDeliveryOptionList($params);
-    // // }
+        return $this->customCheckout->hookActionValidateOrder($params);
+    }
 }

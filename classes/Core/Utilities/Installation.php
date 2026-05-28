@@ -34,7 +34,7 @@ class Installation
                 throw new Exception('Migrazioni tabelle fallite!');
             }
 
-            //$this->registerModuleHooks();
+            $this->registerModuleHooks();
 
             // 3. Config default
             $this->installDefaultConfig();
@@ -55,11 +55,7 @@ class Installation
     private function registerModuleHooks(): void
     {
         $hooks = [
-            //'actionCarrierProcess',
-            //'ActionFilterDeliveryOptionList',
-            // 'actionValidateStepComplete',
-            // 'actionCartSave',
-            //'actionCheckoutRender',
+            'actionValidateOrder'
             //'displayCarrierExtraContent',
         ];
 

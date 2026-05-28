@@ -97,7 +97,8 @@ class CarrierRepository
         $carrier->deleted           = false;
         $carrier->shipping_handling = false;
         $carrier->range_behavior    = 0;
-        $carrier->shipping_method   = 2; // per peso
+        $carrier->shipping_external = 1;
+        $carrier->shipping_method   = 1; // per peso
         $carrier->is_module         = true;
         $carrier->external_module_name = 'spedisciquishipping';
         $carrier->need_range        = true;

@@ -32,7 +32,7 @@ class Uninstallation
             $this->carrierRepo->removeAllCarriers();
 
             // rimuovi hook (non obbligatorio ma pulito)
-            //$this->unregisterModuleHooks();
+            $this->unregisterModuleHooks();
 
             // elimina dati DB modulo
             $this->SQMigrations->deleteAll();
@@ -61,10 +61,7 @@ class Uninstallation
     private function unregisterModuleHooks(): void
     {
         $hooks = [
-            //'actionCarrierProcess',
-            //'ActionFilterDeliveryOptionList',
-            // 'actionValidateStepComplete',
-            // 'actionCartSave',
+            'actionValidateOrder'
             //'displayCarrierExtraContent',
         ];
 

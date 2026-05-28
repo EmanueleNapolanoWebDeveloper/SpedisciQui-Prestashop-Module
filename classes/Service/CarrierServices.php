@@ -20,15 +20,7 @@ class CarrierServices
     // =============================================
     // PRELEVA TARIFFE TRAMITE ID
     // =============================================
-    /**
-     * Restituisce le fasce tariffarie per un carrier.
-     * Se $weight è fornito, filtra sulla fascia applicabile.
-     *
-     * @param int         $carrierId
-     * @param string|null $serviceCode
-     * @param float|null  $weight
-     * @return array
-     */
+
 
     public function getTariffByCarrierId(
         int $carrierId,
@@ -62,17 +54,8 @@ class CarrierServices
     // RECUPERO TARIFFA IN BASE AL PESO CART
     // =============================================
 
-    /**
-     * Restituisce la singola fascia tariffaria applicabile al peso dato.
-     *
-     * @param int    $carrierId
-     * @param string $serviceCode
-     * @param float  $weight
-     * @return array|false
-     */
 
     public function getApplicableTariff(
-        int $carrierId,
         string $serviceCode,
         float $weight,
     ): array|false {
@@ -81,7 +64,6 @@ class CarrierServices
 
         $sql->select('*')
             ->from('spedisciqui_weight_tariffs')
-            ->where('id_carrier = ' . (int)$carrierId)
             ->where('service_code = \'' . pSQL($serviceCode) . '\'')
             ->where('is_active = 1')
             ->where('weight_from <= ' . (float)$weight)
@@ -98,18 +80,6 @@ class CarrierServices
     // =============================================
     // CONTROLLO SOVRAPPOSIZIONE PREZZI AL SALVATAGGIO/UPDATE
     // =============================================
-    /**
-     * Verifica se esiste già una fascia sovrapposta per il carrier/serviceCode.
-     * Usare prima di ogni insert o update.
-     *
-     * @param int         $carrierId
-     * @param string      $serviceCode
-     * @param float       $weightFrom
-     * @param float       $weightTo
-     * @param int|null    $excludeId   ID da escludere (utile in update)
-     * @return bool
-     */
-
 
     public function hasOverlappingRange(
         int $carrierId,
@@ -141,14 +111,6 @@ class CarrierServices
     // SALVATAGGIO TARIFFE
     // =============================================
 
-    /**
-     * Sostituisce tutte le fasce tariffarie per un carrier_code.
-     * Esegue validazione, poi DELETE + INSERT in transazione.
-     *
-     * @param string $carrierCode
-     * @param array  $data  [ ['weight_from'=>…, 'weight_to'=>…, 'tariff'=>…, 'active'=>…], … ]
-     * @return bool
-     */
 
     public function saveTariffs(string $carrierCode, array $data): bool
     {
@@ -236,11 +198,6 @@ class CarrierServices
     // ELIMINA TUTTE LE TARIFFE DI UN CARRIER
     // =========================================================================
 
-    /**
-     * @param string $carrierCode
-     * @return bool
-     */
-
 
 
     public function deleteTariffsByCarrierCode(
@@ -267,11 +224,6 @@ class CarrierServices
     // PRIVATE — VALIDAZIONE RIGHE
     // =========================================================================
 
-    /**
-     * @param array  $rows
-     * @param string $serviceCode  (usato solo per messaggi di log)
-     * @throws InvalidArgumentException
-     */
     private function validateRows(array $rows, string $serviceCode)
     {
         if (empty($rows)) {

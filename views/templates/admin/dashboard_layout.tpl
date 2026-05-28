@@ -47,6 +47,9 @@
 
             <div class="tab-content" style="padding:24px;">
                 <div class="tab-pane active" id="tab-carriers">
+                    {include file="./_partials/order_panel.tpl"}
+                </div>
+                <div class="tab-pane active" id="tab-carriers">
                     {include file="./_partials/carrier_panel.tpl"}
                 </div>
                 <div class="tab-pane" id="tab-settings">

@@ -110,75 +110,100 @@ class CustomCheckout
     }
 
 
-    //========================================
-    // HOOK PER ACTIONPROCESSCARRIER
-    //========================================
 
-    public function hookActionCarrierProcess($params)
+    // ======================================================
+    // HOOK PER VALIDAZIONE ORDINE (PER SALVARE IN TAB SHIPMENT)
+    public function hookActionValidateOrder(array $params): void
     {
-        $db = Db::getInstance();
-        $cart = $params['cart'];
+        try {
+            /** @var Order    $order    */
+            /** @var Cart     $cart     */
+            /** @var Carrier  $carrier  */
+            /** @var Customer $customer */
+            $order    = $params['order'];
+            $cart     = $params['cart'];
+            $carrier  = $params['carrier'];
 
-        // recupero id carrier da cart
-        $idCarrier = $cart->id_carrier;
+            // Verifica che il carrier appartenga a questo modulo
+            $carrierData = $this->carrierRepo->getCarrierById((int) $carrier->id);
 
-        // controllo se dati dal modulo ci sono
-        if (Tools::isSubmit('spedisciqui_service')) {
-
-            // recupero array servizi
-            $services = Tools::getValue('spedisciqui_service');
-
-            $serviceCode = null;
-
-            if (is_array($services) && isset($services[$idCarrier])) {
-                $serviceCode = pSQL($services[$idCarrier]);
+            if (empty($carrierData)) {
+                // Carrier non gestito da SpedisciQui — skip silenzioso
+                return;
             }
 
-            // insurance checkbox
-            $insurance = Tools::getValue('spedisciqui_insurance');
+            // Recupera indirizzo di consegna dall'ordine
+            $address = new Address((int) $order->id_address_delivery);
+            $country = new Country((int) $address->id_country);
 
-            $acceptedInsurance = is_array($insurance) && isset($insurance[$idCarrier]);
+            $shipmentRepo = new ShipmentRepository();
 
-            // salvo dati in tabella
-            $db->insert(
-                'spedisciqui_cart',
-                [
-                    'id_cart' => (int) $cart->id,
-                    'id_carrier' => (int) $idCarrier,
-                    'service_code' => pSQL($serviceCode),
-                    'has_insurance' => (int) $insurance,
-                ],
-                false,
-                true,
-                Db::REPLACE
+            $idShipment = $shipmentRepo->createShipment([
+                'id_order'               => (int)   $order->id,
+                'id_shop'                => (int)   $order->id_shop,
+                'id_spedisciqui_carrier' => (int)   ($carrierData['id_spedisciqui_carrier'] ?? null),
+                'shipment_type'          => 'outbound',
+                'carrier_code'           => (string) ($carrierData['carrier_code'] ?? ''),
+                'service_code'           => (string) ($carrierData['service_code'] ?? ''),
+                'status'                 => 'pending',
+
+                // Indirizzo di consegna
+                'delivery_firstname'   => $address->firstname,
+                'delivery_lastname'    => $address->lastname,
+                'delivery_address1'    => $address->address1,
+                'delivery_address2'    => $address->address2 ?? '',
+                'delivery_postcode'    => $address->postcode,
+                'delivery_city'        => $address->city,
+                'delivery_country_iso' => $country->iso_code,
+
+                // Peso e costo
+                'weight'           => (float) $cart->getTotalWeight(),
+                'shipping_cost'    => (float) $order->total_shipping,
+                'shipping_currency' => $this->getCurrencyIso((int) $order->id_currency),
+            ]);
+
+            if ($idShipment === false) {
+                return; // già loggato nel repository
+            }
+
+            PrestaShopLogger::addLog(
+                sprintf(
+                    '[SpedisciQui] Shipment #%d creato | Order #%d | %s | Peso: %.3f kg | Costo: %.2f €',
+                    $idShipment,
+                    $order->id,
+                    $carrierData['service_code'],
+                    $cart->getTotalWeight(),
+                    $order->total_shipping
+                ),
+                1,
+                null,
+                'Order',
+                (int) $order->id,
+                true
+            );
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog(
+                sprintf(
+                    '[SpedisciQui] hookActionValidateOrder — Eccezione | %s in %s:%d',
+                    $e->getMessage(),
+                    $e->getFile(),
+                    $e->getLine()
+                ),
+                4,
+                null,
+                'Order',
+                (int) ($params['order']->id ?? 0),
+                true
             );
         }
     }
 
-
-    //========================================
-    // HOOK PER FILTRARE DELIVERY
-    //========================================
-    public function hookActionFilterDeliveryOptionList($params)
+    /**
+     * Recupera il codice ISO 4217 della valuta dato l'id.
+     */
+    private function getCurrencyIso(int $idCurrency): string
     {
-        $list = $params['delivery_option_list'];
-        $cart = $params['cart'];
-
-        $idAddress = (int) $cart->id_address_delivery;
-
-        foreach ($list[$idAddress] as $key => $deliveryOption) {
-
-            foreach ($deliveryOption['carrier_list'] as $carrierId => $carrier) {
-                $hasService = Db::getInstance()->getValue(
-                    'SELECT service_code
-                 FROM ' . _DB_PREFIX_ . 'spedisciqui_cart
-                 WHERE id_cart = ' . (int)$cart->id
-                );
-
-                if (!$hasService) {
-                    unset($list[$idAddress][$key]);
-                }
-            }
-        }
+        $currency = new Currency($idCurrency);
+        return $currency->iso_code ?? 'EUR';
     }
 }

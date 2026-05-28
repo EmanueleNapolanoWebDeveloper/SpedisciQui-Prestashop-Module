@@ -9,13 +9,29 @@ class CredentialsRepositories
     public function __construct(
         Context $context,
         ApiClient $apiClient
-    ) 
-    {
+    ) {
         $this->context = $context;
         $this->apiClient = $apiClient;
     }
 
-       
+
+    //=================================================
+    //      recuper ACCESS_TOKEN
+    //=================================================
+    public function get(): array|false
+    {
+        $idShop = (int) $this->context->shop->id;
+
+        $sql = new DbQuery();
+
+        $sql->select('access_token')
+            ->from('spedisciqui_api_credentials')
+            ->where('id_shop = ' . $idShop)
+            ->limit(1);
+
+        return Db::getInstance()->getRow($sql);
+    }
+
     //=================================================
     // SETTAGGIO ACCESS_TOKEN
     //=================================================
@@ -58,7 +74,7 @@ class CredentialsRepositories
             '`id_shop` = ' . $idShop
         );
     }
-    
+
 
 
     //==========================================
