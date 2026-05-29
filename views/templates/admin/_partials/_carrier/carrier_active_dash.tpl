@@ -505,11 +505,17 @@
 
 
                                     {* configura *}
-                                    <a href="{$sc.configure_url|escape:'htmlall':'UTF-8'}"
-                                        class="sq-btn sq-btn-configure">
-                                        <i class="icon-cog"></i>
-                                        {l s='Configura' mod='spedisciquishipping'}
-                                    </a>
+                                    <form method="GET" action="index.php" style="display:inline; margin:0;">
+                                        <input type="hidden" name="controller" value="AdminModules">
+                                        <input type="hidden" name="configure" value="spedisciquishipping">
+                                        <input type="hidden" name="token" value="{$smarty.get.token|escape:'htmlall':'UTF-8'}">
+                                        <input type="hidden" name="carrier_code"
+                                            value="{$sc.carrier_code|escape:'htmlall':'UTF-8'}">
+                                        <button type="submit" class="sq-btn sq-btn-configure">
+                                            <i class="icon-cog"></i>
+                                            {l s='Configura' mod='spedisciquishipping'}
+                                        </button>
+                                    </form>
 
                                     {* rimuovi *}
                                     <form method="POST" action="{$action|escape:'htmlall':'UTF-8'}">

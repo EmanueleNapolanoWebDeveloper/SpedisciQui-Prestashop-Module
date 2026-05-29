@@ -62,8 +62,18 @@ class CarrierRenderer
 
         // Costruisci gli URL di configurazione per ogni carrier
         foreach ($savedCarriers as &$carrier) {
-            $carrier['configure_url'] = $baseUrl . '&configureCarrierTariff=1&carrier_code=' . urlencode($carrier['carrier_code']);
+            $carrier['configure_url'] = $baseUrl . '&carrier_code=' . urlencode($carrier['carrier_code']);
+
+            PrestaShopLogger::addLog(
+                '[SQ] configure_url generata: ' . $carrier['configure_url'],
+                1,
+                null,
+                'SpedisciQui'
+            );
         }
+        unset($carrier);
+
+        $actionUrl = $baseUrl;
 
         $this->context->smarty->assign([
             'carriers'          => $carriers ?? [],
@@ -71,13 +81,10 @@ class CarrierRenderer
             'savedCodes'        => $savedCodes,
             'module_name'       => $this->module->name,
             'module_action_url' => $baseUrl,
-            'action'            => $baseUrl,
+            'action'            => $actionUrl,
         ]);
 
-        return $this->module->display(
-            $this->module->getLocalPath(),
-            'views/templates/admin/_partials/carrier_panel.tpl'
-        );
+        return '';
     }
 
 
@@ -130,16 +137,17 @@ class CarrierRenderer
             'SpedisciQuiShipping'
         );
 
+        $token = Tools::getAdminTokenLite('AdminModules');
+
         // URL action
         $actionUrl = AdminController::$currentIndex
             . '&configure=' . $this->module->name
-            . '&token=' . Tools::getAdminTokenLite('AdminModules')
-            . '&carrier_code=' . urlencode(($carrierCode));
+            . '&token=' . $token
+            . '&carrier_code=' . urlencode($carrierCode);
 
         // backLink
         $backLink = AdminController::$currentIndex
             . '&configure=' . $this->module->name
-            . '&view=dashboard_layout'
             . '&token=' . Tools::getAdminTokenLite('AdminModules');
 
         $this->context->smarty->assign([

@@ -38,12 +38,14 @@ require __DIR__ . '/classes/Service/ShippingService.php';
 require __DIR__ . '/classes/Renderers/CredentialsRenderer.php';
 require __DIR__ . '/classes/Renderers/SenderRenderer.php';
 require __DIR__ . '/classes/Renderers/CarrierRenderer.php';
+require __DIR__ . '/classes/Renderers/DashboardRenderer.php';
 
 // handlers
 require __DIR__ . '/classes/Handlers/ContentHandler.php';
 require __DIR__ . '/classes/Handlers/CredentialsHandlers.php';
 require __DIR__ . '/classes/Handlers/SendersHandler.php';
 require __DIR__ . '/classes/Handlers/CarrierHandlers.php';
+require __DIR__ . '/classes/Handlers/DashboardHandlers.php';
 
 // hooks
 require __DIR__ . '/classes/Hooks/checkout/CustomCheckout.php';

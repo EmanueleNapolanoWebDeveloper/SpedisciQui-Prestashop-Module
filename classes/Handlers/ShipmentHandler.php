@@ -97,7 +97,11 @@ class ShipmentHandler
                 $idShipment,
                 (int) $shipment['id_order']
             ),
-            1, null, 'Order', (int) $shipment['id_order'], true
+            1,
+            null,
+            'Order',
+            (int) $shipment['id_order'],
+            true
         );
 
         $this->redirectWithSuccess('Spedizione #' . $idShipment . ' creata con successo.');
@@ -143,7 +147,11 @@ class ShipmentHandler
                 $idShipment,
                 (int) $shipment['id_order']
             ),
-            2, null, 'Order', (int) $shipment['id_order'], true
+            2,
+            null,
+            'Order',
+            (int) $shipment['id_order'],
+            true
         );
 
         $this->redirectWithSuccess('Spedizione #' . $idShipment . ' annullata.');

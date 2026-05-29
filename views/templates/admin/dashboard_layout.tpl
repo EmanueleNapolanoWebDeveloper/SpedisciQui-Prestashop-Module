@@ -24,7 +24,7 @@
             <ul class="nav nav-tabs" style="padding:0 20px; background:#f8f9fa; border-bottom:2px solid #1e7e34;">
                 <li class="active">
                     <a href="#tab-orders" data-toggle="tab">
-                        <i class="icon-truck"></i>
+                        <i class="icon-list"></i>
                         {l s='Ordini' mod='spedisciquishipping'}
                     </a>
                 </li>
@@ -46,14 +46,16 @@
             </ul>
 
             <div class="tab-content" style="padding:24px;">
-                <div class="tab-pane active" id="tab-carriers">
-                    {include file="./_partials/order_panel.tpl"}
+                <div class="tab-pane active" id="tab-orders">
+                    {include file="module:spedisciquishipping/views/templates/admin/_partials/orders_panel.tpl"}
                 </div>
-                <div class="tab-pane active" id="tab-carriers">
-                    {include file="./_partials/carrier_panel.tpl"}
+
+                <div class="tab-pane" id="tab-carriers">
+                    {include file="module:spedisciquishipping/views/templates/admin/_partials/carrier_panel.tpl"}
                 </div>
+
                 <div class="tab-pane" id="tab-settings">
-                    {include file="./_partials/settings_panel.tpl"}
+                    {include file="module:spedisciquishipping/views/templates/admin/_partials/settings_panel.tpl"}
                 </div>
             </div>
 

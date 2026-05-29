@@ -28,35 +28,41 @@ class ContentHandler
     private SenderRenderer          $senderRenderer;
     private PackageRenderer         $packageRenderer;
     private CarrierRenderer         $carrierRenderer;
+    private DashboardRenderer $dashboardRender;
 
     public function __construct(spedisciquishipping $module)
     {
         $this->module  = $module;
         $this->context = Context::getContext();
 
-
+        // 1. infrastruttura base
         $configRepo    = new ConfigRepositories($this->context);
         $apiClient     = new ApiClient($configRepo);
-        $this->credentialsRepo = new CredentialsRepositories($this->context, $apiClient);
 
-        // repositories
+        // 2. repositories (tutti prima degli handler/renderer)
         $this->credentialsRepo = new CredentialsRepositories($this->context, $apiClient);
-        $this->setupManager    = new SetupManager($configRepo, $this->credentialsRepo);
         $this->senderRepo      = new SenderRepository($this->context);
         $this->packRepo        = new PackageRepository($this->context);
         $this->carrierRepo     = new CarrierRepository(new CarrierApi($apiClient), $this->credentialsRepo, $this->module);
 
-        // handlers
-        $this->credentialsHandler  = new CredentialsHandlers($module, $this->credentialsRepo, $this->setupManager);
-        $this->senderHandler       = new SenderHandler($module, $this->senderRepo, $this->setupManager);
-        $this->packHandler         = new PackageHandler($module, $this->packRepo, $this->setupManager);
-        $this->carrierHandler      = new CarrierHandlers($this->module, $this->carrierRepo, $this->setupManager, new CarrierServices($this->carrierRepo));
+        // 3. setup manager (ora $credentialsRepo esiste)
+        $this->setupManager = new SetupManager($configRepo, $this->credentialsRepo);
 
-        // renderers
+        // 4. services condivisi (ora $carrierRepo esiste)
+        $carrierServices = new CarrierServices($this->carrierRepo);
+
+        // 5. handlers
+        $this->credentialsHandler = new CredentialsHandlers($module, $this->credentialsRepo, $this->setupManager);
+        $this->senderHandler      = new SenderHandler($module, $this->senderRepo, $this->setupManager);
+        $this->packHandler        = new PackageHandler($module, $this->packRepo, $this->setupManager);
+        $this->carrierHandler     = new CarrierHandlers($this->module, $this->carrierRepo, $this->setupManager, $carrierServices);
+
+        // 6. renderers
         $this->credentialsRenderer = new CredentialsRenderer($module, $this->credentialsRepo);
         $this->senderRenderer      = new SenderRenderer($module, $this->senderRepo);
-        $this->packageRenderer = new PackageRenderer($this->module, $this->packRepo);
-        $this->carrierRenderer = new CarrierRenderer($this->module, $this->carrierRepo, new CarrierServices($this->carrierRepo));
+        $this->packageRenderer     = new PackageRenderer($this->module, $this->packRepo);
+        $this->carrierRenderer     = new CarrierRenderer($this->module, $this->carrierRepo, $carrierServices);
+        $this->dashboardRender     = new DashboardRenderer($this->module, $this->context);
     }
 
     //========================================================
@@ -64,27 +70,60 @@ class ContentHandler
     //========================================================
     public function handle(): string
     {
-        $this->handleSubmits();
 
-        $this->context->smarty->assign([
-            'content'    => $this->resolveView(),
-            'setup_step' => $this->setupManager->current(),
-            'module_dir' => $this->module->getLocalPath(),
-        ]);
+        PrestaShopLogger::addLog(
+            '[SQ] carrier_code=' . Tools::getValue('carrier_code', 'VUOTO')
+                . ' | isContextView=' . ($this->isContextView() ? 'TRUE' : 'FALSE')
+                . ' | setupStep=' . $this->setupManager->current()
+                . ' | GET=' . http_build_query($_GET),
+            1,
+            null,
+            'SpedisciQui'
+        );
+
+        $this->handleSubmits();
 
         $output = $this->credentialsHandler->getOutput()
             . $this->senderHandler->getOutput()
             . $this->packHandler->getOutput()
             . $this->carrierHandler->getOutput();
 
-        $layoutTemplate = $this->setupManager->current() == SetupSteps::DONE
-            ? 'views/templates/admin/dashboard_layout.tpl'
-            : 'views/templates/admin/initial_config_layout.tpl';
+        // setup incompleto
+        if ($this->setupManager->current() !== SetupSteps::DONE) {
 
-        return $output . $this->module->display(
-            $this->module->getLocalPath(),
-            $layoutTemplate
-        );
+            $this->context->smarty->assign([
+                'content'    => $this->resolveSetupView(),
+                'setup_step' => $this->setupManager->current(),
+                'module_dir' => $this->module->getLocalPath(),
+            ]);
+
+            return $output . $this->module->display(
+                $this->module->getLocalPath(),
+                'views/templates/admin/initial_config_layout.tpl'
+            );
+        }
+
+        // dashboard
+        if ($this->isContextView()) {
+
+            $carrierCode = Tools::getValue('carrier_code', '');
+
+            return $output . $this->dashboardRender->renderWithContent(
+                $this->carrierRenderer->renderCarrierTariffConfig($carrierCode)
+            );
+        }
+
+        return $output . $this->dashboardRender->renderDashboard([
+            'carriers' => $this->carrierRepo->getCarriers(),
+            'savedCodes' => $this->carrierRepo->getSavedCarriers(),
+            'savedCarriers' => $this->carrierRepo->getSavedCarriers(),
+        ]);
+    }
+
+
+    private function isContextView(): bool
+    {
+        return Tools::getValue('carrier_code', '') !== '';
     }
 
     //========================================================
@@ -134,15 +173,8 @@ class ContentHandler
     //========================================================
     // RESOLVE VIEW
     //========================================================
-    private function resolveView(): string
+    private function resolveSetupView(): string
     {
-
-        // ── Routing config tariffe ────────────────────────────────────────
-        $carrierCode = Tools::getValue('carrier_code', '');
-
-        if ($carrierCode !== '') {
-            return $this->carrierRenderer->renderCarrierTariffConfig($carrierCode);
-        }
 
         switch ($this->setupManager->current()) {
 
