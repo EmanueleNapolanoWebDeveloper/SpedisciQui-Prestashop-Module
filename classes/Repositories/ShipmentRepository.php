@@ -55,9 +55,9 @@ class ShipmentRepository
         return (int) Db::getInstance()->Insert_ID();
     }
 
-    /**
-     * Aggiorna tracking number e status dopo creazione label.
-     */
+    // ===============================================
+    // AGGIORNA TRACKING 
+    // =================================================
     public function updateTracking(int $id, string $trackingNumber, string $trackingUrl = ''): bool
     {
         return Db::getInstance()->update(
@@ -72,9 +72,9 @@ class ShipmentRepository
         );
     }
 
-    /**
-     * Aggiorna status generico (es: in_transit, delivered, ecc.)
-     */
+   // ===============================================
+    // AGGIORNAMENTO STATS
+    // =================================================
     public function updateStatus(int $id, string $status, ?string $datetimeField = null): bool
     {
         $updateData = ['status' => pSQL($status)];

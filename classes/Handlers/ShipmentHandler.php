@@ -13,11 +13,15 @@ if (!defined('_PS_VERSION_')) {
 class ShipmentHandler
 {
     private string $moduleAdminLink;
+    private ShippingServices $shippingService;
 
-    public function __construct(string $moduleAdminLink)
-    {
+    public function __construct(
+        string $moduleAdminLink,
+        ShippingServices $shippingService
+    ) {
         // Link alla dashboard admin del modulo per il redirect finale
         $this->moduleAdminLink = $moduleAdminLink;
+        $this->shippingService = $shippingService;
     }
 
     /**
@@ -57,7 +61,7 @@ class ShipmentHandler
             return;
         }
 
-        $shipment = $this->getShipmentById($idShipment);
+        $shipment = $this->shippingService->getShipmentById($idShipment);
 
         if (empty($shipment)) {
             $this->redirectWithError('Spedizione #' . $idShipment . ' non trovata.');
@@ -76,7 +80,7 @@ class ShipmentHandler
         // $trackingNumber = $apiResult['tracking_number'];
         // ────────────────────────────────────────────────────────────────────
 
-        $updated = $this->updateShipmentStatus(
+        $updated = $this->shippingService->updateShipmentStatus(
             $idShipment,
             'label_created',
             [
@@ -107,9 +111,9 @@ class ShipmentHandler
         $this->redirectWithSuccess('Spedizione #' . $idShipment . ' creata con successo.');
     }
 
-    /**
-     * Annulla spedizione: qualsiasi stato → cancelled
-     */
+    //=============================================================
+    // Annulla spedizione: qualsiasi stato → cancelled
+    //=============================================================
     private function handleCancelShipment(): void
     {
         $idShipment = (int) Tools::getValue('id_shipment');
@@ -119,7 +123,7 @@ class ShipmentHandler
             return;
         }
 
-        $shipment = $this->getShipmentById($idShipment);
+        $shipment = $this->shippingService->getShipmentById($idShipment);
 
         if (empty($shipment)) {
             $this->redirectWithError('Spedizione #' . $idShipment . ' non trovata.');
@@ -134,7 +138,7 @@ class ShipmentHandler
             return;
         }
 
-        $updated = $this->updateShipmentStatus($idShipment, 'cancelled');
+        $updated = $this->shippingService->updateShipmentStatus($idShipment, 'cancelled');
 
         if (!$updated) {
             $this->redirectWithError('Errore annullamento spedizione #' . $idShipment . '.');
@@ -157,38 +161,6 @@ class ShipmentHandler
         $this->redirectWithSuccess('Spedizione #' . $idShipment . ' annullata.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // DB HELPERS
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private function getShipmentById(int $idShipment): array|false
-    {
-        $row = Db::getInstance()->getRow(
-            'SELECT `id`, `id_order`, `status`, `carrier_code`, `service_code`
-             FROM `' . _DB_PREFIX_ . 'spedisciqui_shipments`
-             WHERE `id` = ' . (int) $idShipment
-        );
-
-        return is_array($row) ? $row : false;
-    }
-
-    /**
-     * Aggiorna status e campi extra opzionali (tracking, api_id, ecc.)
-     */
-    private function updateShipmentStatus(int $idShipment, string $status, array $extra = []): bool
-    {
-        $data = array_merge(
-            ['status' => pSQL($status)],
-            $extra
-        );
-
-        return Db::getInstance()->update(
-            'spedisciqui_shipments',
-            $data,
-            '`id` = ' . (int) $idShipment,
-            1  // limit 1
-        );
-    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // REDIRECT HELPERS

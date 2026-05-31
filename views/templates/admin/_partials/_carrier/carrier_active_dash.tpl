@@ -385,7 +385,7 @@
         <div class="sq-header-left">
             <i class="icon-truck" style="font-size:20px;color:#1a6fc4;"></i>
             <div>
-                <p class="sq-header-title">{l s='Corrieri SpedisciQui' mod='spedisciquishipping'}</p>
+                <p class="sq-header-title">{l s='I Tuoi Corrieri Installati' mod='spedisciquishipping'}</p>
                 <p class="sq-header-subtitle">
                     {l s='Gestione e configurazione dei corrieri attivi' mod='spedisciquishipping'}</p>
             </div>
@@ -415,9 +415,9 @@
                     <tr>
                         <th class="sq-logo-cell"></th>
                         <th>{l s='Corriere' mod='spedisciquishipping'}</th>
-                        <th>{l s='Codici' mod='spedisciquishipping'}</th>
-                        <th>{l s='ID Carrier' mod='spedisciquishipping'}</th>
-                        <th>{l s='Tipo / Stato' mod='spedisciquishipping'}</th>
+                        <th>{l s='Codice Servizio' mod='spedisciquishipping'}</th>
+                        <th>{l s='Consegna' mod='spedisciquishipping'}</th>
+                        <th>{l s='Stato' mod='spedisciquishipping'}</th>
                         <th>{l s='Date' mod='spedisciquishipping'}</th>
                         <th>{l s='Azioni' mod='spedisciquishipping'}</th>
                     </tr>
@@ -439,10 +439,11 @@
                                 {/if}
                             </td>
 
+                            {* nome *}
                             <td>
                                 <p class="sq-carrier-name">{$sc.carrier_name|escape:'htmlall':'UTF-8'}</p>
                                 {if $sc.service_name}
-                                    <p class="sq-carrier-service">{$sc.service_name|escape:'htmlall':'UTF-8'}</p>
+                                    <p class="sq-carrier-service text-black">{$sc.service_name|escape:'htmlall':'UTF-8'}</p>
                                 {/if}
                             </td>
 
@@ -458,32 +459,21 @@
                             <td>
                                 <span class="sq-id-badge">
                                     <i class="icon-tag" style="font-size:10px;"></i>
-                                    #{$sc.id_carrier|intval}
+                                    #{$sc.delay}
                                 </span>
                             </td>
 
                             <td>
                                 <div class="sq-badges-stack">
-                                    {if $sc.is_pickup_point}
+                                    {if empty($configuredCodes) || !in_array($sc.carrier_code, $configuredCodes)}
                                         <span class="sq-badge sq-badge-pickup">
                                             <span class="sq-badge-dot"></span>
-                                            {l s='Pickup Point' mod='spedisciquishipping'}
+                                            {l s='Da Configurare!' mod='spedisciquishipping'}
                                         </span>
                                     {else}
                                         <span class="sq-badge sq-badge-courier">
                                             <span class="sq-badge-dot"></span>
-                                            {l s='Corriere' mod='spedisciquishipping'}
-                                        </span>
-                                    {/if}
-                                    {if $sc.is_active}
-                                        <span class="sq-badge sq-badge-active">
-                                            <span class="sq-badge-dot"></span>
-                                            {l s='Attivo' mod='spedisciquishipping'}
-                                        </span>
-                                    {else}
-                                        <span class="sq-badge sq-badge-inactive">
-                                            <span class="sq-badge-dot"></span>
-                                            {l s='Disattivato' mod='spedisciquishipping'}
+                                            {l s='Configurato!' mod='spedisciquishipping'}
                                         </span>
                                     {/if}
                                 </div>

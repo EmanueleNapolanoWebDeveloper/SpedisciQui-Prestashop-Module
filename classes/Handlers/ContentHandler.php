@@ -29,6 +29,7 @@ class ContentHandler
     private PackageRenderer         $packageRenderer;
     private CarrierRenderer         $carrierRenderer;
     private DashboardRenderer $dashboardRender;
+    private ShipmentRenderer $shipmentRenderer;
 
     public function __construct(spedisciquishipping $module)
     {
@@ -59,10 +60,11 @@ class ContentHandler
 
         // 6. renderers
         $this->credentialsRenderer = new CredentialsRenderer($module, $this->credentialsRepo);
-        $this->senderRenderer      = new SenderRenderer($module, $this->senderRepo);
+        $this->senderRenderer      = new SenderRenderer($module, $this->senderRepo, $this->context);
         $this->packageRenderer     = new PackageRenderer($this->module, $this->packRepo);
         $this->carrierRenderer     = new CarrierRenderer($this->module, $this->carrierRepo, $carrierServices);
         $this->dashboardRender     = new DashboardRenderer($this->module, $this->context);
+        $this->shipmentRenderer    = new ShipmentRenderer();
     }
 
     //========================================================
@@ -70,16 +72,6 @@ class ContentHandler
     //========================================================
     public function handle(): string
     {
-
-        PrestaShopLogger::addLog(
-            '[SQ] carrier_code=' . Tools::getValue('carrier_code', 'VUOTO')
-                . ' | isContextView=' . ($this->isContextView() ? 'TRUE' : 'FALSE')
-                . ' | setupStep=' . $this->setupManager->current()
-                . ' | GET=' . http_build_query($_GET),
-            1,
-            null,
-            'SpedisciQui'
-        );
 
         $this->handleSubmits();
 
@@ -113,10 +105,38 @@ class ContentHandler
             );
         }
 
+        // dashboard completa
+        $statusFilter = Tools::getValue('status_filter', '');
+        $idShop       = (int) $this->context->shop->id;
+        $limit        = 50;
+        $currentPage  = max(1, (int) Tools::getValue('page', 1));
+        $offset       = ($currentPage - 1) * $limit;
+
+        $shipments = $this->shipmentRenderer->getShipments($idShop, $statusFilter, $limit, $offset);
+
+        // prepara dati carrier con configure_url
+        $this->carrierRenderer->renderCarrierDash();
+
+        $this->context->smarty->assign([
+            'shipments'       => $shipments,
+            'statusFilter'    => $statusFilter,
+            'totalShipments'  => $this->shipmentRenderer->countShipments($idShop, $statusFilter),
+            'limit'           => $limit,
+            'currentPage'     => $currentPage,
+            'orderDetailLink' => $this->context->link->getAdminLink('AdminOrders') . '&vieworder',
+            'formAction'      => AdminController::$currentIndex
+                . '&configure=' . $this->module->name
+                . '&token=' . Tools::getAdminTokenLite('AdminModules'),
+        ]);
+
+        $savedCarriers = $this->carrierRepo->getSavedCarriers();
+        $configuredCodes = $this->carrierRepo->getConfiguredCarrierCodes();
+
         return $output . $this->dashboardRender->renderDashboard([
             'carriers' => $this->carrierRepo->getCarriers(),
-            'savedCodes' => $this->carrierRepo->getSavedCarriers(),
-            'savedCarriers' => $this->carrierRepo->getSavedCarriers(),
+            'savedCodes'    => array_column($savedCarriers, 'carrier_code'),
+            'savedCarriers' => $savedCarriers,
+            'configuredCodes' => $configuredCodes
         ]);
     }
 
@@ -135,6 +155,7 @@ class ContentHandler
         //===========> CREDENTIALS<======================
         if (Tools::isSubmit('submitSpedisciQuiCredentials')) {
             $this->credentialsHandler->handleSubmit();
+            $this->redirectAfterSubmit();
         }
 
 
@@ -143,6 +164,7 @@ class ContentHandler
         // submit Default Sender
         if (Tools::isSubmit('submitSpedisciQuiSender')) {
             $this->senderHandler->handleSubmit();
+            $this->redirectAfterSubmit();
         }
 
 
@@ -151,24 +173,51 @@ class ContentHandler
         // submit Default Package
         if (Tools::isSubmit('submitPackageForm')) {
             $this->packHandler->handleSubmit();
+            $this->redirectAfterSubmit();
         }
 
         //===========> CARRIERS <======================
         // submit install carrier
         if (Tools::isSubmit('submitSpedisciQuiCarriers')) {
             $this->carrierHandler->handleSubmit();
+            $this->redirectAfterSubmit();
         }
 
         // submit rimozione carrier
         if (Tools::isSubmit('removeSpedisciQuiCarriers')) {
             $this->carrierHandler->handleRemove();
+            $this->redirectAfterSubmit();
         }
 
         // submit salvataggio Peso/tariffa
         if (Tools::isSubmit('saveTariffConfig')) {
             $this->carrierHandler->handleConfigureTariff();
+            $this->redirectAfterSubmit();
         }
+
+         //===========> SHIPMENTS <======================
+         if(Tools::isSubmit('shipmentReview')){
+            
+         }
     }
+
+
+
+    private function redirectAfterSubmit(): void
+    {
+        $url = AdminController::$currentIndex
+            . '&configure=' . $this->module->name
+            . '&token=' . Tools::getAdminTokenLite('AdminModules');
+
+        // carrier_code se presente va preservato
+        $carrierCode = Tools::getValue('carrier_code', '');
+        if ($carrierCode !== '') {
+            $url .= '&carrier_code=' . urlencode($carrierCode);
+        }
+
+        Tools::redirectAdmin($url);
+    }
+
 
     //========================================================
     // RESOLVE VIEW

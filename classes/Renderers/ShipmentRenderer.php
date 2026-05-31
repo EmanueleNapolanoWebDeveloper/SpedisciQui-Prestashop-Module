@@ -4,13 +4,6 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-/**
- * ShipmentRenderer
- *
- * Responsabilità: SOLO lettura dati.
- * Esegue la query principale con join e restituisce
- * array strutturato pronto per Smarty.
- */
 class ShipmentRenderer
 {
     /**
@@ -23,16 +16,11 @@ class ShipmentRenderer
         'Refunded'               => 'refunded',
     ];
 
-    /**
-     * Recupera tutti gli shipment pending/label_created
-     * con dati ordine e cliente via JOIN.
-     *
-     * @param int    $idShop
-     * @param string $statusFilter  filtra per status ('' = tutti)
-     * @param int    $limit
-     * @param int    $offset
-     * @return array
-     */
+
+    //==================================================
+    //RECUPERA TUTTI GLI SHIPMENTS
+    //====================================================
+
     public function getShipments(
         int    $idShop = 1,
         string $statusFilter = '',
@@ -62,7 +50,7 @@ class ShipmentRenderer
             o.`payment`              AS payment_method,
             o.`current_state`        AS id_order_state,
             os.`name`                AS order_state_name,
-            CONCAT(c.`firstname`, \' \', c.`lastname\`) AS customer_name,
+            CONCAT(c.`firstname`, " ", c.`lastname`) AS customer_name,
             c.`email`                AS customer_email
         ');
         $query->from('spedisciqui_shipments', 'sh');
@@ -109,9 +97,9 @@ class ShipmentRenderer
         return array_map([$this, 'formatRow'], $rows);
     }
 
-    /**
-     * Conta totale shipment (per paginazione).
-     */
+    //==================================================
+    //CONTO DEGLI SHIPMENTS
+    //====================================================
     public function countShipments(int $idShop = 1, string $statusFilter = ''): int
     {
         $query = new DbQuery();
@@ -126,10 +114,9 @@ class ShipmentRenderer
         return (int) Db::getInstance()->getValue($query);
     }
 
-    /**
-     * Formatta una singola riga raw del DB
-     * in struttura pulita per Smarty.
-     */
+    //==================================================
+    //FROMATTAZIOEN RIGA PER OUTPUT
+    //====================================================
     private function formatRow(array $row): array
     {
         return [
@@ -157,9 +144,9 @@ class ShipmentRenderer
         ];
     }
 
-    /**
-     * Etichetta leggibile per ogni status.
-     */
+    //==================================================
+    //RECUPERA ETICHETTE
+    //====================================================
     private function getStatusLabel(string $status): string
     {
         return match ($status) {
@@ -195,9 +182,9 @@ class ShipmentRenderer
         };
     }
 
-    /**
-     * Risolve lo stato pagamento dal nome stato ordine PS.
-     */
+    //==================================================
+    //RISOLVE STATO PAGAMENTO
+    //====================================================
     private function resolvePaymentStatus(string $orderStateName): string
     {
         foreach (self::PAYMENT_STATUS_MAP as $keyword => $status) {

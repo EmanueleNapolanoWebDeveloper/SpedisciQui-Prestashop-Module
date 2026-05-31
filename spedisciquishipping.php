@@ -39,6 +39,8 @@ require __DIR__ . '/classes/Renderers/CredentialsRenderer.php';
 require __DIR__ . '/classes/Renderers/SenderRenderer.php';
 require __DIR__ . '/classes/Renderers/CarrierRenderer.php';
 require __DIR__ . '/classes/Renderers/DashboardRenderer.php';
+require __DIR__ . '/classes/Renderers/ShipmentRenderer.php';
+
 
 // handlers
 require __DIR__ . '/classes/Handlers/ContentHandler.php';

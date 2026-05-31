@@ -384,7 +384,7 @@ class CarrierRepository
         $db = Db::getInstance();
 
         $result = $db->executeS(
-            'SELECT c.*, sc.carrier_code, sc.service_name, sc.logo, sc.delay, sc.is_pickup_point
+            'SELECT c.*,sc.carrier_name, sc.carrier_code, sc.service_name, sc.logo, sc.delay, sc.is_pickup_point,sc.date_add,sc.date_upd
         FROM `' . _DB_PREFIX_ . 'carrier` c
         LEFT JOIN `' . _DB_PREFIX_ . 'spedisciqui_carrier` sc 
             ON c.id_carrier = sc.id_carrier
@@ -420,5 +420,22 @@ class CarrierRepository
         );
 
         return $result;
+    }
+
+
+    public function getConfiguredCarrierCodes(): array
+    {
+        $sql = 'SELECT DISTINCT `service_code`
+            FROM `' . _DB_PREFIX_ . 'spedisciqui_weight_tariffs`
+            WHERE `id_shop` = ' . (int) Context::getContext()->shop->id .
+            ' AND `is_active` = 1';
+
+        $rows = Db::getInstance()->executeS($sql);
+
+        if (!$rows) {
+            return [];
+        }
+
+        return array_column($rows, 'service_code');
     }
 }

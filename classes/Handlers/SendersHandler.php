@@ -53,7 +53,7 @@ class SenderHandler
             'state_code'   => Tools::getValue('SQ_SENDER_STATE',        ''),
             'country_iso'  => Tools::getValue('SQ_SENDER_COUNTRY_ISO',  'IT'),
             'id_country'   => Tools::getValue('SQ_SENDER_ID_COUNTRY',   110),
-            'vat_number'   => Tools::getValue('SQ_SENDER_VAT',          ''),
+            'vat_number'   => Tools::getValue('SQ_SENDER_VAT_NUMBER',          ''),
         ];
 
         // validazione
