@@ -12,6 +12,11 @@ class PackageHandler
     private SetupManager        $setup;
     private string $output = '';
 
+
+
+    //==========================================
+    // COSTRUTTORE
+    //==========================================
     public function __construct(
         spedisciquishipping $module,
         PackageRepository   $packRepo,
@@ -22,13 +27,25 @@ class PackageHandler
         $this->setup    = $setup;
     }
 
+
+
+    //===========================================
+    // OUTPUT -INIZIO
+    //===========================================
     public function getOutput(): string
     {
         return $this->output;
     }
+    //===========================================
+    // OUTPUT -FINE
+    //===========================================
+
+
+
+
 
     // =============================================
-    // SUBMIT DEFAULT PACKAGE
+    // SUBMIT DEFAULT PACKAGE - INIZIO
     // =============================================
     public function handleSubmit(): void
     {
@@ -65,4 +82,7 @@ class PackageHandler
             $this->module->l('Dati pacco salvati correttamente.')
         );
     }
+    // =============================================
+    // SUBMIT DEFAULT PACKAGE - fineF
+    // =============================================
 }

@@ -12,6 +12,10 @@ class SenderHandler
     private SetupManager        $setupManager;
     private string              $output = '';
 
+
+    //==========================================
+    // COSTRUTTORE
+    //==========================================
     public function __construct(
         spedisciquishipping $module,
         SenderRepository    $senderRepo,
@@ -25,16 +29,22 @@ class SenderHandler
 
 
     //=============================================
-    // RITORNA OUTPUT
+    // RITORNA OUTPUT - INIZIO
     //=============================================
     public function getOutput(): string
     {
         return $this->output;
     }
-
-    
     //=============================================
-    // SUBMIT DEFUALT/MAIN SENDER
+    // RITORNA OUTPUT - fine
+    //=============================================
+
+
+
+
+
+    //=============================================
+    // SUBMIT DEFUALT/MAIN SENDER - INIZIO
     //=============================================
     public function handleSubmit(): void
     {
@@ -82,4 +92,11 @@ class SenderHandler
             $this->module->l('Indirizzo mittente salvato correttamente.')
         );
     }
+    //=============================================
+    // SUBMIT DEFUALT/MAIN SENDER - fine
+    //=============================================
+
+
+
+    
 }

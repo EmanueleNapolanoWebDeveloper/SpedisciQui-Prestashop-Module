@@ -13,6 +13,11 @@ class DashboardHandlers
     private SenderRepository $senderRepo;
     private ShipmentServices $shipmentService;
 
+
+
+    //==========================================
+    // COSTRUTTORE
+    //==========================================
     public function __construct(
         CarrierRepository $carrierRepo,
         spedisciquishipping $module,
@@ -28,6 +33,12 @@ class DashboardHandlers
     }
 
 
+
+
+
+    //==========================================
+    // COSTRUTTORE DATI PER DASHBOARD - INIZIO
+    //==========================================
     public function buildDashboardData(): array
     {
         $page  = max(1, (int) Tools::getValue('page', 1));
@@ -74,4 +85,7 @@ class DashboardHandlers
             'orderDetailLink' => Context::getContext()->link->getAdminLink('AdminOrders'),
         ];
     }
+    //==========================================
+    // COSTRUTTORE DATI PER DASHBOARD - fine
+    //==========================================
 }

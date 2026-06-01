@@ -17,6 +17,11 @@ class ShipmentHandler
     private ShipmentRepository $shipmentRepo;
     private ShipmentRenderer $shipmentRenderer;
 
+
+
+    //==========================================
+    // COSTRUTTORE
+    //==========================================
     public function __construct(
         string $moduleAdminLink,
         ShipmentServices $shipmentService,
@@ -30,9 +35,8 @@ class ShipmentHandler
     }
 
     //=================================================
-    //ENTRY POINT
+    //ENTRY POINT - INIZIO
     //=================================================
-
     public function handleRequest(): void
     {
         if (!$this->isPost()) {
@@ -49,6 +53,12 @@ class ShipmentHandler
             return;
         }
     }
+    //=================================================
+    //ENTRY POINT - fine
+    //=================================================
+
+
+
 
     // ─────────────────────────────────────────────────────────────────────────
     // AZIONI
@@ -72,31 +82,39 @@ class ShipmentHandler
         return $result;
     }
 
-    /**
-     * Crea spedizione: pending → label_created
-     */
+    //=================================================
+    //HANDLE PER CREAZIOEN SPEDIZIONE TRAMITE API - INIZIO
+    //=================================================
     private function handleCreateShipment(): void
     {
+
+        // recupero id sgipment
         $idShipment = (int) Tools::getValue('id_shipment');
 
+        // controllo
         if ($idShipment <= 0) {
             $this->redirectWithError('ID spedizione non valido.');
             return;
         }
 
+        // recupero shipment
         $shipment = $this->shipmentRepo->getShipmentById($idShipment);
 
+        // controllo
         if (empty($shipment)) {
             $this->redirectWithError('Spedizione #' . $idShipment . ' non trovata.');
             return;
         }
 
+        // controllo status
         if ($shipment['status'] !== 'pending') {
             $this->redirectWithError(
                 'Spedizione #' . $idShipment . ' non è in stato pending (stato attuale: ' . $shipment['status'] . ').'
             );
             return;
         }
+
+        // costruzione payload
 
         // ── Placeholder: qui chiamerai le API del corriere ──────────────────
         // $apiResult = $this->carrierApi->createShipment($shipment);
@@ -133,11 +151,17 @@ class ShipmentHandler
 
         $this->redirectWithSuccess('Spedizione #' . $idShipment . ' creata con successo.');
     }
+    //=================================================
+    //HANDLE PER CREAZIOEN SPEDIZIONE TRAMITE API - fine
+    //=================================================
+
+
+
+
 
     //=============================================================
-    // Annulla spedizione: qualsiasi stato → cancelled
+    // Annulla spedizione: qualsiasi stato → cancelled -INIZIO
     //=============================================================
-
     private function handleCancelShipment(): void
     {
         $idShipment = (int) Tools::getValue('id_shipment');
@@ -184,6 +208,12 @@ class ShipmentHandler
 
         $this->redirectWithSuccess('Spedizione #' . $idShipment . ' annullata.');
     }
+
+    //=============================================================
+    // Annulla spedizione: qualsiasi stato → cancelled -FINE
+    //=============================================================
+
+
 
 
     // ─────────────────────────────────────────────────────────────────────────

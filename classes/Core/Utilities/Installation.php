@@ -23,8 +23,11 @@ class Installation
         $this->config       = $config;
     }
 
+
+
+
     //=============================================
-    // HANDLER DI INSTALLAZIONE
+    // HANDLER DI INSTALLAZIONE -INIZIO
     //=============================================
     public function install(): bool
     {
@@ -48,9 +51,16 @@ class Installation
 
         return true;
     }
+    //=============================================
+    // HANDLER DI INSTALLAZIONE -FINE
+    //=============================================
+
+
+
+
 
     //=============================================
-    // REGISTRAZIONE HOOKS
+    // REGISTRAZIONE HOOKS - INIZIO
     //=============================================
     private function registerModuleHooks(): void
     {
@@ -69,9 +79,15 @@ class Installation
             }
         }
     }
+    //=============================================
+    // REGISTRAZIONE HOOKS - FINE
+    //=============================================
+
+
+
 
     //=============================================
-    // CONFIGURAZIONE DEFAULT
+    // CONFIGURAZIONE DEFAULT - INIZIO
     //=============================================
     private function installDefaultConfig(): void
     {
@@ -99,4 +115,7 @@ class Installation
             }
         }
     }
+    //=============================================
+    // CONFIGURAZIONE DEFAULT - FINE
+    //=============================================
 }

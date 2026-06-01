@@ -10,6 +10,9 @@ class SenderRenderer
     private SenderRepository    $senderRepo;
     private Context $context;
 
+    //==========================================
+    // COSTRUTTORE
+    //==========================================
     public function __construct(spedisciquishipping $module, SenderRepository $senderRepo, Context $context)
     {
         $this->module     = $module;
@@ -17,6 +20,12 @@ class SenderRenderer
         $this->context = $context;
     }
 
+
+
+
+    //==========================================
+    // RENDER FORM PER INSERIMENTO MITTENTE (ADDRESS SHOP) - INIZIO
+    //==========================================
     public function renderSenderForm(): string
     {
         $existing = $this->senderRepo->getDefault();
@@ -52,4 +61,7 @@ class SenderRenderer
             'views/templates/admin/_partials/initial/sender_form_init.tpl'
         );
     }
+    //==========================================
+    // RENDER FORM PER INSERIMENTO MITTENTE (ADDRESS SHOP) - FINE
+    //==========================================
 }

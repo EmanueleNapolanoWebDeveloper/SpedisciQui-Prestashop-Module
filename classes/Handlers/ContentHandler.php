@@ -34,6 +34,11 @@ class ContentHandler
     private DashboardRenderer $dashboardRender;
     private ShipmentRenderer $shipmentRenderer;
 
+
+
+    //==========================================
+    // COSTRUTTORE
+    //==========================================
     public function __construct(spedisciquishipping $module)
     {
         $this->module  = $module;
@@ -87,8 +92,13 @@ class ContentHandler
         );
     }
 
+
+
+
+
+
     //========================================================
-    // HANDLE
+    // HANDLE - inizio
     //========================================================
     public function handle(): string
     {
@@ -144,6 +154,9 @@ class ContentHandler
         // dashboard
         return $output . $this->dashboardRender->renderDashboard($dashboardData);
     }
+    //========================================================
+    // HANDLE - fine
+    //========================================================
 
 
 
@@ -152,7 +165,7 @@ class ContentHandler
 
 
     //========================================================
-    // SUBMIT
+    // SUBMITS - INIZIO
     //========================================================
     private function handleSubmits(): void
     {
@@ -204,13 +217,16 @@ class ContentHandler
         if (Tools::isSubmit('shipmentReview')) {
         }
     }
+    //========================================================
+    // SUBMITS - FINE
+    //========================================================
 
 
 
 
 
     //========================================================
-    // RESOLVE VIEW
+    // RESOLVE VIEW - INIZIO
     //========================================================
     private function resolveSetupView(): string
     {
@@ -238,24 +254,50 @@ class ContentHandler
                 return $this->credentialsRenderer->renderCredentialsForm();
         }
     }
+    //========================================================
+    // RESOLVE VIEW - FINE
+    //========================================================
+
+
+
+
 
     // ─────────────────────────────────────────────────────────────────────────
     // HELPERS
     // ─────────────────────────────────────────────────────────────────────────
 
 
+    //========================================================
+    // VIEW DEL CONTESTO? - INIZIO
+    //========================================================
     private function isContextView(): bool
     {
         return Tools::getValue('carrier_code', '') !== '';
     }
+    //========================================================
+    // VIEW DEL CONTESTO? - FINE
+    //========================================================
 
 
+
+    //========================================================
+    // VIEW DEL SHIPMENT? - INIZIO
+    //========================================================
     private function isShipmentReview(): bool
     {
         return Tools::getValue('action', '') === 'shipmentReview';
     }
 
+    //========================================================
+    // VIEW DEL SHIPMENT? - FINE
+    //========================================================
 
+
+    
+
+    //========================================================
+    // REINDIRIZZAMENTO DOPO UN SUBMIT - INIZIO
+    //========================================================
 
     private function redirectAfterSubmit(): void
     {
@@ -271,4 +313,7 @@ class ContentHandler
 
         Tools::redirectAdmin($url);
     }
+    //========================================================
+    // REINDIRIZZAMENTO DOPO UN SUBMIT - FINE
+    //========================================================
 }

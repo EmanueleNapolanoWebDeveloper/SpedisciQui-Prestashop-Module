@@ -13,6 +13,9 @@ class ShipmentRenderer
     private ShipmentServices $shipmentService;
 
 
+    //==========================================
+    // COSTRUTTORE
+    //==========================================
     public function __construct(
         ShipmentRepository $shipmentRepo,
         spedisciquishipping $module,
@@ -26,8 +29,11 @@ class ShipmentRenderer
     }
 
 
+
+
+
     // ========================================================================
-    // LISTA SPEDIZIONI (dashboard)
+    // LISTA SPEDIZIONI (dashboard) - INIZIO
     // ========================================================================
 
     public function renderShipmentLists(
@@ -62,10 +68,16 @@ class ShipmentRenderer
             'views/templates/admin/_partials/orders_panel.tpl'
         );
     }
+    // ========================================================================
+    // LISTA SPEDIZIONI (dashboard) - FINE
+    // ========================================================================
+
+
+
 
 
     // ========================================================================
-    // DETTAGLIO SPEDIZIONE
+    // DETTAGLIO SPEDIZIONE - INIZIO
     // ========================================================================
     public function renderShipmentDetail(int $shipmentId)
     {
@@ -84,6 +96,9 @@ class ShipmentRenderer
             'views/templates/admin/_partials/_orders/orders_detail.tpl'
         );
     }
+    // ========================================================================
+    // DETTAGLIO SPEDIZIONE - FINE
+    // ========================================================================
 
 
 

@@ -39,6 +39,7 @@ class CarrierApi
     public function getPriceFromApi(): array
     {
         $token = (new CredentialServices())->getToken()['access_token'];
+        
         $payload = [
             'recipient' => [
                 'name'    => 'John Smith',

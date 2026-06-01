@@ -20,8 +20,11 @@ class CustomCheckout
         $this->carrierRepo = $carrierRepo;
     }
 
+
+
+
     //========================================
-    // HOOK PER VISUALIZZARE AL CHECKOUT
+    // HOOK PER VISUALIZZARE AL CHECKOUT - INIZIO
     //========================================
 
     public function hookDisplayCarrierExtraContent($params)
@@ -108,11 +111,16 @@ class CustomCheckout
             'module:spedisciquishipping/views/templates/hook/checkout/_partials/carrier_extra_content.tpl'
         );
     }
+    //========================================
+    // HOOK PER VISUALIZZARE AL CHECKOUT - FINE
+    //========================================
 
 
 
     // ======================================================
-    // HOOK PER VALIDAZIONE ORDINE (PER SALVARE IN TAB SHIPMENT)
+    // HOOK PER VALIDAZIONE ORDINE (PER SALVARE IN TAB SHIPMENT) - inizio
+    // ======================================================
+
     public function hookActionValidateOrder(array $params): void
     {
         try {
@@ -258,7 +266,16 @@ class CustomCheckout
         }
     }
 
+    // ======================================================
+    // HOOK PER VALIDAZIONE ORDINE (PER SALVARE IN TAB SHIPMENT) - FINE
+    // ======================================================
 
+
+
+
+    // ======================================================
+    // HOOK PER INIEZIONE CSS E JS IN COMPOENNTI - INIZIO
+    // ======================================================
     public function hookActionAdminControllerSetMedia(array $params)
     {
 
@@ -280,13 +297,12 @@ class CustomCheckout
             $this->module->getPathUri() . 'views/js/shipment_reviews.js',
             false
         );
-
-        $this->context->controller->registerStylesheet(
-            'module-spedisciquishipping-active-carriers',
-            'modules/' . $this->module->name . '/views/css/admin/carriers/active_carriers.css',
-            ['media' => 'all', 'priority' => 150]
-        );
     }
+    // ======================================================
+    // HOOK PER INIEZIONE CSS E JS IN COMPOENNTI - FINE
+    // ======================================================
+
+
 
 
     //===========================================================

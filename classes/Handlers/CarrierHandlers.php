@@ -11,6 +11,10 @@ class CarrierHandlers
     private CarrierServices $carrierService;
     private string $output = '';
 
+
+    //==========================================
+    // COSTRUTTORE
+    //==========================================
     public function __construct(
         spedisciquishipping $module,
         CarrierRepository   $carrierRepo,
@@ -23,8 +27,11 @@ class CarrierHandlers
         $this->carrierService = $carrierService;
     }
 
+
+    
+
     //==========================================
-    // ENTRY POINT
+    // ENTRY POINT - INZIO
     //==========================================
     public function handle(): string
     {
@@ -38,17 +45,30 @@ class CarrierHandlers
 
         return $this->output;
     }
+    //==========================================
+    // ENTRY POINT - FINE
+    //==========================================
+
+
+
+
 
     // ==========================================
-    // OUTPUT
+    // OUTPUT - inizio
     // ==========================================
     public function getOutput(): string
     {
         return $this->output;
     }
+    // ==========================================
+    // OUTPUT - fine
+    // ==========================================
+
+
+
 
     // ==========================================
-    // SUBMIT SELEZIONE CORRIERI
+    // SUBMIT SELEZIONE CORRIERI - INIZIO
     // ==========================================
     public function handleSubmit(): void
     {
@@ -131,9 +151,16 @@ class CarrierHandlers
             return;
         }
     }
+    // ==========================================
+    // SUBMIT SELEZIONE CORRIERI - FINE
+    // ==========================================
+
+
+
+
 
     // ==========================================
-    // RIMOZIONE CORRIERE
+    // RIMOZIONE CORRIERE - INZIIO
     // ==========================================
     public function handleRemove(): void
     {
@@ -157,9 +184,14 @@ class CarrierHandlers
             sprintf($this->module->l('Corriere %s rimosso correttamente.'), $code)
         );
     }
+    // ==========================================
+    // RIMOZIONE CORRIERE - FINE
+    // ==========================================
+
+
 
     // ==========================================
-    // CONFIGURA CORRIERE
+    // CONFIGURA CORRIERE - inizio
     // ==========================================
     public function handleConfigureTariff(): void
     {
@@ -206,4 +238,7 @@ class CarrierHandlers
             );
         }
     }
+    // ==========================================
+    // CONFIGURA CORRIERE - FINE
+    // ==========================================
 }

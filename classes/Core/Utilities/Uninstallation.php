@@ -11,6 +11,11 @@ class Uninstallation
     private SQMigrations $SQMigrations;
     private CarrierRepository $carrierRepo;
 
+
+
+    //=============================================
+    // COSTRUTTORE
+    //=============================================
     public function __construct(
         spedisciquishipping $module,
         SQMigrations $SQMigrations,
@@ -21,8 +26,11 @@ class Uninstallation
         $this->carrierRepo = $carrierRepo;
     }
 
+
+
+
     //=============================================
-    // DISINSTALLAZIONE
+    // DISINSTALLAZIONE - INIZIO
     //=============================================
     public function uninstall(): bool
     {
@@ -53,10 +61,17 @@ class Uninstallation
             return false;
         }
     }
+    //=============================================
+    // DISINSTALLAZIONE - FINE
+    //=============================================
+
+
+
+
 
 
     //=============================================
-    // ELIMINAZIONE HOOKS
+    // ELIMINAZIONE HOOKS - inizio
     //=============================================
     private function unregisterModuleHooks(): void
     {
@@ -77,4 +92,7 @@ class Uninstallation
             }
         }
     }
+    //=============================================
+    // ELIMINAZIONE HOOKS - fine
+    //=============================================
 }

@@ -22,6 +22,9 @@ class SetupManager
         $this->credentialsRepo = $credentialsRepo;
     }
 
+
+
+
     //=============================================
     // STEP CORRENTE
     //=============================================
@@ -29,6 +32,10 @@ class SetupManager
     {
         return (int) $this->config->get(self::CONFIG_KEY, SetupSteps::TOKEN);
     }
+
+
+
+
 
     //=============================================
     // AVANZA STEP
@@ -51,6 +58,10 @@ class SetupManager
         }
     }
 
+
+
+
+
     //=============================================
     // RESET STEP
     //=============================================
@@ -59,6 +70,10 @@ class SetupManager
         $this->config->set(self::CONFIG_KEY, (string) SetupSteps::TOKEN);
     }
 
+
+
+
+
     //=============================================
     // SETUP COMPLETATO?
     //=============================================
@@ -66,6 +81,10 @@ class SetupManager
     {
         return $this->current() >= SetupSteps::DONE;
     }
+
+
+
+    
 
     //=============================================
     // RICALCOLA STEP DA DATI REALI

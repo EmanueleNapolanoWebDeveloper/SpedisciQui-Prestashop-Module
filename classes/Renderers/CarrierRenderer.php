@@ -12,6 +12,11 @@ class CarrierRenderer
     private $context;
     private CarrierServices $carrierService;
 
+
+
+    // =============================================
+    // COSTRUTTORE
+    // =============================================
     public function __construct(
         spedisciquishipping $module,
         CarrierRepository   $carrierRepo,
@@ -23,8 +28,11 @@ class CarrierRenderer
         $this->carrierService = $carrierService;
     }
 
+
+
+
     // =============================================
-    // RENDERIZZA LISTA CORRIERI CONFIG
+    // RENDERIZZA LISTA CORRIERI CONFIG - INIZIO
     // =============================================
     public function renderCarrierForm(): string
     {
@@ -44,11 +52,14 @@ class CarrierRenderer
             'views/templates/admin/_partials/initial/carrier_list_init.tpl'
         );
     }
+    // =============================================
+    // RENDERIZZA LISTA CORRIERI CONFIG - FINE
+    // =============================================
 
 
 
     // =============================================
-    // RENDERIZZA LISTA CORRIERI DASHBOARD
+    // RENDERIZZA LISTA CORRIERI DASHBOARD - INIZIO
     // =============================================
     public function renderCarrierDash(): string
     {
@@ -86,10 +97,17 @@ class CarrierRenderer
 
         return '';
     }
+    // =============================================
+    // RENDERIZZA LISTA CORRIERI DASHBOARD - FINE
+    // =============================================
+
+
+
+
 
 
     // =============================================
-    // RENDERIZZA CONFIGURAZIONE CORREIRE
+    // RENDERIZZA CONFIGURAZIONE CORREIRE - INIZIO
     // =============================================
     public function renderCarrierTariffConfig(
         string $carrierCode
@@ -166,4 +184,7 @@ class CarrierRenderer
             'views/templates/admin/_partials/_carrier/config_tariffs.tpl'
         );
     }
+    // =============================================
+    // RENDERIZZA CONFIGURAZIONE CORREIRE - FINE
+    // =============================================
 }

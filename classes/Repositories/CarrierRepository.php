@@ -423,6 +423,10 @@ class CarrierRepository
     }
 
 
+    // ==========================================
+    // RECUPERO DI CARRIER CONFIGURATI
+    // ==========================================
+
     public function getConfiguredCarrierCodes(): array
     {
         $sql = 'SELECT DISTINCT `service_code`

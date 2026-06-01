@@ -10,6 +10,11 @@ class DashboardRenderer
     private spedisciquishipping $module;
     private Context $context;
 
+
+
+    //==========================================
+    // COSTRUTTORE
+    //==========================================
     public function __construct(
         spedisciquishipping $module,
         Context $context
@@ -18,27 +23,18 @@ class DashboardRenderer
         $this->context = $context;
     }
 
+
+
+
+
     //==========================================
-    // RENDER DASHBOARD
+    // RENDER DASHBOARD - INIZIO
     //==========================================
     public function renderDashboard(array $data = []): string
     {
-        PrestaShopLogger::addLog(
-            '[SQ-DEBUG] renderDashboard() chiamato. data keys: ' . implode(',', array_keys($data)),
-            1,
-            null,
-            'SpedisciQuiShipping'
-        );
 
         $this->clearDashboardContext();
 
-        PrestaShopLogger::addLog(
-            '[SQ-DEBUG] Dopo clearDashboardContext. Smarty vars: '
-                . implode(',', array_keys($this->context->smarty->getTemplateVars())),
-            1,
-            null,
-            'SpedisciQuiShipping'
-        );
 
         if (!empty($data)) {
             $this->context->smarty->assign($data);
@@ -57,30 +53,35 @@ class DashboardRenderer
             );
         }
 
-        PrestaShopLogger::addLog(
-            '[SQ-DEBUG] Pre-fetch vars: '
-                . implode(',', array_keys($this->context->smarty->getTemplateVars())),
-            1,
-            null,
-            'SpedisciQuiShipping'
-        );
-
         return $this->context->smarty->fetch(
             'module:spedisciquishipping/views/templates/admin/dashboard_layout.tpl'
         );
     }
+    //==========================================
+    // RENDER DASHBOARD - fine
+    //==========================================
+
+
+
 
 
     //==========================================
-    // PULIZIA CONTESTO DASHBOARD
+    // PULIZIA CONTESTO DASHBOARD -INIZIPO
     //==========================================
     private function clearDashboardContext(): void
     {
         $this->context->smarty->clearAssign('content');
     }
+    //==========================================
+    // PULIZIA CONTESTO DASHBOARD -FINE
+    //==========================================
+
+
+
+
 
     //==========================================
-    // PRENDERIZAZZIONI DEI PARTIALS (COMPONENTI)
+    // PRENDERIZAZZIONI DEI PARTIALS (COMPONENTI) - INIZIO
     //==========================================
     private function renderPartials(
         string $template,
@@ -92,10 +93,16 @@ class DashboardRenderer
         }
         return $this->context->smarty->fetch($template);
     }
+    //==========================================
+    // PRENDERIZAZZIONI DEI PARTIALS (COMPONENTI) - FINE
+    //==========================================
+
+
+
 
 
     //==========================================
-    // PRENDERIZAZZIONI DASH CON CONTENT
+    // PRENDERIZAZZIONI DASH CON CONTENT - INIZIO
     //==========================================
     public function renderWithContent(
         string $content,
@@ -111,4 +118,8 @@ class DashboardRenderer
             'module:spedisciquishipping/views/templates/admin/dashboard_layout.tpl'
         );
     }
+
+    //==========================================
+    // PRENDERIZAZZIONI DASH CON CONTENT - FINE
+    //==========================================
 }

@@ -11,6 +11,10 @@ class CredentialsRenderer
     private spedisciquishipping $module;
     private CredentialsRepositories $credentialsRepo;
 
+
+    //==========================================
+    // COSTRUTTORE
+    //==========================================
     public function __construct(spedisciquishipping $module, CredentialsRepositories $credentialsRepo)
     {
         $this->module = $module;
@@ -19,7 +23,7 @@ class CredentialsRenderer
 
 
     //==========================================
-    // RENDER FORM
+    // RENDER FORM - INIZIO
     //==========================================
     public function renderCredentialsForm(): string
     {
@@ -49,4 +53,7 @@ class CredentialsRenderer
             'module:spedisciquishipping/views/templates/admin/_partials/initial/token_config.tpl'
         );
     }
+    //==========================================
+    // RENDER FORM - FINE
+    //==========================================
 }

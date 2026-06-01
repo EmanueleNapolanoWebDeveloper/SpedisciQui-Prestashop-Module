@@ -12,6 +12,11 @@ class CredentialsHandlers
     private SetupManager            $setupManager;
     private string                  $output = '';
 
+
+
+    //==========================================
+    // COSTRUTTORE
+    //==========================================
     public function __construct(
         spedisciquishipping     $module,
         CredentialsRepositories $credentialsRepo,
@@ -22,16 +27,28 @@ class CredentialsHandlers
         $this->setupManager    = $setupManager;
     }
 
+
+
+
+
     //===========================================
-    // OUTPUT ACCUMULATO
+    // OUTPUT -INIZIO
     //===========================================
     public function getOutput(): string
     {
         return $this->output;
     }
+    //===========================================
+    // OUTPUT -FINE
+    //===========================================
+
+
+
+
+
 
     //===========================================
-    // SUBMIT TOKEN
+    // SUBMIT TOKEN - INIZIO
     //===========================================
     public function handleSubmit(): void
     {
@@ -65,4 +82,9 @@ class CredentialsHandlers
                 date('d/m/Y', strtotime('+1 month'))
         );
     }
+
+    //===========================================
+    // SUBMIT TOKEN - FINE
+    //===========================================
+    
 }

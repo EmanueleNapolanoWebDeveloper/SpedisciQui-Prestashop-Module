@@ -27,7 +27,7 @@ class PackageRenderer
 
 
     // =============================================
-    // RENDERIZZA FORM PER PACKAGE
+    // RENDERIZZA FORM PER PACKAGE - INZIO
     // =============================================
     public function renderPackageForm(): string
     {
@@ -57,4 +57,7 @@ class PackageRenderer
             'views/templates/admin/_partials/initial/package_init.tpl'
         );
     }
+    // =============================================
+    // RENDERIZZA FORM PER PACKAGE - FINE
+    // =============================================
 }
