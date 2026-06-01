@@ -185,7 +185,13 @@ class CustomCheckout
             $defaultPackage = $packageRepo->getDefault((int) $order->id_shop);
 
             // calcolo dimensioni carrello
-            $dimensions = new ShippingServices($this->carrierRepo, new CarrierServices($this->carrierRepo))->calculatePackageDimensions($cart, $defaultPackage);
+            $dimensions = new ShipmentServices(
+                $this->carrierRepo,
+                new CarrierServices($this->carrierRepo),
+                new ShipmentRepository(),
+                $this->context,
+                $this->module
+            )->calculatePackageDimensions($cart, $defaultPackage);
 
             $idShipment = $shipmentRepo->createShipment([
                 'id_order'               => (int)    $order->id,
@@ -252,9 +258,40 @@ class CustomCheckout
         }
     }
 
-    /**
-     * Recupera il codice ISO 4217 della valuta dato l'id.
-     */
+
+    public function hookActionAdminControllerSetMedia(array $params)
+    {
+
+        if (Tools::getValue('configure') !== $this->module->name) {
+            return;
+        }
+
+        /** @var \AdminController $controller */
+        $controller = $this->context->controller;
+
+        $controller->addCSS(
+            $this->module->getPathUri() . 'views/css/shipment_reviews.css',
+            'all',
+            null,
+            false
+        );
+
+        $controller->addJS(
+            $this->module->getPathUri() . 'views/js/shipment_reviews.js',
+            false
+        );
+
+        $this->context->controller->registerStylesheet(
+            'module-spedisciquishipping-active-carriers',
+            'modules/' . $this->module->name . '/views/css/admin/carriers/active_carriers.css',
+            ['media' => 'all', 'priority' => 150]
+        );
+    }
+
+
+    //===========================================================
+    // HELOPERS
+    // =========================================================
     private function getCurrencyIso(int $idCurrency): string
     {
         $currency = new Currency($idCurrency);

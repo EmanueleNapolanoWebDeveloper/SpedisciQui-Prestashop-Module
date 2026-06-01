@@ -1,0 +1,378 @@
+ .sq-dashboard {
+     font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+ }
+
+ .sq-header {
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+     padding: 18px 24px;
+     background: #fff;
+     border-bottom: 1px solid #e8ecef;
+     border-radius: 4px 4px 0 0;
+ }
+
+ .sq-header-left {
+     display: flex;
+     align-items: center;
+     gap: 12px;
+ }
+
+ .sq-header-title {
+     font-size: 16px;
+     font-weight: 700;
+     color: #2c3e50;
+     margin: 0;
+ }
+
+ .sq-header-subtitle {
+     font-size: 12px;
+     color: #8a9ab0;
+     margin: 2px 0 0 0;
+ }
+
+ .sq-count-badge {
+     display: inline-flex;
+     align-items: center;
+     justify-content: center;
+     min-width: 26px;
+     height: 26px;
+     padding: 0 8px;
+     background: #1a6fc4;
+     color: #fff;
+     font-size: 13px;
+     font-weight: 700;
+     border-radius: 13px;
+ }
+
+ .sq-panel {
+     background: #fff;
+     border: 1px solid #dde3ea;
+     border-radius: 4px;
+     margin-top: 20px;
+     overflow: hidden;
+     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+ }
+
+ .sq-table-wrap {
+     overflow-x: auto;
+ }
+
+ .sq-table {
+     width: 100%;
+     border-collapse: collapse;
+     min-width: 760px;
+ }
+
+ .sq-table thead tr {
+     background: #f5f7fa;
+     border-bottom: 2px solid #dde3ea;
+ }
+
+ .sq-table thead th {
+     padding: 11px 16px;
+     font-size: 11px;
+     font-weight: 700;
+     text-transform: uppercase;
+     letter-spacing: 0.6px;
+     color: #7a8a9a;
+     white-space: nowrap;
+     vertical-align: middle;
+ }
+
+ .sq-table tbody tr {
+     border-bottom: 1px solid #f0f3f6;
+     transition: background 0.15s;
+ }
+
+ .sq-table tbody tr:last-child {
+     border-bottom: none;
+ }
+
+ .sq-table tbody tr:hover {
+     background: #f7f9fc;
+ }
+
+ .sq-table td {
+     padding: 14px 16px;
+     vertical-align: middle;
+     color: #2c3e50;
+     font-size: 13px;
+ }
+
+ /* Logo cell */
+ .sq-logo-cell {
+     width: 56px;
+ }
+
+ .sq-logo-wrap {
+     width: 44px;
+     height: 44px;
+     border-radius: 6px;
+     border: 1px solid #e4e9f0;
+     background: #fff;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     overflow: hidden;
+     flex-shrink: 0;
+ }
+
+ .sq-logo-wrap img {
+     width: 40px;
+     height: 40px;
+     object-fit: contain;
+ }
+
+ .sq-logo-placeholder {
+     width: 44px;
+     height: 44px;
+     border-radius: 6px;
+     border: 1px dashed #c8d0db;
+     background: #f5f7fa;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     color: #b0bbc8;
+     font-size: 18px;
+ }
+
+ /* Carrier name cell */
+ .sq-carrier-name {
+     font-size: 14px;
+     font-weight: 700;
+     color: #1a2535;
+     margin: 0 0 2px 0;
+     white-space: nowrap;
+ }
+
+ .sq-carrier-service {
+     font-size: 12px;
+     color: #7a8a9a;
+     margin: 0;
+ }
+
+ /* Code badges */
+ .sq-code {
+     display: inline-block;
+     padding: 3px 8px;
+     border-radius: 4px;
+     font-size: 11px;
+     font-weight: 600;
+     font-family: 'Courier New', monospace;
+     background: #eef2f7;
+     color: #3a5276;
+     border: 1px solid #d5dfe9;
+     white-space: nowrap;
+ }
+
+ .sq-code-small {
+     display: inline-block;
+     padding: 2px 6px;
+     border-radius: 3px;
+     font-size: 11px;
+     font-family: 'Courier New', monospace;
+     background: #f0f4f8;
+     color: #5a6a7a;
+     border: 1px solid #dde3ea;
+     margin-top: 3px;
+     white-space: nowrap;
+ }
+
+ .sq-id-badge {
+     display: inline-flex;
+     align-items: center;
+     gap: 4px;
+     padding: 3px 9px;
+     border-radius: 4px;
+     font-size: 12px;
+     font-weight: 700;
+     font-family: 'Courier New', monospace;
+     background: #e8f0fb;
+     color: #1a6fc4;
+     border: 1px solid #c2d6f0;
+ }
+
+ /* Status/type badges */
+ .sq-badge {
+     display: inline-flex;
+     align-items: center;
+     gap: 5px;
+     padding: 4px 10px;
+     border-radius: 20px;
+     font-size: 11px;
+     font-weight: 700;
+     letter-spacing: 0.2px;
+     white-space: nowrap;
+ }
+
+ .sq-badge-active {
+     background: #e6f9ee;
+     color: #1e7e34;
+     border: 1px solid #b8e8c8;
+ }
+
+ .sq-badge-inactive {
+     background: #fdecea;
+     color: #c0392b;
+     border: 1px solid #f5c0ba;
+ }
+
+ .sq-badge-pickup {
+     background: #fff4e5;
+     color: #d46b08;
+     border: 1px solid #fcd4a0;
+ }
+
+ .sq-badge-courier {
+     background: #e8f0fb;
+     color: #1a6fc4;
+     border: 1px solid #bdd4f0;
+ }
+
+ .sq-badge-dot {
+     width: 6px;
+     height: 6px;
+     border-radius: 50%;
+     display: inline-block;
+     flex-shrink: 0;
+ }
+
+ .sq-badge-active .sq-badge-dot {
+     background: #1e7e34;
+ }
+
+ .sq-badge-inactive .sq-badge-dot {
+     background: #c0392b;
+ }
+
+ .sq-badge-pickup .sq-badge-dot {
+     background: #d46b08;
+ }
+
+ .sq-badge-courier .sq-badge-dot {
+     background: #1a6fc4;
+ }
+
+ /* Meta dates */
+ .sq-meta {
+     font-size: 11px;
+     color: #9aabb8;
+     line-height: 1.6;
+     white-space: nowrap;
+ }
+
+ .sq-meta-label {
+     font-weight: 600;
+     color: #b0bbc8;
+     margin-right: 3px;
+ }
+
+ /* Actions */
+ .sq-actions {
+     display: flex;
+     align-items: center;
+     gap: 6px;
+     flex-wrap: nowrap;
+ }
+
+ .sq-btn {
+     display: inline-flex;
+     align-items: center;
+     gap: 5px;
+     padding: 6px 13px;
+     border-radius: 4px;
+     font-size: 12px;
+     font-weight: 600;
+     border: none;
+     cursor: pointer;
+     transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+     white-space: nowrap;
+     text-decoration: none;
+     line-height: 1;
+     vertical-align: middle;
+ }
+
+ .sq-btn:active {
+     transform: scale(0.97);
+ }
+
+ .sq-btn-configure {
+     background: #1a6fc4;
+     color: #fff;
+     box-shadow: 0 1px 3px rgba(26, 111, 196, 0.18);
+ }
+
+ .sq-btn-configure:hover {
+     background: #155da0;
+     color: #fff;
+     box-shadow: 0 2px 6px rgba(26, 111, 196, 0.28);
+     text-decoration: none;
+ }
+
+ .sq-btn-remove {
+     background: #fff;
+     color: #c0392b;
+     border: 1px solid #e8b4af;
+     box-shadow: none;
+ }
+
+ .sq-btn-remove:hover {
+     background: #fdecea;
+     color: #a93226;
+     border-color: #c0392b;
+     text-decoration: none;
+ }
+
+ .sq-btn i {
+     font-size: 12px;
+ }
+
+ /* Empty state */
+ .sq-empty {
+     padding: 60px 20px;
+     text-align: center;
+ }
+
+ .sq-empty-icon {
+     width: 70px;
+     height: 70px;
+     border-radius: 50%;
+     background: #f0f4f8;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     margin: 0 auto 20px auto;
+     font-size: 28px;
+     color: #b0bbc8;
+ }
+
+ .sq-empty-title {
+     font-size: 17px;
+     font-weight: 700;
+     color: #2c3e50;
+     margin: 0 0 8px 0;
+ }
+
+ .sq-empty-desc {
+     font-size: 13px;
+     color: #8a9ab0;
+     margin: 0;
+     max-width: 340px;
+     margin-left: auto;
+     margin-right: auto;
+ }
+
+ /* Divider line in codes column */
+ .sq-codes-stack {
+     display: flex;
+     flex-direction: column;
+     gap: 4px;
+ }
+
+ .sq-badges-stack {
+     display: flex;
+     flex-direction: column;
+     gap: 5px;
+     align-items: flex-start;
+ }

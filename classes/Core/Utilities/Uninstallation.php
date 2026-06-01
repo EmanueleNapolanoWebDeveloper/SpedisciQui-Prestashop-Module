@@ -61,7 +61,8 @@ class Uninstallation
     private function unregisterModuleHooks(): void
     {
         $hooks = [
-            'actionValidateOrder'
+            'actionValidateOrder',
+            'actionAdminControllerSetMedia'
             //'displayCarrierExtraContent',
         ];
 

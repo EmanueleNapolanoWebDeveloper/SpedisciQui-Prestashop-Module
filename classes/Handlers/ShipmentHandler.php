@@ -13,21 +13,26 @@ if (!defined('_PS_VERSION_')) {
 class ShipmentHandler
 {
     private string $moduleAdminLink;
-    private ShippingServices $shippingService;
+    private ShipmentServices $shipmentService;
+    private ShipmentRepository $shipmentRepo;
+    private ShipmentRenderer $shipmentRenderer;
 
     public function __construct(
         string $moduleAdminLink,
-        ShippingServices $shippingService
+        ShipmentServices $shipmentService,
+        ShipmentRepository $shipmentRepo,
+        ShipmentRenderer $shipmentRenderer
     ) {
-        // Link alla dashboard admin del modulo per il redirect finale
         $this->moduleAdminLink = $moduleAdminLink;
-        $this->shippingService = $shippingService;
+        $this->shipmentService = $shipmentService;
+        $this->shipmentRepo = $shipmentRepo;
+        $this->shipmentRenderer = $shipmentRenderer;
     }
 
-    /**
-     * Entry point — smista le azioni POST in arrivo.
-     * Da chiamare nel controller admin del modulo.
-     */
+    //=================================================
+    //ENTRY POINT
+    //=================================================
+
     public function handleRequest(): void
     {
         if (!$this->isPost()) {
@@ -49,6 +54,24 @@ class ShipmentHandler
     // AZIONI
     // ─────────────────────────────────────────────────────────────────────────
 
+
+    public function handleShipmentReview(): string
+    {
+        $idShipment = (int) Tools::getValue('id_shipment', 0);
+
+        if ($idShipment <= 0) {
+            $this->redirectWithError('ID Spedizione non valido');
+        }
+
+        $result = $this->shipmentRenderer->renderShipmentDetail($idShipment);
+
+        if ($result === false) {
+            $this->redirectWithError('Spedizione #' . $idShipment . ' non è stata trovata!');
+        };
+
+        return $result;
+    }
+
     /**
      * Crea spedizione: pending → label_created
      */
@@ -61,7 +84,7 @@ class ShipmentHandler
             return;
         }
 
-        $shipment = $this->shippingService->getShipmentById($idShipment);
+        $shipment = $this->shipmentRepo->getShipmentById($idShipment);
 
         if (empty($shipment)) {
             $this->redirectWithError('Spedizione #' . $idShipment . ' non trovata.');
@@ -80,7 +103,7 @@ class ShipmentHandler
         // $trackingNumber = $apiResult['tracking_number'];
         // ────────────────────────────────────────────────────────────────────
 
-        $updated = $this->shippingService->updateShipmentStatus(
+        $updated = $this->shipmentRepo->updateShipmentStatus(
             $idShipment,
             'label_created',
             [
@@ -114,6 +137,7 @@ class ShipmentHandler
     //=============================================================
     // Annulla spedizione: qualsiasi stato → cancelled
     //=============================================================
+
     private function handleCancelShipment(): void
     {
         $idShipment = (int) Tools::getValue('id_shipment');
@@ -123,7 +147,7 @@ class ShipmentHandler
             return;
         }
 
-        $shipment = $this->shippingService->getShipmentById($idShipment);
+        $shipment = $this->shipmentRepo->getShipmentById($idShipment);
 
         if (empty($shipment)) {
             $this->redirectWithError('Spedizione #' . $idShipment . ' non trovata.');
@@ -138,7 +162,7 @@ class ShipmentHandler
             return;
         }
 
-        $updated = $this->shippingService->updateShipmentStatus($idShipment, 'cancelled');
+        $updated = $this->shipmentRepo->updateShipmentStatus($idShipment, 'cancelled');
 
         if (!$updated) {
             $this->redirectWithError('Errore annullamento spedizione #' . $idShipment . '.');

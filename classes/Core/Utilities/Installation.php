@@ -55,7 +55,8 @@ class Installation
     private function registerModuleHooks(): void
     {
         $hooks = [
-            'actionValidateOrder'
+            'actionValidateOrder',
+            'actionAdminControllerSetMedia'
             //'displayCarrierExtraContent',
         ];
 

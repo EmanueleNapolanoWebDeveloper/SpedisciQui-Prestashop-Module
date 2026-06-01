@@ -16,12 +16,15 @@ class ContentHandler
     private SenderRepository        $senderRepo;
     private PackageRepository       $packRepo;
     private CarrierRepository       $carrierRepo;
+    private ShipmentRepository      $shipmentRepo;
 
     // handlers
     private CredentialsHandlers     $credentialsHandler;
     private SenderHandler           $senderHandler;
     private PackageHandler          $packHandler;
     private CarrierHandlers         $carrierHandler;
+    private ShipmentHandler         $shipmentHandler;
+    private DashboardHandlers        $dashboardHandler;
 
     // renderes
     private CredentialsRenderer     $credentialsRenderer;
@@ -36,27 +39,36 @@ class ContentHandler
         $this->module  = $module;
         $this->context = Context::getContext();
 
-        // 1. infrastruttura base
+        // 1. configurazione base
         $configRepo    = new ConfigRepositories($this->context);
         $apiClient     = new ApiClient($configRepo);
+        $moduleAdminLink = AdminController::$currentIndex
+            . '&configure=' . $this->module->name
+            . '&token='     . Tools::getAdminTokenLite('AdminModules');
+
 
         // 2. repositories (tutti prima degli handler/renderer)
         $this->credentialsRepo = new CredentialsRepositories($this->context, $apiClient);
         $this->senderRepo      = new SenderRepository($this->context);
         $this->packRepo        = new PackageRepository($this->context);
         $this->carrierRepo     = new CarrierRepository(new CarrierApi($apiClient), $this->credentialsRepo, $this->module);
+        $this->shipmentRepo = new ShipmentRepository();
 
         // 3. setup manager (ora $credentialsRepo esiste)
         $this->setupManager = new SetupManager($configRepo, $this->credentialsRepo);
 
         // 4. services condivisi (ora $carrierRepo esiste)
         $carrierServices = new CarrierServices($this->carrierRepo);
+        $shipmentService = new ShipmentServices($this->carrierRepo, $carrierServices, $this->shipmentRepo, $this->context, $this->module);
+
+
 
         // 5. handlers
         $this->credentialsHandler = new CredentialsHandlers($module, $this->credentialsRepo, $this->setupManager);
         $this->senderHandler      = new SenderHandler($module, $this->senderRepo, $this->setupManager);
         $this->packHandler        = new PackageHandler($module, $this->packRepo, $this->setupManager);
         $this->carrierHandler     = new CarrierHandlers($this->module, $this->carrierRepo, $this->setupManager, $carrierServices);
+        $this->dashboardHandler = new DashboardHandlers($this->carrierRepo, $this->module, $this->shipmentRepo, $this->senderRepo, $shipmentService);
 
         // 6. renderers
         $this->credentialsRenderer = new CredentialsRenderer($module, $this->credentialsRepo);
@@ -64,7 +76,15 @@ class ContentHandler
         $this->packageRenderer     = new PackageRenderer($this->module, $this->packRepo);
         $this->carrierRenderer     = new CarrierRenderer($this->module, $this->carrierRepo, $carrierServices);
         $this->dashboardRender     = new DashboardRenderer($this->module, $this->context);
-        $this->shipmentRenderer    = new ShipmentRenderer();
+        $this->shipmentRenderer    = new ShipmentRenderer($this->shipmentRepo, $this->module, $this->context, $shipmentService);
+        $this->shipmentHandler = new ShipmentHandler($moduleAdminLink, $shipmentService, $this->shipmentRepo, $this->shipmentRenderer);
+
+        PrestaShopLogger::addLog(
+            '[SQ-DEBUG] ContentHandler costruito. ShipmentRepo class: ' . get_class($this->shipmentRepo),
+            1,
+            null,
+            'SpedisciQuiShipping'
+        );
     }
 
     //========================================================
@@ -73,6 +93,8 @@ class ContentHandler
     public function handle(): string
     {
 
+        $this->shipmentHandler->handleRequest();
+
         $this->handleSubmits();
 
         $output = $this->credentialsHandler->getOutput()
@@ -80,7 +102,12 @@ class ContentHandler
             . $this->packHandler->getOutput()
             . $this->carrierHandler->getOutput();
 
+
+
+        // ----------------------------------------------
         // setup incompleto
+        // ----------------------------------------------
+
         if ($this->setupManager->current() !== SetupSteps::DONE) {
 
             $this->context->smarty->assign([
@@ -95,7 +122,9 @@ class ContentHandler
             );
         }
 
-        // dashboard
+        // ----------------------------------------------
+        // VIEW CONFIGURAZIOEN TARIFFA CORRIERE
+        // ----------------------------------------------
         if ($this->isContextView()) {
 
             $carrierCode = Tools::getValue('carrier_code', '');
@@ -105,46 +134,22 @@ class ContentHandler
             );
         }
 
-        // dashboard completa
-        $statusFilter = Tools::getValue('status_filter', '');
-        $idShop       = (int) $this->context->shop->id;
-        $limit        = 50;
-        $currentPage  = max(1, (int) Tools::getValue('page', 1));
-        $offset       = ($currentPage - 1) * $limit;
+        //detaglio psedizione
+        if ($this->isShipmentReview()) {
+            return $output . $this->shipmentHandler->handleShipmentReview();
+        }
 
-        $shipments = $this->shipmentRenderer->getShipments($idShop, $statusFilter, $limit, $offset);
+        $dashboardData = $this->dashboardHandler->buildDashboardData();
 
-        // prepara dati carrier con configure_url
-        $this->carrierRenderer->renderCarrierDash();
-
-        $this->context->smarty->assign([
-            'shipments'       => $shipments,
-            'statusFilter'    => $statusFilter,
-            'totalShipments'  => $this->shipmentRenderer->countShipments($idShop, $statusFilter),
-            'limit'           => $limit,
-            'currentPage'     => $currentPage,
-            'orderDetailLink' => $this->context->link->getAdminLink('AdminOrders') . '&vieworder',
-            'formAction'      => AdminController::$currentIndex
-                . '&configure=' . $this->module->name
-                . '&token=' . Tools::getAdminTokenLite('AdminModules'),
-        ]);
-
-        $savedCarriers = $this->carrierRepo->getSavedCarriers();
-        $configuredCodes = $this->carrierRepo->getConfiguredCarrierCodes();
-
-        return $output . $this->dashboardRender->renderDashboard([
-            'carriers' => $this->carrierRepo->getCarriers(),
-            'savedCodes'    => array_column($savedCarriers, 'carrier_code'),
-            'savedCarriers' => $savedCarriers,
-            'configuredCodes' => $configuredCodes
-        ]);
+        // dashboard
+        return $output . $this->dashboardRender->renderDashboard($dashboardData);
     }
 
 
-    private function isContextView(): bool
-    {
-        return Tools::getValue('carrier_code', '') !== '';
-    }
+
+
+
+
 
     //========================================================
     // SUBMIT
@@ -195,28 +200,13 @@ class ContentHandler
             $this->redirectAfterSubmit();
         }
 
-         //===========> SHIPMENTS <======================
-         if(Tools::isSubmit('shipmentReview')){
-            
-         }
-    }
-
-
-
-    private function redirectAfterSubmit(): void
-    {
-        $url = AdminController::$currentIndex
-            . '&configure=' . $this->module->name
-            . '&token=' . Tools::getAdminTokenLite('AdminModules');
-
-        // carrier_code se presente va preservato
-        $carrierCode = Tools::getValue('carrier_code', '');
-        if ($carrierCode !== '') {
-            $url .= '&carrier_code=' . urlencode($carrierCode);
+        //===========> SHIPMENTS <======================
+        if (Tools::isSubmit('shipmentReview')) {
         }
-
-        Tools::redirectAdmin($url);
     }
+
+
+
 
 
     //========================================================
@@ -247,5 +237,38 @@ class ContentHandler
                 $this->setupManager->reset();
                 return $this->credentialsRenderer->renderCredentialsForm();
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+
+    private function isContextView(): bool
+    {
+        return Tools::getValue('carrier_code', '') !== '';
+    }
+
+
+    private function isShipmentReview(): bool
+    {
+        return Tools::getValue('action', '') === 'shipmentReview';
+    }
+
+
+
+    private function redirectAfterSubmit(): void
+    {
+        $url = AdminController::$currentIndex
+            . '&configure=' . $this->module->name
+            . '&token=' . Tools::getAdminTokenLite('AdminModules');
+
+        // carrier_code se presente va preservato
+        $carrierCode = Tools::getValue('carrier_code', '');
+        if ($carrierCode !== '') {
+            $url .= '&carrier_code=' . urlencode($carrierCode);
+        }
+
+        Tools::redirectAdmin($url);
     }
 }

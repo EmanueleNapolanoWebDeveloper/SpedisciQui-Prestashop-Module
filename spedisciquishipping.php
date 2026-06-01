@@ -32,7 +32,7 @@ require __DIR__ . '/classes/Service/CredentialServices.php';
 require __DIR__ . '/classes/Service/PackageServices.php';
 require __DIR__ . '/classes/Service/CarrierServices.php';
 require __DIR__ . '/classes/Service/SenderServices.php';
-require __DIR__ . '/classes/Service/ShippingService.php';
+require __DIR__ . '/classes/Service/ShipmentService.php';
 
 // renderets
 require __DIR__ . '/classes/Renderers/CredentialsRenderer.php';
@@ -48,6 +48,8 @@ require __DIR__ . '/classes/Handlers/CredentialsHandlers.php';
 require __DIR__ . '/classes/Handlers/SendersHandler.php';
 require __DIR__ . '/classes/Handlers/CarrierHandlers.php';
 require __DIR__ . '/classes/Handlers/DashboardHandlers.php';
+require __DIR__ . '/classes/Handlers/ShipmentHandler.php';
+
 
 // hooks
 require __DIR__ . '/classes/Hooks/checkout/CustomCheckout.php';
@@ -64,6 +66,8 @@ class spedisciquishipping extends CarrierModule
     protected CredentialsRepositories $credentials;
     protected CarrierRepository $carrierRepo;
     protected CarrierServices $carrierService;
+    protected ShipmentServices $shipmentService;
+    protected ShipmentRepository $shipmentRepo;
     public int $id_carrier = 0;
 
     // ================================================================
@@ -119,6 +123,9 @@ class spedisciquishipping extends CarrierModule
             $this->carrierService = new CarrierServices(
                 $this->carrierRepo
             );
+            $this->shipmentRepo = new ShipmentRepository();
+            $this->shipmentService = new ShipmentServices($this->carrierRepo, $this->carrierService, $this->shipmentRepo, $context, $this);
+            $this->shipmentRepo->setShipmentService($this->shipmentService);
         } catch (Exception $e) {
             PrestaShopLogger::addLog(
                 '[SpedisciQui] COSTRUTTORE CRASH: ' . $e->getMessage()
@@ -209,10 +216,7 @@ class spedisciquishipping extends CarrierModule
             return false;
         }
 
-        return (new ShippingServices(
-            $this->carrierRepo,
-            new CarrierServices($this->carrierRepo)
-        ))->getRateShippingCost($cart, $carrierId);
+        return $this->shipmentService->getRateShippingCost($cart, $carrierId);
     }
 
 
@@ -254,5 +258,15 @@ class spedisciquishipping extends CarrierModule
         }
 
         return $this->customCheckout->hookActionValidateOrder($params);
+    }
+
+    public function hookActionAdminControllerSetMedia($params)
+    {
+        if (!$this->customCheckout) {
+            PrestaShopLogger::addLog('[SpedisciQui] customCheckout è NULL', 3);
+            return '';
+        }
+
+        return $this->customCheckout->hookActionAdminControllerSetMedia($params);
     }
 }

@@ -21,15 +21,49 @@ class DashboardRenderer
     //==========================================
     // RENDER DASHBOARD
     //==========================================
-    public function renderDashboard(
-        array $data = []
-    ): string {
-        // pulizia context
+    public function renderDashboard(array $data = []): string
+    {
+        PrestaShopLogger::addLog(
+            '[SQ-DEBUG] renderDashboard() chiamato. data keys: ' . implode(',', array_keys($data)),
+            1,
+            null,
+            'SpedisciQuiShipping'
+        );
+
         $this->clearDashboardContext();
+
+        PrestaShopLogger::addLog(
+            '[SQ-DEBUG] Dopo clearDashboardContext. Smarty vars: '
+                . implode(',', array_keys($this->context->smarty->getTemplateVars())),
+            1,
+            null,
+            'SpedisciQuiShipping'
+        );
 
         if (!empty($data)) {
             $this->context->smarty->assign($data);
+            PrestaShopLogger::addLog(
+                '[SQ-DEBUG] assign() eseguito con: ' . json_encode(array_keys($data)),
+                1,
+                null,
+                'SpedisciQuiShipping'
+            );
+        } else {
+            PrestaShopLogger::addLog(
+                '[SQ-DEBUG] WARN: data vuoto, assign() saltato',
+                2,
+                null,
+                'SpedisciQuiShipping'
+            );
         }
+
+        PrestaShopLogger::addLog(
+            '[SQ-DEBUG] Pre-fetch vars: '
+                . implode(',', array_keys($this->context->smarty->getTemplateVars())),
+            1,
+            null,
+            'SpedisciQuiShipping'
+        );
 
         return $this->context->smarty->fetch(
             'module:spedisciquishipping/views/templates/admin/dashboard_layout.tpl'

@@ -833,14 +833,14 @@
                             <td>
                                 {if $shipment.status === 'pending'}
                                     <div class="sq-action-wrap">
-                                        <a href="{$formAction}&action=shipmentReview&id_shipment={$shipment.id_shipment}"
+                                        <a href="{$action}&action=shipmentReview&id_shipment={$shipment.id_shipment}"
                                             class="sq-btn-create">
                                             <i class="icon-search"></i>
                                             {l s='Crea spedizione' mod='spedisciquishipping'}
                                         </a>
                                     </div>
                                 {elseif $shipment.status === 'label_created'}
-                                    <form method="POST" action="{$formAction}" style="margin:0;">
+                                    <form method="POST" action="{$action}" style="margin:0;">
                                         <input type="hidden" name="id_shipment" value="{$shipment.id_shipment}">
                                         <button type="submit" name="cancelShipment" class="sq-btn-cancel"
                                             onclick="return confirm('{l s='Annullare la spedizione?' mod='spedisciquishipping' js=1}');">
