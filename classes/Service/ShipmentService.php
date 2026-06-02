@@ -480,15 +480,17 @@ class ShipmentServices
                 throw new \InvalidArgumentException('Nessun indirizzo mittente trovato nella tabella spedisciqui_sender_address. Configuralo nel modulo.');
             }
 
-            if (empty($sender['name']) || empty($sender['address']) || empty($sender['city']) || empty($sender['postcode'])) {
+            PrestaShopLogger::addLog('parcel : ' . print_r($parcelData, true));
+
+            if (empty($sender['firstname']) || empty($sender['lastname']) || empty($sender['address1']) || empty($sender['city']) || empty($sender['postcode'])) {
                 throw new \InvalidArgumentException('I dati del mittente estratti dal database sono incompleti (Nome, Indirizzo, Città o CAP mancanti).');
             }
 
             // DATI PACCO
-            $weight = (float)($parcelData['weight'] ?? 0);
-            $width = (float)($parcelData['width'] ?? 0);
-            $length = (float)($parcelData['lenght'] ?? 0);
-            $height = (float)($parcelData['lenght'] ?? 0);
+            $weight = (float) ($parcelData['weights'][0] ?? 0);
+            $width  = (float) ($parcelData['widths'][0] ?? 0);
+            $length = (float) ($parcelData['lengths'][0] ?? 0);
+            $height = (float) ($parcelData['heights'][0] ?? 0);
 
             if ($weight <= 0) {
                 throw new \InvalidArgumentException(sprintf('Il peso del pacco deve essere maggiore di zero. Rilevato: %s kg', $weight));
@@ -508,11 +510,12 @@ class ShipmentServices
             // costruzione payload
             return [
                 'sender' => [
-                    'name'      => substr((string)$sender['name'], 0, 64), // Limiti di stringa di sicurezza per le API
-                    'address'   => substr((string)$sender['address'], 0, 100),
+                    'name'      => substr((string)$sender['firstname'], 0, 64),
+                    'surname'      => substr((string)$sender['lastname'], 0, 64),
+                    'address'   => substr((string)$sender['address1'], 0, 100),
                     'city'      => (string)$sender['city'],
                     'postcode'  => (string)$sender['postcode'],
-                    'country'   => !empty($sender['country']) ? strtoupper((string)$sender['country']) : 'IT',
+                    'country'   => !empty($sender['country_iso']) ? strtoupper((string)$sender['country_iso']) : 'IT',
                 ],
 
                 'recipient' => [

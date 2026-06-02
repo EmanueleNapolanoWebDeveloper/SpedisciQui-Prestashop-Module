@@ -82,7 +82,7 @@ class ContentHandler
         $this->carrierRenderer     = new CarrierRenderer($this->module, $this->carrierRepo, $carrierServices);
         $this->dashboardRender     = new DashboardRenderer($this->module, $this->context);
         $this->shipmentRenderer    = new ShipmentRenderer($this->shipmentRepo, $this->module, $this->context, $shipmentService);
-        $this->shipmentHandler = new ShipmentHandler($moduleAdminLink, $shipmentService, $this->shipmentRepo, $this->shipmentRenderer);
+        $this->shipmentHandler = new ShipmentHandler($moduleAdminLink, $shipmentService, $this->shipmentRepo, $this->shipmentRenderer,$this->packRepo);
 
         PrestaShopLogger::addLog(
             '[SQ-DEBUG] ContentHandler costruito. ShipmentRepo class: ' . get_class($this->shipmentRepo),

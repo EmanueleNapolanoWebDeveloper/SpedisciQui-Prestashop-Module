@@ -16,6 +16,7 @@ class ShipmentHandler
     private ShipmentServices $shipmentService;
     private ShipmentRepository $shipmentRepo;
     private ShipmentRenderer $shipmentRenderer;
+    private PackageRepository $packageRepo;
 
 
 
@@ -26,12 +27,14 @@ class ShipmentHandler
         string $moduleAdminLink,
         ShipmentServices $shipmentService,
         ShipmentRepository $shipmentRepo,
-        ShipmentRenderer $shipmentRenderer
+        ShipmentRenderer $shipmentRenderer,
+        PackageRepository $packageRepo
     ) {
         $this->moduleAdminLink = $moduleAdminLink;
         $this->shipmentService = $shipmentService;
         $this->shipmentRepo = $shipmentRepo;
         $this->shipmentRenderer = $shipmentRenderer;
+        $this->packageRepo = $packageRepo;
     }
 
     //=================================================
@@ -88,6 +91,7 @@ class ShipmentHandler
     private function handleCreateShipment(): void
     {
 
+    PrestaShopLogger::addLog('Sono entrato in create shipment');
         // recupero id sgipment
         $idShipment = (int) Tools::getValue('id_shipment');
 
@@ -114,42 +118,65 @@ class ShipmentHandler
             return;
         }
 
-        // costruzione payload
+        try {
+
+            // Carico Ordine
+            $order = new Order((int) $shipment['id_order']);
+
+            if (!Validate::isLoadedObject($order)) {
+                throw new \RuntimeException('Ordine #' . $shipment['id_order'] . 'non trovato');
+            }
+
+            // carico parcel data
+            $parcelData = $this->packageRepo->getParcelData($order);
+
+            // costruzione payload
+            $payload = $this->shipmentService->buildShipmentPayload($order,$parcelData);
+
+            PrestaShopLogger::addLog(
+                'Payload alla psedizione: ' . print_r($payload,true)
+            );
+
+            $updated = $this->shipmentRepo->updateShipmentStatus(
+                $idShipment,
+                'label_created',
+                [
+                    // 'tracking_number' => $trackingNumber,  // da API corriere
+                    // 'tracking_url'    => $trackingUrl,
+                    // 'api_shipment_id' => $apiResult['id'],
+                ]
+            );
+
+            if (!$updated) {
+                $this->redirectWithError('Errore aggiornamento spedizione #' . $idShipment . '.');
+                return;
+            }
+
+            PrestaShopLogger::addLog(
+                sprintf(
+                    '[SpedisciQui] Shipment #%d | pending → label_created | Order #%d',
+                    $idShipment,
+                    (int) $shipment['id_order']
+                ),
+                1,
+                null,
+                'Order',
+                (int) $shipment['id_order'],
+                true
+            );
+
+            $this->redirectWithSuccess('Spedizione #' . $idShipment . ' creata con successo.');
+        } catch (Exception $e) {
+            $this->redirectWithError('Errore aggiornamento spedizione #' . $idShipment . '.');
+            return;
+        }
 
         // ── Placeholder: qui chiamerai le API del corriere ──────────────────
         // $apiResult = $this->carrierApi->createShipment($shipment);
         // $trackingNumber = $apiResult['tracking_number'];
         // ────────────────────────────────────────────────────────────────────
 
-        $updated = $this->shipmentRepo->updateShipmentStatus(
-            $idShipment,
-            'label_created',
-            [
-                // 'tracking_number' => $trackingNumber,  // da API corriere
-                // 'tracking_url'    => $trackingUrl,
-                // 'api_shipment_id' => $apiResult['id'],
-            ]
-        );
 
-        if (!$updated) {
-            $this->redirectWithError('Errore aggiornamento spedizione #' . $idShipment . '.');
-            return;
-        }
-
-        PrestaShopLogger::addLog(
-            sprintf(
-                '[SpedisciQui] Shipment #%d | pending → label_created | Order #%d',
-                $idShipment,
-                (int) $shipment['id_order']
-            ),
-            1,
-            null,
-            'Order',
-            (int) $shipment['id_order'],
-            true
-        );
-
-        $this->redirectWithSuccess('Spedizione #' . $idShipment . ' creata con successo.');
     }
     //=================================================
     //HANDLE PER CREAZIOEN SPEDIZIONE TRAMITE API - fine

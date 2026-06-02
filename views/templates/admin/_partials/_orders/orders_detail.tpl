@@ -342,17 +342,21 @@
 
         {* ── Azioni ── *}
         <div class="sr-actions">
+            {* back link *}
             <a href="{$vm.form.back_url|escape:'html':'UTF-8'}" class="sr-btn-back">
                 <i class="icon-arrow-left"></i>
                 {l s='Annulla' mod='spedisciquishipping'}
             </a>
-            <button type="submit" class="sr-btn-confirm" id="sr-submit-btn">
-                <i class="icon-truck" id="sr-submit-icon"></i>
-                <span id="sr-submit-label">
-                    {l s='Conferma e crea spedizione' mod='spedisciquishipping'}
-                </span>
-                <div class="sr-spinner" id="sr-spinner"></div>
-            </button>
+            {* conferma shipping *}
+            <form action={$vm.form.action} name='createShipment'>
+                <button type="submit" class="sr-btn-confirm" id="sr-submit-btn">
+                    <i class="icon-truck" id="sr-submit-icon"></i>
+                    <span id="sr-submit-label">
+                        {l s='Conferma e crea spedizione' mod='spedisciquishipping'}
+                    </span>
+                    <div class="sr-spinner" id="sr-spinner"></div>
+                </button>
+            </form>
         </div>
 
     </form>
