@@ -16,7 +16,7 @@ class ShipmentHandler
     private ShipmentServices $shipmentService;
     private ShipmentRepository $shipmentRepo;
     private ShipmentRenderer $shipmentRenderer;
-    private PackageRepository $packageRepo;
+    private PackageServices $packageService;
 
 
 
@@ -28,13 +28,13 @@ class ShipmentHandler
         ShipmentServices $shipmentService,
         ShipmentRepository $shipmentRepo,
         ShipmentRenderer $shipmentRenderer,
-        PackageRepository $packageRepo
+        PackageServices $packageService
     ) {
         $this->moduleAdminLink = $moduleAdminLink;
         $this->shipmentService = $shipmentService;
         $this->shipmentRepo = $shipmentRepo;
         $this->shipmentRenderer = $shipmentRenderer;
-        $this->packageRepo = $packageRepo;
+        $this->packageService = $packageService;
     }
 
     //=================================================
@@ -91,7 +91,6 @@ class ShipmentHandler
     private function handleCreateShipment(): void
     {
 
-    PrestaShopLogger::addLog('Sono entrato in create shipment');
         // recupero id sgipment
         $idShipment = (int) Tools::getValue('id_shipment');
 
@@ -128,7 +127,7 @@ class ShipmentHandler
             }
 
             // carico parcel data
-            $parcelData = $this->packageRepo->getParcelData($order);
+            $parcelData = $this->packageService->getParcelData($order);
 
             // costruzione payload
             $payload = $this->shipmentService->buildShipmentPayload($order,$parcelData);
@@ -137,7 +136,7 @@ class ShipmentHandler
                 'Payload alla psedizione: ' . print_r($payload,true)
             );
 
-            $updated = $this->shipmentRepo->updateShipmentStatus(
+            $updated = $this->shipmentRepo->updateStatus(
                 $idShipment,
                 'label_created',
                 [
@@ -213,7 +212,7 @@ class ShipmentHandler
             return;
         }
 
-        $updated = $this->shipmentRepo->updateShipmentStatus($idShipment, 'cancelled');
+        $updated = $this->shipmentRepo->updateStatus($idShipment, 'cancelled');
 
         if (!$updated) {
             $this->redirectWithError('Errore annullamento spedizione #' . $idShipment . '.');

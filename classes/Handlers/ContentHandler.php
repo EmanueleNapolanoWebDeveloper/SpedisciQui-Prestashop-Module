@@ -34,6 +34,9 @@ class ContentHandler
     private DashboardRenderer $dashboardRender;
     private ShipmentRenderer $shipmentRenderer;
 
+    // servies
+    private PackageServices $packageService;
+
 
 
     //==========================================
@@ -65,6 +68,7 @@ class ContentHandler
         // 4. services condivisi (ora $carrierRepo esiste)
         $carrierServices = new CarrierServices($this->carrierRepo);
         $shipmentService = new ShipmentServices($this->carrierRepo, $carrierServices, $this->shipmentRepo, $this->context, $this->module);
+        $this->packageService = new PackageServices();
 
 
 
@@ -82,7 +86,7 @@ class ContentHandler
         $this->carrierRenderer     = new CarrierRenderer($this->module, $this->carrierRepo, $carrierServices);
         $this->dashboardRender     = new DashboardRenderer($this->module, $this->context);
         $this->shipmentRenderer    = new ShipmentRenderer($this->shipmentRepo, $this->module, $this->context, $shipmentService);
-        $this->shipmentHandler = new ShipmentHandler($moduleAdminLink, $shipmentService, $this->shipmentRepo, $this->shipmentRenderer,$this->packRepo);
+        $this->shipmentHandler = new ShipmentHandler($moduleAdminLink, $shipmentService, $this->shipmentRepo, $this->shipmentRenderer,$this->packageService);
 
         PrestaShopLogger::addLog(
             '[SQ-DEBUG] ContentHandler costruito. ShipmentRepo class: ' . get_class($this->shipmentRepo),

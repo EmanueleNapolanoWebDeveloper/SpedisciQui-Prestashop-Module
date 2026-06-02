@@ -6,12 +6,47 @@ class ShipmentRepository
     private ?ShipmentServices $shipmentService = null;
 
 
+    //------------------------------------------------------------
+    // ------------ COSTANTI 
+    //------------------------------------------------------------
+    private const ALLOWED_STATUSES = [
+        'pending',
+        'label_created',
+        'picked_up',
+        'in_transit',
+        'out_for_delivery',
+        'delivered',
+        'failed',
+        'cancelled',
+        'returned'
+    ];
+
+    private const ALLOWED_EXTRA_FIELDS = [
+        'tracking_number',
+        'tracking_url',
+        'api_shipment_id',
+        'shipped_at',
+        'delivered_at'
+    ];
+
+    private const DATE_MAP = [
+        'picked_up'  => 'shipped_at',
+        'in_transit' => 'shipped_at',
+        'delivered'  => 'delivered_at',
+    ];
+
+
+    //==========================================
+    // COSTRUTTORE
+    //==========================================
     public function __construct() {}
 
     public function setShipmentService(ShipmentServices $shipmentService): void
     {
         $this->shipmentService = $shipmentService;
     }
+
+
 
 
     // ==============================================
@@ -67,90 +102,16 @@ class ShipmentRepository
             return false;
         }
     }
-
-
-
     // ==============================================
-    // AGGIORNAMENT STATO + OPZIONALI
-    // ==============================================
-    public function updateShipmentStatus(int $idShipment, string $status, array $extra = []): bool
-    {
-        // 1. Validazione ID
-        if ($idShipment <= 0) {
-            PrestaShopLogger::addLog(
-                '[SpedisciQui] updateShipmentStatus: ID non valido (' . $idShipment . ')',
-                3
-            );
-            return false;
-        }
+    // RECUPERO SHIPMENT DA ID - fine
+    // ============================================
 
-        // 2. Whitelist stati validi (IMPORTANTISSIMO)
-        $allowedStatuses = [
-            'pending',
-            'label_created',
-            'picked_up',
-            'in_transit',
-            'out_for_delivery',
-            'delivered',
-            'failed',
-            'cancelled',
-            'returned'
-        ];
 
-        if (!in_array($status, $allowedStatuses, true)) {
-            PrestaShopLogger::addLog(
-                '[SpedisciQui] Stato non valido: ' . $status,
-                3
-            );
-            return false;
-        }
 
-        // 3. Sanitizzazione extra fields (anti injection logica)
-        $cleanExtra = [];
-        foreach ($extra as $key => $value) {
-            if (!is_string($key)) {
-                continue;
-            }
 
-            // whitelist base chiavi consentite (opzionale ma consigliato)
-            if (in_array($key, ['tracking_number', 'tracking_url', 'api_shipment_id', 'shipped_at', 'delivered_at'])) {
-                $cleanExtra[$key] = pSQL($value);
-            }
-        }
 
-        // 4. Dati finali
-        $data = array_merge(
-            ['status' => pSQL($status)],
-            $cleanExtra
-        );
 
-        try {
-            // 5. Update DB
-            $result = Db::getInstance()->update(
-                'spedisciqui_shipments',
-                $data,
-                '`id` = ' . (int) $idShipment,
-                1
-            );
 
-            if (!$result) {
-                PrestaShopLogger::addLog(
-                    '[SpedisciQui] Update fallito per shipment ID: ' . $idShipment,
-                    3
-                );
-                return false;
-            }
-
-            return true;
-        } catch (Exception $e) {
-            PrestaShopLogger::addLog(
-                '[SpedisciQui] Errore updateShipmentStatus: ' . $e->getMessage(),
-                3
-            );
-
-            return false;
-        }
-    }
 
     //==================================================
     //RECUPERA TUTTI GLI SHIPMENTS
@@ -162,10 +123,25 @@ class ShipmentRepository
         int    $limit = 50,
         int    $offset = 0
     ): array {
-        $db = Db::getInstance();
 
-        $query = new DbQuery();
-        $query->select('
+        $limit  = max(1, min($limit, 200));
+        $offset = max(0, $offset);
+
+        if ($idShop <= 0) {
+            $this->log('getShipments: idShop non valido (' . $idShop . ')', 3);
+            return [];
+        }
+
+        if ($statusFilter !== '' && !in_array($statusFilter, self::ALLOWED_STATUSES, true)) {
+            $this->log('getShipments: statusFilter non valido (' . $statusFilter . ')', 3);
+            return [];
+        }
+
+        try {
+            $db = Db::getInstance();
+
+            $query = new DbQuery();
+            $query->select('
             sh.`id`                  AS id_shipment,
             sh.`id_order`,
             sh.`id_spedisciqui_carrier`,
@@ -188,49 +164,57 @@ class ShipmentRepository
             CONCAT(c.`firstname`, " ", c.`lastname`) AS customer_name,
             c.`email`                AS customer_email
         ');
-        $query->from('spedisciqui_shipments', 'sh');
+            $query->from('spedisciqui_shipments', 'sh');
 
-        // JOIN ordine
-        $query->innerJoin(
-            'orders',
-            'o',
-            'o.`id_order` = sh.`id_order`'
-        );
+            // JOIN ordine
+            $query->innerJoin(
+                'orders',
+                'o',
+                'o.`id_order` = sh.`id_order`'
+            );
 
-        // JOIN stato ordine (con lingua — default 1)
-        $query->leftJoin(
-            'order_state_lang',
-            'os',
-            'os.`id_order_state` = o.`current_state`
+            // JOIN stato ordine (con lingua — default 1)
+            $query->leftJoin(
+                'order_state_lang',
+                'os',
+                'os.`id_order_state` = o.`current_state`
              AND os.`id_lang` = ' . (int) Configuration::get('PS_LANG_DEFAULT')
-        );
+            );
 
-        // JOIN cliente
-        $query->innerJoin(
-            'customer',
-            'c',
-            'c.`id_customer` = o.`id_customer`'
-        );
+            // JOIN cliente
+            $query->innerJoin(
+                'customer',
+                'c',
+                'c.`id_customer` = o.`id_customer`'
+            );
 
-        // Filtro shop
-        $query->where('sh.`id_shop` = ' . (int) $idShop);
+            // Filtro shop
+            $query->where('sh.`id_shop` = ' . (int) $idShop);
 
-        // Filtro status opzionale
-        if ($statusFilter !== '') {
-            $query->where('sh.`status` = \'' . pSQL($statusFilter) . '\'');
-        }
+            // Filtro status opzionale
+            if ($statusFilter !== '') {
+                $query->where('sh.`status` = \'' . pSQL($statusFilter) . '\'');
+            }
 
-        $query->orderBy('sh.`date_add` DESC');
-        $query->limit($limit, $offset);
+            $query->orderBy('sh.`date_add` DESC');
+            $query->limit($limit, $offset);
 
-        $rows = $db->executeS($query);
+            $rows = $db->executeS($query);
 
-        if (empty($rows)) {
+            if (empty($rows)) {
+                return [];
+            }
+
+            return is_array($rows) ? $rows : [];
+        } catch (Exception $e) {
+            $this->log('Errore getShipments: ' . $e->getMessage(), 3);
             return [];
         }
-
-        return is_array($rows) ? $rows : [];
     }
+
+
+
+
 
 
     // ===============================================
@@ -239,81 +223,172 @@ class ShipmentRepository
 
     public function createShipment(array $data): int|false
     {
-        $insert = [
-            'id_order'               => (int)   ($data['id_order'] ?? 0),
-            'id_shop'                => (int)   ($data['id_shop'] ?? 1),
-            'id_spedisciqui_carrier' => !empty($data['id_spedisciqui_carrier'])
-                ? (int) $data['id_spedisciqui_carrier']
-                : null,
-            'shipment_type'          => pSQL($data['shipment_type'] ?? 'outbound'),
-            'carrier_code'           => pSQL($data['carrier_code'] ?? ''),
-            'service_code'           => pSQL($data['service_code'] ?? ''),
-            'status'                 => pSQL($data['status'] ?? 'pending'),
-            'delivery_firstname'     => pSQL($data['delivery_firstname'] ?? ''),
-            'delivery_lastname'      => pSQL($data['delivery_lastname'] ?? ''),
-            'delivery_address1'      => pSQL($data['delivery_address1'] ?? ''),
-            'delivery_address2'      => pSQL($data['delivery_address2'] ?? ''),
-            'delivery_postcode'      => pSQL($data['delivery_postcode'] ?? ''),
-            'delivery_city'          => pSQL($data['delivery_city'] ?? ''),
-            'delivery_country_iso'   => pSQL($data['delivery_country_iso'] ?? ''),
-            'weight'                 => (float) ($data['weight'] ?? 0),
-            'length'                 => (float) ($data['length'] ?? 0),
-            'width'                 => (float) ($data['width'] ?? 0),
-            'height'                 => (float) ($data['height'] ?? 0),
-            'shipping_cost'          => (float) ($data['shipping_cost'] ?? 0),
-            'shipping_currency'      => pSQL($data['shipping_currency'] ?? 'EUR'),
-        ];
 
-        $result = Db::getInstance()->insert('spedisciqui_shipments', $insert);
-
-        if (!$result) {
-            PrestaShopLogger::addLog(
-                sprintf(
-                    '[SpedisciQui] ShipmentRepository::createShipment — Insert fallito | Order #%d',
-                    (int) ($data['id_order'] ?? 0)
-                ),
-                3,
-                null,
-                'Order',
-                (int) ($data['id_order'] ?? 0),
-                true
-            );
+        // Validazione preliminare PRIMA di aprire la transazione
+        $idOrder = (int) ($data['id_order'] ?? 0);
+        if ($idOrder <= 0) {
+            $this->log('createShipment: id_order non valido', 3);
             return false;
         }
 
-        return (int) Db::getInstance()->Insert_ID();
+        $idShop = (int) ($data['id_shop'] ?? 1);
+        if ($idShop <= 0) {
+            $this->log('createShipment: id_shop non valido', 3);
+            return false;
+        }
+
+        $status = $data['status'] ?? 'pending';
+        if (!in_array($status, self::ALLOWED_STATUSES, true)) {
+            $this->log('createShipment: status non valido (' . $status . ')', 3);
+            return false;
+        }
+
+        $db = Db::getInstance();
+
+        try {
+            $db->execute('START TRANSACTION');
+
+
+            $insert = [
+                'id_order'               => (int)   ($data['id_order'] ?? 0),
+                'id_shop'                => (int)   ($data['id_shop'] ?? 1),
+                'id_spedisciqui_carrier' => !empty($data['id_spedisciqui_carrier'])
+                    ? (int) $data['id_spedisciqui_carrier']
+                    : null,
+                'shipment_type'          => pSQL($data['shipment_type'] ?? 'outbound'),
+                'carrier_code'           => pSQL($data['carrier_code'] ?? ''),
+                'service_code'           => pSQL($data['service_code'] ?? ''),
+                'status'                 => pSQL($data['status'] ?? 'pending'),
+                'delivery_firstname'     => pSQL($data['delivery_firstname'] ?? ''),
+                'delivery_lastname'      => pSQL($data['delivery_lastname'] ?? ''),
+                'delivery_address1'      => pSQL($data['delivery_address1'] ?? ''),
+                'delivery_address2'      => pSQL($data['delivery_address2'] ?? ''),
+                'delivery_postcode'      => pSQL($data['delivery_postcode'] ?? ''),
+                'delivery_city'          => pSQL($data['delivery_city'] ?? ''),
+                'delivery_country_iso'   => pSQL($data['delivery_country_iso'] ?? ''),
+                'weight'                 => (float) ($data['weight'] ?? 0),
+                'length'                 => (float) ($data['length'] ?? 0),
+                'width'                 => (float) ($data['width'] ?? 0),
+                'height'                 => (float) ($data['height'] ?? 0),
+                'shipping_cost'          => (float) ($data['shipping_cost'] ?? 0),
+                'shipping_currency'      => pSQL($data['shipping_currency'] ?? 'EUR'),
+            ];
+
+            $result = $db->insert('spedisciqui_shipments', $insert);
+
+            if (!$result) {
+                $db->execute('ROLLBACK');
+                $this->log('createShipment: insert fallito | Order #' . $idOrder, 3, 'Order', $idOrder);
+                return false;
+            }
+
+            $newId = (int) $db->Insert_ID();
+
+            if ($newId < 0) {
+                $db->execute('ROLLBACK');
+                $this->log('createShipment: InsertId non valido dopo insert| Order #' . $idOrder, 3);
+                return false;
+            }
+
+            $db->execute('COMMIT');
+            return $newId;
+        } catch (Exception $e) {
+            $db->execute('ROLLBACK');
+            $this->log('createShipment: eccezione — ' . $e->getMessage(), 3, 'Order', $idOrder);
+            return false;
+        }
     }
+    // ===============================================
+    // CREAZIOEN SHIPMENT - FINE
+    // =================================================
+
+
+
+
 
     // ===============================================
     // AGGIORNA TRACKING 
     // =================================================
     public function updateTracking(int $id, string $trackingNumber, string $trackingUrl = ''): bool
     {
-        return Db::getInstance()->update(
-            'spedisciqui_shipments',
-            [
-                'tracking_number' => pSQL($trackingNumber),
-                'tracking_url'    => pSQL($trackingUrl),
-                'status'          => 'label_created',
-                'label_generated' => 1,
-            ],
-            '`id` = ' . (int) $id
-        );
+
+        if ($id <= 0) {
+            $this->log('updateTracking: ID non valido (' . $id . ')', 3);
+            return false;
+        }
+
+        // Formato tracking: alfanumerico con trattini/underscore (adattare al corriere)
+        if (!preg_match('/^[A-Za-z0-9\-_]{3,50}$/', $trackingNumber)) {
+            $this->log('updateTracking: tracking_number non valido (' . $trackingNumber . ')', 3);
+            return false;
+        }
+
+        // Validazione URL opzionale
+        if ($trackingUrl !== '' && !filter_var($trackingUrl, FILTER_VALIDATE_URL)) {
+            $this->log('updateTracking: tracking_url non valida (' . $trackingUrl . ')', 2);
+            $trackingUrl = ''; // fallback sicuro invece di bloccare
+        }
+
+        try {
+            $result = Db::getInstance()->update(
+                'spedisciqui_shipments',
+                [
+                    'tracking_number' => pSQL($trackingNumber),
+                    'tracking_url'    => pSQL($trackingUrl),
+                    'status'          => 'label_created',
+                    'label_generated' => 1,
+                ],
+                '`id` = ' . (int) $id
+            );
+
+            if (!$result) {
+                $this->log('updateTracking: update Falllito per id: ' . $id, 3);
+                return false;
+            }
+
+            return true;
+        } catch (Exception $e) {
+            $this->log('updateTracking: eccezione — ' . $e->getMessage(), 3);
+            return false;
+        }
     }
+    // ===============================================
+    // AGGIORNA TRACKING - fine
+    // =================================================
+
+
+
 
     // ===============================================
     // AGGIORNAMENTO STATS
-    // =================================================
-    public function updateStatus(int $id, string $status, ?string $datetimeField = null): bool
-    {
-        $updateData = ['status' => pSQL($status)];
+    // ===============================================
+    public function updateStatus(
+        int $id,
+        string $status,
+        array $extra = [],
+        ?string $datetimeField = null
+    ): bool {
 
-        // Se lo status ha una data dedicata, la aggiorna contestualmente
-        $dateMap = [
-            'picked_up'   => 'shipped_at',
-            'in_transit'  => 'shipped_at',
-            'delivered'   => 'delivered_at',
-        ];
+        if ($id <= 0) {
+            $this->log('updateStatus: ID non valido (' . $id . ')', 3);
+            return false;
+        }
+
+        if (!in_array($status, self::ALLOWED_STATUSES, true)) {
+            $this->log('updateStatus: stato non valido (' . $status . ')', 3);
+            return false;
+        }
+
+        // Campi extra con whitelist
+        $cleanExtra = [];
+        foreach ($extra as $key => $value) {
+            if (is_string($key) && in_array($key, self::ALLOWED_EXTRA_FIELDS, true)) {
+                $cleanExtra[$key] = pSQL((string) $value);
+            }
+        }
+
+
+        $updateData = ['status' => pSQL($status)];
 
         if ($datetimeField !== null) {
             $updateData[$datetimeField] = date('Y-m-d H:i:s');
@@ -321,10 +396,52 @@ class ShipmentRepository
             $updateData[$dateMap[$status]] = date('Y-m-d H:i:s');
         }
 
-        return Db::getInstance()->update(
-            'spedisciqui_shipments',
-            $updateData,
-            '`id` = ' . (int) $id
+        $updateData = array_merge($updateData, $cleanExtra);
+
+        try {
+
+            $result = Db::getInstance()->update(
+                'spedisciqui_shipments',
+                $updateData,
+                '`id` = ' . (int)$id,
+
+            );
+
+            if (!$result) {
+                $this->log('updateStatus: update fallito per ID ' . $id, 3);
+                return false;
+            }
+
+            return true;
+        } catch (Exception $e) {
+            $this->log('updateStatus: eccezione — ' . $e->getMessage(), 3);
+            return false;
+        }
+    }
+    // ===============================================
+    // AGGIORNAMENTO STATS - FINE
+    // ===============================================
+
+
+
+
+
+    // ===============================================
+    // HELPER PER PRESTALOGGER
+    // =================================================
+    private function log(
+        string  $message,
+        int     $severity = 3,
+        string  $objectType = '',
+        int     $objectId = 0
+    ): void {
+        PrestaShopLogger::addLog(
+            '[SpedisciQui] ' . $message,
+            $severity,
+            null,
+            $objectType ?: null,
+            $objectId ?: null,
+            true
         );
     }
 }

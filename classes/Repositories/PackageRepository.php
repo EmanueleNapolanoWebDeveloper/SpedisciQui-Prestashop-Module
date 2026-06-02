@@ -18,8 +18,11 @@ class PackageRepository
     {
         $idShop = $idShop ?: (int) Context::getContext()->shop->id;
 
-        $db  = Db::getInstance();
-        $pfx = _DB_PREFIX_;
+        if ($idShop <= 0) {
+            $this->log('savePackage: id_shop non valido', 3);
+            return false;
+        }
+
 
         $row = [
             'name'       => pSQL(trim($data['name'] ?? 'Default')),
@@ -30,30 +33,41 @@ class PackageRepository
             'is_default' => (int) ($data['is_default'] ?? 0),
         ];
 
-        $exists = $db->getRow(
-            '
-        SELECT `id`
-        FROM `' . $pfx . self::TABLE_NAME . '`
-        WHERE `id_shop` = ' . (int) $idShop . '
-        AND `is_default` = 1
-        '
-        );
+        $db  = Db::getInstance();
 
-        if ($exists) {
-            return (bool) $db->update(
-                self::TABLE_NAME,
-                $row,
-                '`id_shop` = ' . (int) $idShop
-            );
+
+        try {
+
+            $db->execute('START TRANSACTION');
+
+            $exists = $this->findDefaultPackage($idShop);
+
+            if ($exists) {
+                return (bool) $db->update(
+                    self::TABLE_NAME,
+                    $row,
+                    '`id_shop` = ' . (int) $idShop
+                );
+            } else {
+                $result = $db->insert(
+                    self::TABLE_NAME,
+                    array_merge(['id_shop' => (int) $idShop], $row)
+                );
+            }
+
+            if (!$result) {
+                $db->execute('ROLLBACK');
+                $this->log('savePackage: ' . ($exists ? 'update' : 'insert') . ' fallito per shop #' . $idShop, 3);
+                return false;
+            }
+
+            $db->execute('COMMIT');
+            return true;
+        } catch (Exception $e) {
+            $db->execute('ROLLBACK');
+            $this->log('savePackage: eccezione — ' . $e->getMessage(), 3);
+            return false;
         }
-
-        return (bool) $db->insert(
-            self::TABLE_NAME,
-            array_merge(
-                ['id_shop' => (int) $idShop],
-                $row
-            )
-        );
     }
 
 
@@ -65,134 +79,78 @@ class PackageRepository
     {
         $idShop = $idShop ?? (int) Context::getContext()->shop->id;
 
-        $result = Db::getInstance()->getRow(
-            '
-        SELECT `height`, `length`, `width`, `weight`
-        FROM `' . _DB_PREFIX_ . self::TABLE_NAME . '`
-        WHERE `id_shop` = ' . (int) $idShop
-        );
+        if ($idShop <= 0) {
+            $this->log('getPackage: id_shop non valido', 3);
+            return null;
+        }
 
-        return $result ?: null;
+        try {
+
+            $sql = new DbQuery();
+            $sql->select('`name`, `height`, `length`, `width`, `weight`, `is_default`')
+                ->from(self::TABLE_NAME)
+                ->where('`id_shop` = ' . (int) $idShop)
+                ->where('`is_default` = 1');
+
+            $result = Db::getInstance()->getRow($sql);
+
+            if (empty($result)) {
+                return null;
+            }
+
+            return $this->normalizePackageRow($result);
+        } catch (Exception $e) {
+            $this->log('getPackage: eccezione — ' . $e->getMessage(), 3);
+            return null;
+        }
     }
 
 
-    // ================================================================
-    // PRENDI DATI DI PACKAGE PER SHIPMENT (PARCELDATA)
-    // ================================================================
-    public function getParcelData(\Order $order)
+
+    // ===============================================
+    // HELPER PER PRESTALOGGER
+    // =================================================
+    private function log(
+        string  $message,
+        int     $severity = 3,
+        string  $objectType = '',
+        int     $objectId = 0
+    ): void {
+        PrestaShopLogger::addLog(
+            '[SpedisciQui] ' . $message,
+            $severity,
+            null,
+            $objectType ?: null,
+            $objectId ?: null,
+            true
+        );
+    }
+
+    /**
+     * Cerca il package default per uno shop — usato internamente da savePackage.
+     */
+    private function findDefaultPackage(int $idShop): array|false
     {
+        return Db::getInstance()->getRow(
+            'SELECT `id`
+             FROM `' . _DB_PREFIX_ . self::TABLE_NAME . '`
+             WHERE `id_shop` = ' . (int) $idShop . '
+             AND `is_default` = 1'
+        );
+    }
 
-        try {
-            $products = $order->getProducts();
-            $dimensionDefault = new PackageServices()->getDefault();
-
-            if (empty($products)) {
-                throw new \RuntimeException((
-                    'Nessun prodotto trovato per l\' ordine #' . (int)$order->id
-                ));
-            }
-
-            $weights = [];
-            $lengths = [];
-            $widths  = [];
-            $heights = [];
-            $totalWeight = 0.0;
-
-            foreach ($products as $product) {
-                $productId = (int)$product['id_product'];
-                $quantity = (int)($product['product_quantity'] ?? 1);
-                $productName = $product['product_name'] ?? 'Prodotto #' . $productId;
-
-
-                // -- peso ----------------------------
-                $weight = (float)($product['product_weight'] ?? 0);
-
-                if ($weight <= 0) {
-
-                    PrestaShopLogger::addLog(
-                        '[SpedisciQui] Prodotto "' . $productId . '" peso a zero → default ' . $dimensionDefault['weight']. 'kg | Ordine #' . (int)$order->id,
-                        2,
-                        null,
-                        'Order',
-                        (int)$order->id,
-                        true
-                    );
-
-                    $weight = $dimensionDefault['weight'];
-                }
-
-
-                // ── larghezza ───────────────────────────────────────────
-                $width = (float)($product['width'] ?? 0);
-                if ($width <= 0) {
-                    \PrestaShopLogger::addLog(
-                        '[SpedisciQui] Prodotto "' . $productId . '" width a zero → default ' . $dimensionDefault['weight'] . 'cm | Ordine #' . (int)$order->id,
-                        2,
-                        null,
-                        'Order',
-                        (int)$order->id,
-                        true
-                    );
-                    $width = $dimensionDefault['weight'];
-                }
-
-                // ── lunghezza ───────────────────────────────────────────
-                $length = (float)($product['depth'] ?? 0);
-                if ($length <= 0) {
-                    \PrestaShopLogger::addLog(
-                        '[SpedisciQui] Prodotto "' . $productId . '" length a zero → default ' . $dimensionDefault['weight'] . 'cm | Ordine #' . (int)$order->id,
-                        2,
-                        null,
-                        'Order',
-                        (int)$order->id,
-                        true
-                    );
-                    $length = $dimensionDefault['weight'];
-                }
-
-                // ── altezza ─────────────────────────────────────────────
-                $height = (float)($product['height'] ?? 0);
-                if ($height <= 0) {
-                    \PrestaShopLogger::addLog(
-                        '[SpedisciQui] Prodotto "' . $productId . '" height a zero → default ' . $dimensionDefault['weight'] . 'cm | Ordine #' . (int)$order->id,
-                        2,
-                        null,
-                        'Order',
-                        (int)$order->id,
-                        true
-                    );
-                    $height = $dimensionDefault['weight'];
-                }
-
-                // ── accumulo per ogni unità del prodotto ────────────────
-                for ($i = 0; $i < $quantity; $i++) {
-                    $weights[] = round($weight, 3);
-                    $widths[]  = round($width, 2);
-                    $lengths[] = round($length, 2);
-                    $heights[] = round($height, 2);
-                }
-
-                $totalWeight += $weight * $quantity;
-            }
-
-            return [
-                'weights'      => $weights,
-                'widths'       => $widths,
-                'lengths'      => $lengths,            // [10, 10, 30]
-                'heights'      => $heights,            // [10, 10, 15]
-                'total_weight' => round($totalWeight, 3), // 2.2
-                'items_count'  => count($weights),     // 3
-            ];
-        } catch (\Throwable $e) {
-            \PrestaShopLogger::addLog(
-                '[SpedisciQui] Errore getParcelData() Ordine #' . (int)$order->id . ': ' . $e->getMessage(),
-                3,
-                null,
-                'Order',
-                (int)$order->id,
-                true
-            );
-            throw $e;
-        }
+    /**
+     * Normalizza e tipizza il risultato raw del DB.
+     */
+    private function normalizePackageRow(array $row): array
+    {
+        return [
+            'name'       => (string) $row['name'],
+            'height'     => (float)  $row['height'],
+            'length'     => (float)  $row['length'],
+            'width'      => (float)  $row['width'],
+            'weight'     => (float)  $row['weight'],
+            'is_default' => (int)    $row['is_default'],
+        ];
     }
 }
