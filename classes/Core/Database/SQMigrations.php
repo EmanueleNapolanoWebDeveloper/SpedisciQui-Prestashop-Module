@@ -28,16 +28,19 @@ class SQMigrations
         $sql = 'CREATE TABLE IF NOT EXISTS ' . bqSQL(_DB_PREFIX_ . 'spedisciqui_api_credentials') . ' (
             `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
             `id_shop`       INT UNSIGNED NOT NULL DEFAULT 1,
-            `access_token`  TEXT NOT NULL,
+            `access_token`  VARCHAR(512) NOT NULL,
+            `token_iv` VARCHAR(64) DEFAULT NULL,
             `token_type`    VARCHAR(50) DEFAULT \'Bearer\',
             `expires_at`    DATETIME DEFAULT NULL,
             `refresh_token` TEXT DEFAULT NULL,
             `is_active`     TINYINT(1) NOT NULL DEFAULT 1,
+            `date_revoked` DATETIME NULL DEFAULT NULL,
             `date_add`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `date_upd`      DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`),
             UNIQUE KEY `unique_shop` (`id_shop`),
-            KEY `idx_active` (`is_active`)
+            KEY `idx_expires` (`expires_at`),
+        KEY `idx_shop_active_expires` (`id_shop`, `is_active`, `expires_at`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
 
         return (bool) Db::getInstance()->execute($sql);

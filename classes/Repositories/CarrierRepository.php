@@ -8,7 +8,7 @@ class CarrierRepository
 {
 
     private CarrierApi $api;
-    private CredentialsRepositories $credentials;
+    private CredentialsRepositories $credentialsRepo;
     private spedisciquishipping $module;
 
 
@@ -17,11 +17,11 @@ class CarrierRepository
     //==========================================
     public function __construct(
         CarrierApi $api,
-        CredentialsRepositories $credentials,
+        CredentialsRepositories $credentialsRepo,
         spedisciquishipping $module
     ) {
         $this->api = $api;
-        $this->credentials = $credentials;
+        $this->credentialsRepo = $credentialsRepo;
         $this->module = $module;
     }
 
@@ -34,8 +34,7 @@ class CarrierRepository
     // ==========================================
     public function getCarriers(): ?array
     {
-        $credentialService = new CredentialServices();
-        $credentials       = $credentialService->getToken();
+        $credentials       = $this->credentialsRepo->get();
 
         $token       = $credentials['access_token'] ?? '';
 
@@ -106,7 +105,7 @@ class CarrierRepository
             $sql = new DbQuery();
             $sql->select('id_carrier, carrier_code, service_code, carrier_name')
                 ->from('spedisciqui_carrier')
-                ->where('`carrier_code` =\'' . pSQL($carrierCode . '\''));
+                ->where('`carrier_code` = \'' . pSQL($carrierCode) . '\'');
 
             $row = Db::getInstance()->getRow($sql);
 
