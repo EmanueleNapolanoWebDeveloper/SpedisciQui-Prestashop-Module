@@ -108,7 +108,8 @@ class ContentHandler
             $this->packageService,
             $apiClient,
             $this->credentialsRepo,
-            $this->senderRepo
+            $this->senderRepo,
+            new LabelService()
         );
 
         $this->shipmentHandler = new ShipmentHandler(

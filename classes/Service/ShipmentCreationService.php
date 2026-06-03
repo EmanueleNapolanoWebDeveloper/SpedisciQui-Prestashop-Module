@@ -17,19 +17,22 @@ class ShipmentCreationService
     private ApiClient             $apiClient;
     private CredentialsRepositories $credentialRepo;
     private SenderRepository $senderRepo;
+    private LabelService $labelService;
 
     public function __construct(
         ShipmentRepository    $shipmentRepo,
         PackageServices     $packageService,
         ApiClient             $apiClient,
         CredentialsRepositories $credentialRepo,
-        SenderRepository        $senderRepo
+        SenderRepository        $senderRepo,
+        LabelService            $labelService
     ) {
         $this->shipmentRepo = $shipmentRepo;
         $this->packageService = $packageService;
         $this->apiClient = $apiClient;
         $this->credentialRepo = $credentialRepo;
         $this->senderRepo = $senderRepo;
+        $this->labelService   = $labelService;
     }
 
     //------------------------------------------------
@@ -278,38 +281,17 @@ class ShipmentCreationService
         // estrazione tracking
         $trackingNumber = (string) ($data['tracking_number'] ?? '');
         $remoteShipmentId = (string) ($data['shipment_id'] ?? '');
+        $labelBase64      = (string) ($data['label_pdf'] ?? '');  // ← aggiunto
 
-        // DEBUG VALORI ESTRATTI
-        PrestaShopLogger::addLog(
-            sprintf(
-                '[SpedisciQui] Parsed data | tracking: %s | shipment_id: %s',
-                $trackingNumber ?: 'EMPTY',
-                $remoteShipmentId ?: 'EMPTY'
-            ),
-            1,
-            null,
-            'Order',
-            (int) $shipment['id_order'],
-            true
-        );
-
-        // CHECK CRITICO
-        if (empty($trackingNumber)) {
-            PrestaShopLogger::addLog(
-                '[SpedisciQui] ERRORE: tracking_number mancante nella response API',
-                3,
-                null,
-                'Order',
-                (int) $shipment['id_order'],
-                true
+        // Salva label — non bloccante, fuori transazione
+        if (!empty($labelBase64)) {
+            $this->labelService->saveLabelPdf(
+                $labelBase64,
+                $trackingNumber,
+                (int) $shipment['id_order']
             );
         }
 
-        if (empty($trackingNumber)) {
-            return ShipmentCreationResult::failure(
-                "Risposta API per spedizione #{$idShipment} prova di tracking number"
-            );
-        }
 
         // transazioen dati
         return $this->persistSuccess(

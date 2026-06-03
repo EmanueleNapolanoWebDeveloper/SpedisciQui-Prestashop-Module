@@ -36,6 +36,8 @@ require __DIR__ . '/classes/Service/CarrierServices.php';
 require __DIR__ . '/classes/Service/SenderServices.php';
 require __DIR__ . '/classes/Service/ShipmentService.php';
 require __DIR__ . '/classes/Service/ShipmentCreationService.php';
+require __DIR__ . '/classes/Service/LabelService.php';
+
 
 
 // renderets
