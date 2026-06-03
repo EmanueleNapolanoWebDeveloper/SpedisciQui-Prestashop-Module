@@ -50,7 +50,7 @@ class CredentialsRenderer
         ]);
 
         return Context::getContext()->smarty->fetch(
-            'module:spedisciquishipping/views/templates/admin/_partials/initial/token_config.tpl'
+            'module:spedisciquishipping/views/templates/admin/_partials/_initial/token_config.tpl'
         );
     }
     //==========================================

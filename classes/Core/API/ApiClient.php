@@ -9,6 +9,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
+use SpedisciQui\DTO\ApiResponse;
 
 class ApiClient
 {
@@ -67,13 +68,14 @@ class ApiClient
         string $endpoint,
         string $token,
         array $payload = []
-    ): mixed {
+    ): ?ApiResponse {
 
         try {
 
             $options = [
                 'headers' => [
                     'Authorization' => "Bearer {$token}",
+                    'Accept' => 'application/json'
                 ],
             ];
 
@@ -82,33 +84,55 @@ class ApiClient
             }
 
             $response = $this->client->request($method, $endpoint, $options);
-            $body     = $response->getBody()->getContents();
-            $data     = json_decode($body, true);
+            $statusCode = $response->getStatusCode();
+            $body = trim($response->getBody()->getContents());
+
+            PrestaShopLogger::addLog(
+                '[SPEDISCIQUI] BODY HEX (primi 40 byte): ' . bin2hex(substr($body, 0, 40)),
+                1
+            );
+
+            $data = json_decode(trim($body), true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                //PrestaShopLogger::addLog('[SPEDISCIQUI] JSON decode error: ' . json_last_error_msg(), 3);
+                PrestaShopLogger::addLog(
+                    '[SPEDISCIQUI] JSON decode error: ' . json_last_error_msg() .
+                        ' | primi 200 chars: ' . substr($body, 0, 200),
+                    3
+                );
                 return null;
             }
 
-            return $data;
+
+            PrestaShopLogger::addLog(
+                '[SPEDISCIQUI] RAW RESPONSE: ' . $body,
+                1
+            );
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                PrestaShopLogger::addLog('[SPEDISCIQUI] JSON decode error: ' . json_last_error_msg(), 3);
+                return null;
+            }
+
+            return ApiResponse::success($statusCode, $data);
         } catch (ClientException $e) {
             $response   = $e->getResponse();
             $statusCode = $response ? $response->getStatusCode() : 0;
-
-            if ($statusCode === 401) {
-                Configuration::deleteByName('SPEDISCIQUI_ACCESS_TOKEN');
-                $body = $response ? $response->getBody()->getContents() : '';
-                //PrestaShopLogger::addLog('[SPEDISCIQUI] Token scaduto o non valido (401): ' . $body, 2);
-            }
+            $body = $response ? trim($response->getBody()->getContents()) : '';
+            $data = json_decode($body, true);
+            $errorMsg = (is_array($data) && isset($data['message'])) ? $data['message'] : $e->getMessage();
+            $errorType = $statusCode === 401 ? 'auth' : 'server';
 
             PrestaShopLogger::addLog('[SPEDISCIQUI] ClientException (HTTP ' . $statusCode . '): ' . $e->getMessage(), 3);
-            return null;
+
+            return ApiResponse::failure($statusCode, $errorMsg, $errorType);
         } catch (ConnectException $e) {
             PrestaShopLogger::addLog('[SPEDISCIQUI] Server non raggiungibile: ' . $e->getMessage(), 3);
-            return null;
+
+            return ApiResponse::failure(0, $e->getMessage(), 'network');
         } catch (RequestException $e) {
             PrestaShopLogger::addLog('[SPEDISCIQUI] RequestException: ' . $e->getMessage(), 3);
-            return null;
+            return ApiResponse::failure(0, $e->getMessage(), 'network');;
         }
     }
 }

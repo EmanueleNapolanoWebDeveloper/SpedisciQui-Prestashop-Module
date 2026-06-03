@@ -1,0 +1,593 @@
+.sq-orders {
+        font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: #2c3e50;
+    }
+
+    /* ── Header ── */
+    .sq-orders-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 24px;
+        border-bottom: 1px solid #e8ecef;
+        background: #fff;
+    }
+
+    .sq-orders-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .sq-orders-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1a2535;
+        margin: 0;
+    }
+
+    .sq-orders-subtitle {
+        font-size: 12px;
+        color: #8a9ab0;
+        margin: 2px 0 0;
+    }
+
+    .sq-count-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        height: 28px;
+        padding: 0 10px;
+        background: #1a6fc4;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        border-radius: 14px;
+    }
+
+    /* ── Alert flash ── */
+    .sq-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        margin: 16px 24px;
+        border-left: 3px solid transparent;
+    }
+
+    .sq-alert-success {
+        background: #e6f9ee;
+        border-color: #1e7e34;
+        color: #155724;
+    }
+
+    .sq-alert-danger {
+        background: #fdecea;
+        border-color: #c0392b;
+        color: #721c24;
+    }
+
+    .sq-alert i {
+        font-size: 15px;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    /* ── Filtro ── */
+    .sq-filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 24px;
+        background: #f8f9fb;
+        border-bottom: 1px solid #e8ecef;
+    }
+
+    .sq-filter-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #7a8a9a;
+        white-space: nowrap;
+    }
+
+    .sq-filter-bar select {
+        font-size: 13px;
+        padding: 6px 10px;
+        border: 1px solid #d0d8e4;
+        border-radius: 5px;
+        background: #fff;
+        color: #2c3e50;
+        outline: none;
+        cursor: pointer;
+        min-width: 180px;
+    }
+
+    .sq-filter-bar select:focus {
+        border-color: #1a6fc4;
+        box-shadow: 0 0 0 2px rgba(26, 111, 196, 0.12);
+    }
+
+    .sq-filter-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 14px;
+        background: #1a6fc4;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .sq-filter-btn:hover {
+        background: #155da0;
+    }
+
+    /* ── Tabella ── */
+    .sq-table-wrap {
+        overflow-x: auto;
+    }
+
+    .sq-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 900px;
+        font-size: 13px;
+    }
+
+    .sq-table thead tr {
+        background: #f5f7fa;
+        border-bottom: 2px solid #dde3ea;
+    }
+
+    .sq-table thead th {
+        padding: 10px 14px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #7a8a9a;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .sq-table tbody tr {
+        border-bottom: 1px solid #f0f3f6;
+        transition: background 0.12s;
+    }
+
+    .sq-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .sq-table tbody tr:hover {
+        background: #f7f9fc;
+    }
+
+    .sq-table td {
+        padding: 12px 14px;
+        vertical-align: middle;
+        color: #2c3e50;
+    }
+
+    /* ── Celle specifiche ── */
+    .sq-order-id {
+        font-weight: 700;
+        font-size: 13px;
+        color: #1a6fc4;
+        text-decoration: none;
+    }
+
+    .sq-order-id:hover {
+        text-decoration: underline;
+    }
+
+    .sq-customer-name {
+        font-weight: 600;
+        color: #1a2535;
+        font-size: 13px;
+    }
+
+    .sq-customer-meta {
+        font-size: 11px;
+        color: #9aabb8;
+        margin-top: 2px;
+    }
+
+    .sq-tracking code {
+        background: #f0f4f8;
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
+        padding: 2px 7px;
+        font-size: 11px;
+        color: #3a5276;
+        font-family: 'Courier New', monospace;
+    }
+
+    .sq-carrier-code {
+        display: inline-block;
+        padding: 2px 8px;
+        background: #eef2f7;
+        border: 1px solid #d5dfe9;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        font-family: 'Courier New', monospace;
+        color: #3a5276;
+    }
+
+    .sq-service-code {
+        font-size: 11px;
+        color: #9aabb8;
+        margin-top: 3px;
+    }
+
+    /* ── Badge status ── */
+    .sq-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 9px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .sq-badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+
+    .sq-badge-warning {
+        background: #fff8e1;
+        color: #856404;
+        border: 1px solid #ffd966;
+    }
+
+    .sq-badge-warning .sq-badge-dot {
+        background: #d4a017;
+    }
+
+    .sq-badge-info {
+        background: #e8f0fb;
+        color: #1a6fc4;
+        border: 1px solid #bdd4f0;
+    }
+
+    .sq-badge-info .sq-badge-dot {
+        background: #1a6fc4;
+    }
+
+    .sq-badge-primary {
+        background: #e8f0fb;
+        color: #1a6fc4;
+        border: 1px solid #bdd4f0;
+    }
+
+    .sq-badge-primary .sq-badge-dot {
+        background: #1a6fc4;
+    }
+
+    .sq-badge-success {
+        background: #e6f9ee;
+        color: #1e7e34;
+        border: 1px solid #b8e8c8;
+    }
+
+    .sq-badge-success .sq-badge-dot {
+        background: #1e7e34;
+    }
+
+    .sq-badge-danger {
+        background: #fdecea;
+        color: #c0392b;
+        border: 1px solid #f5c0ba;
+    }
+
+    .sq-badge-danger .sq-badge-dot {
+        background: #c0392b;
+    }
+
+    .sq-badge-secondary {
+        background: #f0f3f6;
+        color: #5a6a7a;
+        border: 1px solid #dde3ea;
+    }
+
+    .sq-badge-secondary .sq-badge-dot {
+        background: #8a9ab0;
+    }
+
+    /* Badge pagamento */
+    .sq-pay-paid {
+        background: #e6f9ee;
+        color: #155724;
+        border: 1px solid #b8e8c8;
+    }
+
+    .sq-pay-refunded {
+        background: #fff8e1;
+        color: #856404;
+        border: 1px solid #ffd966;
+    }
+
+    .sq-pay-pending {
+        background: #fdecea;
+        color: #721c24;
+        border: 1px solid #f5c0ba;
+    }
+
+    /* ── Totale ── */
+    .sq-total {
+        font-weight: 700;
+        font-size: 13px;
+        color: #1a2535;
+    }
+
+    .sq-payment-method {
+        font-size: 11px;
+        color: #9aabb8;
+        margin-top: 2px;
+    }
+
+    /* ── Azioni ── */
+    .sq-action-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .sq-btn-create {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 13px;
+        background: #1a6fc4;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, transform 0.1s;
+        white-space: nowrap;
+    }
+
+    .sq-btn-create:hover {
+        background: #155da0;
+    }
+
+    .sq-btn-create:active {
+        transform: scale(0.97);
+    }
+
+    .sq-btn-cancel {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 13px;
+        background: #fff;
+        color: #c0392b;
+        border: 1px solid #e8b4af;
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+        white-space: nowrap;
+    }
+
+    .sq-btn-cancel:hover {
+        background: #fdecea;
+        border-color: #c0392b;
+    }
+
+    .sq-btn-help {
+        font-size: 11px;
+        color: #8a9ab0;
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .sq-btn-help:hover {
+        color: #1a6fc4;
+    }
+
+    /* ── Tooltip modale ── */
+    .sq-modal-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(30, 37, 50, 0.45);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sq-modal-backdrop.active {
+        display: flex;
+    }
+
+    .sq-modal {
+        background: #fff;
+        border-radius: 10px;
+        padding: 28px 32px;
+        max-width: 460px;
+        width: 90%;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+        position: relative;
+    }
+
+    .sq-modal-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1a2535;
+        margin: 0 0 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .sq-modal-title i {
+        color: #1a6fc4;
+        font-size: 18px;
+    }
+
+    .sq-modal-steps {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .sq-modal-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        font-size: 13px;
+        color: #2c3e50;
+    }
+
+    .sq-step-num {
+        min-width: 22px;
+        height: 22px;
+        background: #1a6fc4;
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .sq-modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .sq-modal-confirm {
+        padding: 8px 18px;
+        background: #1a6fc4;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .sq-modal-confirm:hover {
+        background: #155da0;
+    }
+
+    .sq-modal-close-btn {
+        padding: 8px 16px;
+        background: #fff;
+        color: #5a6a7a;
+        border: 1px solid #dde3ea;
+        border-radius: 5px;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .sq-modal-close-btn:hover {
+        background: #f5f7fa;
+    }
+
+    /* ── Empty state ── */
+    .sq-empty {
+        padding: 64px 20px;
+        text-align: center;
+    }
+
+    .sq-empty-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: #f0f4f8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 18px;
+        font-size: 28px;
+        color: #b0bbc8;
+    }
+
+    .sq-empty-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0 0 8px;
+    }
+
+    .sq-empty-desc {
+        font-size: 13px;
+        color: #8a9ab0;
+        margin: 0;
+    }
+
+    /* ── Paginazione ── */
+    .sq-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 18px;
+        border-top: 1px solid #e8ecef;
+        flex-wrap: wrap;
+    }
+
+    .sq-page-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 32px;
+        border-radius: 5px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1px solid #dde3ea;
+        background: #fff;
+        color: #5a6a7a;
+        text-decoration: none;
+        transition: background 0.12s;
+    }
+
+    .sq-page-btn:hover {
+        background: #f0f4f8;
+        color: #1a2535;
+    }
+
+    .sq-page-btn.active {
+        background: #1a6fc4;
+        border-color: #1a6fc4;
+        color: #fff;
+    }
+
+    .sq-page-info {
+        font-size: 12px;
+        color: #9aabb8;
+        margin-top: 8px;
+        text-align: center;
+        width: 100%;
+    }

@@ -49,7 +49,7 @@ class CarrierRenderer
 
         return $this->module->display(
             $this->module->getLocalPath(),
-            'views/templates/admin/_partials/initial/carrier_list_init.tpl'
+            'views/templates/admin/_partials/_initial/carrier_list_init.tpl'
         );
     }
     // =============================================

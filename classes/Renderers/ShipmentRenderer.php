@@ -65,7 +65,7 @@ class ShipmentRenderer
 
         return $this->module->display(
             $this->module->getLocalPath(),
-            'views/templates/admin/_partials/orders_panel.tpl'
+            'views/templates/admin/_partials/shipment/shipment_panel.tpl'
         );
     }
     // ========================================================================
@@ -93,7 +93,7 @@ class ShipmentRenderer
 
         return $this->module->display(
             $this->module->getLocalPath(),
-            'views/templates/admin/_partials/_orders/orders_detail.tpl'
+            'views/templates/admin/_partials/_shipment/shipment_detail.tpl'
         );
     }
     // ========================================================================

@@ -47,15 +47,15 @@
 
             <div class="tab-content" style="padding:24px;">
                 <div class="tab-pane active" id="tab-orders">
-                    {include file="module:spedisciquishipping/views/templates/admin/_partials/orders_panel.tpl"}
+                    {include file="module:spedisciquishipping/views/templates/admin/_partials/_shipment/shipment_panel.tpl"}
                 </div>
 
                 <div class="tab-pane" id="tab-carriers">
-                    {include file="module:spedisciquishipping/views/templates/admin/_partials/carrier_panel.tpl"}
+                    {include file="module:spedisciquishipping/views/templates/admin/_partials/_carrier/carrier_panel.tpl"}
                 </div>
 
                 <div class="tab-pane" id="tab-settings">
-                    {include file="module:spedisciquishipping/views/templates/admin/_partials/settings_panel.tpl"}
+                    {include file="module:spedisciquishipping/views/templates/admin/_partials/_settings/settings_panel.tpl"}
                 </div>
             </div>
 

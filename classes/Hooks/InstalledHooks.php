@@ -10,14 +10,17 @@ class CustomCheckout
     private spedisciquishipping $module;
     private Context $context;
     private CarrierRepository $carrierRepo;
+    private ApiClient $apiClient;
 
     public function __construct(
         spedisciquishipping $module,
-        CarrierRepository $carrierRepo
+        CarrierRepository $carrierRepo,
+        ApiClient $apiClient
     ) {
         $this->module = $module;
         $this->context = Context::getContext();
         $this->carrierRepo = $carrierRepo;
+        $this->apiClient = $apiClient;
     }
 
 
@@ -197,6 +200,10 @@ class CustomCheckout
                 $this->carrierRepo,
                 new CarrierServices($this->carrierRepo),
                 new ShipmentRepository(),
+                new CredentialsRepositories(
+                    $this->context,
+                    $this->apiClient
+                ),
                 $this->context,
                 $this->module
             )->calculatePackageDimensions($cart, $defaultPackage);
@@ -276,9 +283,8 @@ class CustomCheckout
     // ======================================================
     // HOOK PER INIEZIONE CSS E JS IN COMPOENNTI - INIZIO
     // ======================================================
-    public function hookActionAdminControllerSetMedia(array $params)
+    public function hookActionAdminControllerSetMedia(array $params): void
     {
-
         if (Tools::getValue('configure') !== $this->module->name) {
             return;
         }
@@ -286,17 +292,51 @@ class CustomCheckout
         /** @var \AdminController $controller */
         $controller = $this->context->controller;
 
+        $tab = Tools::getValue('tab', 'dashboard'); // default: dashboard
+
+        // Asset comuni a tutto il modulo
         $controller->addCSS(
-            $this->module->getPathUri() . 'views/css/shipment_reviews.css',
+            $this->module->getPathUri() . 'views/css/common.css',
             'all',
             null,
             false
         );
 
-        $controller->addJS(
-            $this->module->getPathUri() . 'views/js/shipment_reviews.js',
-            false
-        );
+        // Asset specifici per tab
+        switch ($tab) {
+            case 'dashboard':
+                $controller->addCSS(
+                    $this->module->getPathUri() . 'views/css/shipment_reviews.css',
+                    'all',
+                    null,
+                    false
+                );
+                $controller->addJS(
+                    $this->module->getPathUri() . 'views/js/shipment_reviews.js',
+                    false
+                );
+                break;
+
+            case 'tariffs':
+                $controller->addCSS(
+                    $this->module->getPathUri() . 'views/css/tariffs.css',
+                    'all',
+                    null,
+                    false
+                );
+                $controller->addJS(
+                    $this->module->getPathUri() . 'views/js/tariffs.js',
+                    false
+                );
+                break;
+
+            case 'settings':
+                $controller->addJS(
+                    $this->module->getPathUri() . 'views/js/settings.js',
+                    false
+                );
+                break;
+        }
     }
     // ======================================================
     // HOOK PER INIEZIONE CSS E JS IN COMPOENNTI - FINE

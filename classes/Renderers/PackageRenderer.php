@@ -54,7 +54,7 @@ class PackageRenderer
 
         return $this->module->display(
             $this->module->getLocalPath(),
-            'views/templates/admin/_partials/initial/package_init.tpl'
+            'views/templates/admin/_partials/_initial/package_init.tpl'
         );
     }
     // =============================================

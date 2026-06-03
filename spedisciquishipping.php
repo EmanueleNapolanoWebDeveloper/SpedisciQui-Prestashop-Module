@@ -35,6 +35,8 @@ require __DIR__ . '/classes/Service/PackageServices.php';
 require __DIR__ . '/classes/Service/CarrierServices.php';
 require __DIR__ . '/classes/Service/SenderServices.php';
 require __DIR__ . '/classes/Service/ShipmentService.php';
+require __DIR__ . '/classes/Service/ShipmentCreationService.php';
+
 
 // renderets
 require __DIR__ . '/classes/Renderers/CredentialsRenderer.php';
@@ -55,6 +57,11 @@ require __DIR__ . '/classes/Handlers/ShipmentHandler.php';
 
 // hooks
 require __DIR__ . '/classes/Hooks/InstalledHooks.php';
+
+//DTo
+require __DIR__ . '/classes/Core/API/DTO/ApiResponse.php';
+require __DIR__ . '/classes/Core/API/DTO/ShipmentCreationResult.php';
+
 
 
 
@@ -114,20 +121,31 @@ class spedisciquishipping extends CarrierModule
 
             $this->customCheckout = new CustomCheckout(
                 $this,
-                $this->carrierRepo
+                $this->carrierRepo,
+                $this->apiClient
             );
 
-            $this->carrierRepo = new CarrierRepository(
-                new CarrierApi(new ApiClient(new ConfigRepositories())),
-                new CredentialsRepositories($this->context, new ApiClient(new ConfigRepositories())),
-                $this,
-            );
             $this->carrierService = new CarrierServices(
                 $this->carrierRepo
             );
+
+
             $this->shipmentRepo = new ShipmentRepository();
-            $this->shipmentService = new ShipmentServices($this->carrierRepo, $this->carrierService, $this->shipmentRepo, $context, $this);
+
+
+            $this->shipmentService = new ShipmentServices(
+                $this->carrierRepo,
+                $this->carrierService,
+                $this->shipmentRepo,
+                $this->credentials,
+                $context,
+                $this
+                );
+
+
             $this->shipmentRepo->setShipmentService($this->shipmentService);
+
+
         } catch (Exception $e) {
             PrestaShopLogger::addLog(
                 '[SpedisciQui] COSTRUTTORE CRASH: ' . $e->getMessage()

@@ -1,8 +1,3 @@
-{**
- * SpedisciQui — Dashboard Spedizioni (UI/UX upgrade)
- * Template: views/templates/admin/_partials/orders_panel.tpl
- *}
-
 <style>
     .sq-orders {
         font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -598,6 +593,11 @@
         width: 100%;
     }
 </style>
+
+
+
+
+
 
 {* ── Modale conferma Crea Spedizione ── *}
 <div class="sq-modal-backdrop" id="sq-shipment-modal">

@@ -36,7 +36,7 @@ class ContentHandler
 
     // servies
     private PackageServices $packageService;
-
+    private ShipmentCreationService $shipmentCreationService;
 
 
     //==========================================
@@ -67,7 +67,16 @@ class ContentHandler
 
         // 4. services condivisi (ora $carrierRepo esiste)
         $carrierServices = new CarrierServices($this->carrierRepo);
-        $shipmentService = new ShipmentServices($this->carrierRepo, $carrierServices, $this->shipmentRepo, $this->context, $this->module);
+
+        $shipmentService = new ShipmentServices(
+            $this->carrierRepo,
+            $carrierServices,
+            $this->shipmentRepo,
+            $this->credentialsRepo,
+            $this->context,
+            $this->module
+        );
+
         $this->packageService = new PackageServices();
 
 
@@ -79,14 +88,46 @@ class ContentHandler
         $this->carrierHandler     = new CarrierHandlers($this->module, $this->carrierRepo, $this->setupManager, $carrierServices);
         $this->dashboardHandler = new DashboardHandlers($this->carrierRepo, $this->module, $this->shipmentRepo, $this->senderRepo, $shipmentService);
 
+
         // 6. renderers
         $this->credentialsRenderer = new CredentialsRenderer($module, $this->credentialsRepo);
         $this->senderRenderer      = new SenderRenderer($module, $this->senderRepo, $this->context);
         $this->packageRenderer     = new PackageRenderer($this->module, $this->packRepo);
         $this->carrierRenderer     = new CarrierRenderer($this->module, $this->carrierRepo, $carrierServices);
         $this->dashboardRender     = new DashboardRenderer($this->module, $this->context);
-        $this->shipmentRenderer    = new ShipmentRenderer($this->shipmentRepo, $this->module, $this->context, $shipmentService);
-        $this->shipmentHandler = new ShipmentHandler($moduleAdminLink, $shipmentService, $this->shipmentRepo, $this->shipmentRenderer,$this->packageService);
+
+        $this->shipmentRenderer    = new ShipmentRenderer(
+            $this->shipmentRepo,
+            $this->module,
+            $this->context,
+            $shipmentService
+        );
+
+        $this->shipmentCreationService = new ShipmentCreationService(
+            $this->shipmentRepo,
+            $this->packageService,
+            $apiClient,
+            $this->credentialsRepo,
+            $this->senderRepo
+        );
+
+        $this->shipmentHandler = new ShipmentHandler(
+            $moduleAdminLink,
+            $this->shipmentCreationService,
+            $this->shipmentRepo,
+            $this->shipmentRenderer,
+            $this->packageService,
+            $apiClient,
+        );
+
+        $this->shipmentHandler = new ShipmentHandler(
+            $moduleAdminLink,
+            $this->shipmentCreationService,
+            $this->shipmentRepo,
+            $this->shipmentRenderer,
+            $this->packageService,
+            $apiClient
+        );
 
         PrestaShopLogger::addLog(
             '[SQ-DEBUG] ContentHandler costruito. ShipmentRepo class: ' . get_class($this->shipmentRepo),
@@ -132,7 +173,7 @@ class ContentHandler
 
             return $output . $this->module->display(
                 $this->module->getLocalPath(),
-                'views/templates/admin/initial_config_layout.tpl'
+                'views/templates/admin/layouts/initial_config_layout.tpl'
             );
         }
 
@@ -297,7 +338,7 @@ class ContentHandler
     //========================================================
 
 
-    
+
 
     //========================================================
     // REINDIRIZZAMENTO DOPO UN SUBMIT - INIZIO

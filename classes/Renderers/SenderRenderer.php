@@ -58,7 +58,7 @@ class SenderRenderer
 
         return $this->module->display(
             $this->module->getLocalPath(),
-            'views/templates/admin/_partials/initial/sender_form_init.tpl'
+            'views/templates/admin/_partials/_initial/sender_form_init.tpl'
         );
     }
     //==========================================

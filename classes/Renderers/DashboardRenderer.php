@@ -54,7 +54,7 @@ class DashboardRenderer
         }
 
         return $this->context->smarty->fetch(
-            'module:spedisciquishipping/views/templates/admin/dashboard_layout.tpl'
+            'module:spedisciquishipping/views/templates/admin/layouts/dashboard_layout.tpl'
         );
     }
     //==========================================
@@ -115,7 +115,7 @@ class DashboardRenderer
         ], $data));
 
         return $this->context->smarty->fetch(
-            'module:spedisciquishipping/views/templates/admin/dashboard_layout.tpl'
+            'module:spedisciquishipping/views/templates/admin/layouts/dashboard_layout.tpl'
         );
     }
 

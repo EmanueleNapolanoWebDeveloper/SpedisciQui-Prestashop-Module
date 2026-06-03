@@ -6,7 +6,10 @@ class ShipmentServices
     private CarrierServices $carrierServices;
     private ShipmentRepository $shipmentRepo;
     private Context $context;
+    private CredentialsRepositories $credentialRepo;
     private spedisciquishipping $module;
+
+
 
     /**
      * Impostato dal modulo principale prima di invocare getRateShippingCost().
@@ -20,12 +23,14 @@ class ShipmentServices
         CarrierRepository $carrierRepo,
         CarrierServices $carrierServices,
         ShipmentRepository $shipmentRepo,
+        CredentialsRepositories $credentialRepo,
         Context $context,
         spedisciquishipping $module
     ) {
         $this->carrierRepo    = $carrierRepo;
         $this->carrierServices = $carrierServices;
         $this->shipmentRepo = $shipmentRepo;
+        $this->credentialRepo = $credentialRepo;
         $this->context = $context;
         $this->module = $module;
     }
@@ -258,7 +263,7 @@ class ShipmentServices
 
     //==================================================
     //RISOLVE STATO PAGAMENTO
-    //====================================================
+    //==================================================
     public function resolvePaymentStatus(string $orderStateName): string
     {
         foreach (self::PAYMENT_STATUS_MAP as $keyword => $status) {
@@ -425,154 +430,9 @@ class ShipmentServices
     }
 
 
-
     //==================================================
     //HELPERS
-    //====================================================
-
-
-    // PAYLOAD PER API CONFERMA SHIPPING
-
-    public function buildShipmentPayload(
-        \Order $order,
-        array $parcelData,
-        array $extraOptions = []
-    ): array {
-        try {
-
-            // indirizzo destinatario
-            $deliveryAddress = new \Address((int)$order->id_address_delivery);
-
-            if (!Validate::isLoadedObject($deliveryAddress)) {
-                throw new InvalidArgumentException(('Indirizzo di spedizione dell\' ordine non valido!'));
-            }
-
-            $customer = new Customer((int) $order->id_customer);
-            $country = new Country((int)$deliveryAddress->id_country);
-            $country_iso = $country->iso_code ? strtoupper($country->iso_code) : 'IT';
-
-            // destinatario
-            $recipientName = trim($deliveryAddress->firstname . ' ' . $deliveryAddress->lastname);
-            $recipientPhone = !empty($deliveryAddress->phone_mobile) ? $deliveryAddress->phone_mobile : $deliveryAddress->phone;
-
-            if (empty($recipientName)) {
-                throw new \InvalidArgumentException('Il nome del destinatario è vuoto o non valido.');
-            }
-            if (empty($deliveryAddress->address1)) {
-                throw new \InvalidArgumentException('L\'indirizzo (Via/Piazza) del destinatario è obbligatorio.');
-            }
-            if (empty($deliveryAddress->city)) {
-                throw new \InvalidArgumentException('La città del destinatario è mancante.');
-            }
-            if (empty($deliveryAddress->postcode)) {
-                throw new \InvalidArgumentException('Il CAP del destinatario è obbligatorio per la spedizione.');
-            }
-            if (empty($recipientPhone)) {
-                throw new \InvalidArgumentException('Il numero di telefono del destinatario è obbligatorio per i corrieri.');
-            }
-
-            // recupero mittente
-            $senderRepo = new SenderRepository($this->context);
-
-            $sender = $senderRepo->getDefault();
-
-            if (!$sender || empty($sender)) {
-                throw new \InvalidArgumentException('Nessun indirizzo mittente trovato nella tabella spedisciqui_sender_address. Configuralo nel modulo.');
-            }
-
-            PrestaShopLogger::addLog('parcel : ' . print_r($parcelData, true));
-
-            if (empty($sender['firstname']) || empty($sender['lastname']) || empty($sender['address1']) || empty($sender['city']) || empty($sender['postcode'])) {
-                throw new \InvalidArgumentException('I dati del mittente estratti dal database sono incompleti (Nome, Indirizzo, Città o CAP mancanti).');
-            }
-
-            // DATI PACCO
-            $weight = (float) ($parcelData['weights'][0] ?? 0);
-            $width  = (float) ($parcelData['widths'][0] ?? 0);
-            $length = (float) ($parcelData['lengths'][0] ?? 0);
-            $height = (float) ($parcelData['heights'][0] ?? 0);
-
-            if ($weight <= 0) {
-                throw new \InvalidArgumentException(sprintf('Il peso del pacco deve essere maggiore di zero. Rilevato: %s kg', $weight));
-            }
-            if ($width <= 0 || $length <= 0 || $height <= 0) {
-                throw new \InvalidArgumentException('Le dimensioni del pacco (larghezza, lunghezza, profondità) devono essere maggiori di zero.');
-            }
-
-            // ASSICURAZIONE
-            $insuranceEnabled = !empty($extraOptions['insurance_enabled']);
-            $insuranceValue   = $insuranceEnabled ? round((float)($extraOptions['insurance_value'] ?? 0), 2) : 0.0;
-
-            // contrassegno
-            $isCod = ($order->module === 'ps_cashondelivery' || !empty($extraOptions['cod_enabled']));
-            $codValue = $isCod ? round((float)$order->total_paid_tax_incl, 2) : 0.0;
-
-            // costruzione payload
-            return [
-                'sender' => [
-                    'name'      => substr((string)$sender['firstname'], 0, 64),
-                    'surname'      => substr((string)$sender['lastname'], 0, 64),
-                    'address'   => substr((string)$sender['address1'], 0, 100),
-                    'city'      => (string)$sender['city'],
-                    'postcode'  => (string)$sender['postcode'],
-                    'country'   => !empty($sender['country_iso']) ? strtoupper((string)$sender['country_iso']) : 'IT',
-                ],
-
-                'recipient' => [
-                    'name'      => substr($recipientName, 0, 64),
-                    'address'   => substr($deliveryAddress->address1 . ' ' . $deliveryAddress->address2, 0, 100),
-                    'city'      => $deliveryAddress->city,
-                    'postcode'  => $deliveryAddress->postcode,
-                    'country'   => $country_iso,
-                    'phone'     => preg_replace('/[^0-9+]/', '', $recipientPhone), // Mantiene solo numeri e l'eventuale prefisso '+'
-                ],
-
-                'parcel' => [
-                    'width'  => $width,
-                    'length' => $length,
-                    'height'  => $height,
-                    'weight' => $weight,
-                ],
-
-                'insurance' => [
-                    'enabled' => $insuranceEnabled,
-                    'value'   => $insuranceValue,
-                ],
-
-                'cod' => [
-                    'enabled' => $isCod,
-                    'value'   => $codValue,
-                ]
-            ];
-        } catch (\InvalidArgumentException $e) {
-            // Intercettiamo gli errori di validazione (campi vuoti, incongruenze nei dati inseriti)
-            \PrestaShopLogger::addLog(
-                '[SpedisciQui] Errore validazione dati per spedizione Ordine #' . (int)$order->id . ': ' . $e->getMessage(),
-                2, // Severity 2 = Warning (Significa che il codice funziona, ma i dati utente sono errati)
-                null,
-                'Order',
-                (int)$order->id,
-                true
-            );
-            // Rilanciamo l'eccezione in modo che il controller possa catturarla e mostrare un messaggio d'errore all'utente
-            throw $e;
-        } catch (\Throwable $e) {
-            // Intercettiamo errori gravi di sistema (es: errori di sintassi SQL nel Repository, database down, ecc.)
-            \PrestaShopLogger::addLog(
-                '[SpedisciQui] Eccezione critica durante la generazione del payload dell\'Ordine #' . (int)$order->id .
-                    ' - Errore: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine(),
-                3, // Severity 3 = Error
-                null,
-                'Order',
-                (int)$order->id,
-                true
-            );
-            // Mascheriamo l'errore tecnico per non mostrare dettagli del database all'utente finale
-            throw new \Exception('Si è verificato un errore tecnico interno durante la preparazione dei dati di spedizione.');
-        }
-    }
-
-
+    //==================================================
 
     // HELPER FORMATTAZION EPREZZO
     private function formatPrice(float $amount, ?\Currency $currency): string
@@ -631,4 +491,6 @@ class ShipmentServices
             . '&configure=' . $this->module->name
             . '&token='     . Tools::getAdminTokenLite('AdminModules');
     }
+
+    
 }
