@@ -25,8 +25,12 @@ class ShipmentRepository
         'tracking_number',
         'tracking_url',
         'api_shipment_id',
+        'remote_shipment_id',
+        'label_path',
+        'label_generated',
+        'error_message',
         'shipped_at',
-        'delivered_at'
+        'delivered_at',
     ];
 
     private const DATE_MAP = [
@@ -146,8 +150,9 @@ class ShipmentRepository
             sh.`id_order`,
             sh.`id_spedisciqui_carrier`,
             sh.`carrier_code`,
-            sh.`service_code`,
+            sh.`service_code`,            
             sh.`tracking_number`,
+            sh.`label_path`,
             sh.`status`,
             sh.`shipping_cost`,
             sh.`shipping_currency`,
@@ -309,7 +314,7 @@ class ShipmentRepository
     // ===============================================
     // AGGIORNA TRACKING 
     // =================================================
-    public function updateTracking(int $id, string $trackingNumber, string $trackingUrl = ''): bool
+    public function updateTracking(int $id, string $trackingNumber, ?string $labelPath, string $trackingUrl = ''): bool
     {
 
         if ($id <= 0) {
@@ -336,6 +341,7 @@ class ShipmentRepository
                     'tracking_number' => pSQL($trackingNumber),
                     'tracking_url'    => pSQL($trackingUrl),
                     'status'          => 'label_created',
+                    'label_path' => pSQL($labelPath),
                     'label_generated' => 1,
                 ],
                 '`id` = ' . (int) $id
@@ -392,12 +398,14 @@ class ShipmentRepository
 
         if ($datetimeField !== null) {
             $updateData[$datetimeField] = date('Y-m-d H:i:s');
-        } elseif (isset($dateMap[$status])) {
-            $updateData[$dateMap[$status]] = date('Y-m-d H:i:s');
+        } elseif (isset(self::DATE_MAP[$status])) {
+            $updateData[self::DATE_MAP[$status]] = date('Y-m-d H:i:s');
         }
 
         $updateData = array_merge($updateData, $cleanExtra);
 
+
+        PrestaShopLogger::addLog('updateStatus | id=' . $id . ' | status=' . $status . ' | extra=' . json_encode($extra) . ' | updateData=' . json_encode($updateData));
         try {
 
             $result = Db::getInstance()->update(
@@ -406,6 +414,8 @@ class ShipmentRepository
                 '`id` = ' . (int)$id,
 
             );
+
+            PrestaShopLogger::addLog('updateStatus result=' . var_export($result, true) . ' | affected=' . Db::getInstance()->Affected_Rows() . ' | id=' . $id);
 
             if (!$result) {
                 $this->log('updateStatus: update fallito per ID ' . $id, 3);

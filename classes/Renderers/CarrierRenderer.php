@@ -181,7 +181,7 @@ class CarrierRenderer
 
         return $this->module->display(
             $this->module->getLocalPath(),
-            'views/templates/admin/_partials/_carrier/config_tariffs.tpl'
+            'views/templates/admin/_partials/_carrier/components/config_tariffs.tpl'
         );
     }
     // =============================================

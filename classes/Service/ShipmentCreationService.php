@@ -284,8 +284,9 @@ class ShipmentCreationService
         $labelBase64      = (string) ($data['label_pdf'] ?? '');  // ← aggiunto
 
         // Salva label — non bloccante, fuori transazione
+        $savedPdf = null;
         if (!empty($labelBase64)) {
-            $this->labelService->saveLabelPdf(
+            $savedPdf = $this->labelService->saveLabelPdf(
                 $labelBase64,
                 $trackingNumber,
                 (int) $shipment['id_order']
@@ -298,7 +299,8 @@ class ShipmentCreationService
             $idShipment,
             $shipment,
             $trackingNumber,
-            $remoteShipmentId
+            $remoteShipmentId,
+            $savedPdf
         );
     }
 
@@ -316,29 +318,37 @@ class ShipmentCreationService
         int    $idShipment,
         array  $shipment,
         string $trackingNumber,
-        string $remoteShipmentId
+        string $remoteShipmentId,
+        ?string $pdfPath
     ): ShipmentCreationResult {
+
+
         $db = Db::getInstance();
         $db->execute('START TRANSACTION');
 
         try {
-            PrestaShopLogger::addLog('persistSuccess avviato');
 
-
-            $updated = $this->shipmentRepo->updateStatus(
+            $trackingUpdated = $this->shipmentRepo->updateTracking(
                 $idShipment,
-                self::STATUS_LABEL_CREATED,
-                [
-                    'tracking_number'    => $trackingNumber,
-                    'remote_shipment_id' => $remoteShipmentId,
-                ]
+                $trackingNumber,
+                $pdfPath
             );
 
-            if (!$updated) {
-                PrestaShopLogger::addLog('Fallito updated');
-                throw new RuntimeException(
-                    "Aggiornamento DB fallito per spedizione #{$idShipment}."
-                );
+            if (!$trackingUpdated) {
+                throw new RuntimeException("updateTracking fallito per spedizione #{$idShipment}.");
+            }
+
+            PrestaShopLogger::addLog('updateTracking OK');
+
+
+            // aggiorna remote_shipment_id separatamente
+            $statusUpdated = $this->shipmentRepo->updateStatus(
+                $idShipment,
+                self::STATUS_LABEL_CREATED,
+            );
+
+            if (!$statusUpdated) {
+                throw new RuntimeException("updateStatus (remote_shipment_id) fallito per spedizione #{$idShipment}.");
             }
 
             PrestaShopLogger::addLog('Successo updated');
@@ -362,6 +372,7 @@ class ShipmentCreationService
             );
 
             return ShipmentCreationResult::success($trackingNumber, $remoteShipmentId);
+            
         } catch (RuntimeException $e) {
             $db->execute('ROLLBACK');
 

@@ -11,7 +11,6 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
 require __DIR__ . '/classes/Core/Database/SQMigrations.php';
 require __DIR__ . '/classes/Core/API/ApiClient.php';
 require __DIR__ . '/classes/Core/API/CarrierApi.php';
-require __DIR__ . '/classes/Core/API/ShipmentApi.php';
 
 
 

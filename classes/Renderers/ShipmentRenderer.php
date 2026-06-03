@@ -41,11 +41,16 @@ class ShipmentRenderer
         int    $limit        = 20,
         string $statusFilter = ''
     ) {
+            PrestaShopLogger::addLog('entro in render shipmentlist');
 
         $shipments = $this->shipmentRepo->getShipments();
+
+        PrestaShopLogger::addLog('shipments :', print_r($shipments, true));
+
         $totalShipments = $this->shipmentService->countShipments();
 
-        if (empty($ordersList)) {
+        if (empty($shipments)) {
+            PrestaShopLogger::addLog('shipments vuoti');
             return false;
         }
 
@@ -65,7 +70,7 @@ class ShipmentRenderer
 
         return $this->module->display(
             $this->module->getLocalPath(),
-            'views/templates/admin/_partials/shipment/shipment_panel.tpl'
+            'views/templates/admin/_partials/_shipment/shipment_panel.tpl'
         );
     }
     // ========================================================================

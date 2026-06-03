@@ -1,0 +1,27 @@
+<div class="sq-table-wrap">
+    <table class="sq-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>{l s='Codice' mod='spedisciquishipping'}</th>
+                <th>{l s='Cliente' mod='spedisciquishipping'}</th>
+                <th>{l s='Corriere' mod='spedisciquishipping'}</th>
+                <th>{l s='Tracking' mod='spedisciquishipping'}</th>
+                <th>{l s='Stato spedizione' mod='spedisciquishipping'}</th>
+                <th>{l s='Pagamento' mod='spedisciquishipping'}</th>
+                <th>{l s='Totale' mod='spedisciquishipping'}</th>
+                <th>{l s='Peso' mod='spedisciquishipping'}</th>
+                <th>{l s='Data' mod='spedisciquishipping'}</th>
+                <th>{l s='Azioni' mod='spedisciquishipping'}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {foreach $shipments as $shipment}
+                {include
+            file="module:spedisciquishipping/views/templates/admin/_partials/_shipment/components/shipment_panel_shipment_row.tpl"
+            row=$shipment
+        }
+            {/foreach}
+        </tbody>
+    </table>
+</div>
