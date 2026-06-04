@@ -198,10 +198,21 @@ class ShipmentServices
     //====================================================
     public function formatRow(array $row): array
     {
+
+        $labelUrl = '';
+        if (!empty($row['label_path'])) {
+            $labelUrl = str_replace(
+                _PS_ROOT_DIR_,                    // /var/www/html/prestatest
+                Context::getContext()->shop->getBaseURL(true), // https://tuodominio.com/
+                $row['label_path']
+            );
+        }
+
         return [
             'id_shipment'      => (int)    $row['id_shipment'],
             'id_order'         => (int)    $row['id_order'],
             'tracking_number'  => (string) ($row['tracking_number'] ?? '—'),
+            'label_path'       => $labelUrl,
             'carrier_code'     => (string) ($row['carrier_code']    ?? '—'),
             'service_code'     => (string) ($row['service_code']    ?? '—'),
             'status'           => (string) $row['status'],
@@ -491,6 +502,4 @@ class ShipmentServices
             . '&configure=' . $this->module->name
             . '&token='     . Tools::getAdminTokenLite('AdminModules');
     }
-
-    
 }

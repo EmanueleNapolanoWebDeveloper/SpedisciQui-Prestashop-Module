@@ -94,7 +94,14 @@ class ContentHandler
         $this->senderRenderer      = new SenderRenderer($module, $this->senderRepo, $this->context);
         $this->packageRenderer     = new PackageRenderer($this->module, $this->packRepo);
         $this->carrierRenderer     = new CarrierRenderer($this->module, $this->carrierRepo, $carrierServices);
-        $this->dashboardRender     = new DashboardRenderer($this->module, $this->context);
+        $this->dashboardRender     = new DashboardRenderer(
+            $this->module, 
+            $this->context,
+            $this->carrierRepo,
+            $this->shipmentRepo,
+            $this->senderRepo,
+            $shipmentService
+            );
 
         $this->shipmentRenderer    = new ShipmentRenderer(
             $this->shipmentRepo,
@@ -119,15 +126,6 @@ class ContentHandler
             $this->shipmentRenderer,
             $this->packageService,
             $apiClient,
-        );
-
-        $this->shipmentHandler = new ShipmentHandler(
-            $moduleAdminLink,
-            $this->shipmentCreationService,
-            $this->shipmentRepo,
-            $this->shipmentRenderer,
-            $this->packageService,
-            $apiClient
         );
 
         PrestaShopLogger::addLog(
@@ -195,7 +193,7 @@ class ContentHandler
             return $output . $this->shipmentHandler->handleShipmentReview();
         }
 
-        $dashboardData = $this->dashboardHandler->buildDashboardData();
+        $dashboardData = $this->dashboardRender->buildDashboardData();
 
         // dashboard
         return $output . $this->dashboardRender->renderDashboard($dashboardData);
