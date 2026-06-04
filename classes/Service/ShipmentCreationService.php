@@ -306,6 +306,8 @@ class ShipmentCreationService
         return $this->persistSuccess(
             $idShipment,
             $shipment,
+            $insuranceEnabled,
+            $insuranceValue,
             $trackingNumber,
             $remoteShipmentId,
             $savedPdf
@@ -318,13 +320,15 @@ class ShipmentCreationService
     // HELPERS
     // ================================
 
-    /**
-     * Persiste il risultato positivo in una transazione DB.
-     * Se qualcosa fallisce → rollback, nessuna modifica locale.
-     */
+    //=============================================================
+    // Persiste il risultato positivo in una transazione DB.
+    // Se qualcosa fallisce → rollback, nessuna modifica locale.
+    //??==========================================================
     private function persistSuccess(
         int    $idShipment,
         array  $shipment,
+        int $insuranceEnabled,
+        float $insuranceValue,
         string $trackingNumber,
         string $remoteShipmentId,
         ?string $pdfPath
@@ -348,6 +352,17 @@ class ShipmentCreationService
 
             PrestaShopLogger::addLog('updateTracking OK');
 
+            $updateInsurance = $this->shipmentRepo->updateInsurance(
+                $idShipment,
+                $insuranceEnabled,
+                $insuranceValue
+            );
+
+            if (!$updateInsurance) {
+                throw new RuntimeException("updateInsurance fallito per spedizione #{$idShipment}.");
+            }
+
+            PrestaShopLogger::addLog('updateInsurance OK');
 
             // aggiorna remote_shipment_id separatamente
             $statusUpdated = $this->shipmentRepo->updateStatus(
@@ -396,9 +411,12 @@ class ShipmentCreationService
         }
     }
 
-    /**
-     * Gestisce la risposta API negativa: log, eventuale pulizia token, stato fallito.
-     */
+
+
+
+    //===================================================================
+    // Gestisce la risposta API negativa: log, eventuale pulizia token, stato fallito.
+    //====================================================================
     private function handleApiFailure(
         ApiResponse $apiResponse,
         int         $idShipment,
@@ -421,10 +439,6 @@ class ShipmentCreationService
             true
         );
 
-        // Se il token è scaduto lo puliamo (responsabilità del service, non del client)
-        if ($apiResponse->isAuthError()) {
-            Configuration::deleteByName('SPEDISCIQUI_ACCESS_TOKEN');
-        }
 
         // Aggiorniamo lo stato a 'failed' per tracciabilità (best-effort, fuori transazione)
         $this->shipmentRepo->updateStatus($idShipment, self::STATUS_FAILED, [

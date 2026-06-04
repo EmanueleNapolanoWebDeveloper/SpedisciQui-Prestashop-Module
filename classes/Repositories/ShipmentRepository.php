@@ -273,10 +273,12 @@ class ShipmentRepository
                 'delivery_country_iso'   => pSQL($data['delivery_country_iso'] ?? ''),
                 'weight'                 => (float) ($data['weight'] ?? 0),
                 'length'                 => (float) ($data['length'] ?? 0),
-                'width'                 => (float) ($data['width'] ?? 0),
+                'width'                  => (float) ($data['width'] ?? 0),
                 'height'                 => (float) ($data['height'] ?? 0),
                 'shipping_cost'          => (float) ($data['shipping_cost'] ?? 0),
                 'shipping_currency'      => pSQL($data['shipping_currency'] ?? 'EUR'),
+                'insurance_enabled'      => pSQL($data['insurance_enabled'] ?? 0),
+                'insurance_value'        => pSQL($data['insurance_value'] ?? 0)
             ];
 
             $result = $db->insert('spedisciqui_shipments', $insert);
@@ -309,13 +311,66 @@ class ShipmentRepository
 
 
 
+    // ===============================================
+    // AGGIORNA ASSICURAZIONE "INSURANCE" 
+    // ===============================================
+    public function updateInsurance(
+        int $id,
+        int $insurance_enabled = 0,
+        float $insurance_value = 0.00
+    ) {
+
+        PrestaShopLogger::addLog('entrato in updateInsurance');
+
+        if ($id <= 0) {
+            $this->log('updateInsurance: ID non valido (' . $id . ')', 3);
+            return false;
+        }
+
+        if ($insurance_value < 0) {
+            $this->log('updateInsurance: valore assicurazione non valido (' . $insurance_value . ')', 3);
+            return false;
+        }
+
+        try {
+
+            $result = Db::getInstance()->update(
+                'spedisciqui_shipments',
+                [
+                    'insurance_enabled' => (int) $insurance_enabled,
+                    'insurance_value' => (float)$insurance_value,
+                    'date_upd' => date('Y-m-d H:i:s')
+                ],
+                '`id` = ' . (int) $id
+            );
+
+            if (!$result) {
+                $this->log(
+                    'updateInsurance: fallito il tentativo di aggiornamento per ID shipment : ' . $id,
+                    3
+                );
+                return false;
+            }
+
+            return true;
+        } catch (Exception $e) {
+            $this->Log('updateInsurance: errrore - ' . $e->getMessage(), 3);
+            return false;
+        }
+    }
+
+
 
 
     // ===============================================
     // AGGIORNA TRACKING 
-    // =================================================
-    public function updateTracking(int $id, string $trackingNumber, ?string $labelPath, string $trackingUrl = ''): bool
-    {
+    // ===============================================
+    public function updateTracking(
+        int $id,
+        string $trackingNumber,
+        ?string $labelPath,
+        string $trackingUrl = ''
+    ): bool {
 
         if ($id <= 0) {
             $this->log('updateTracking: ID non valido (' . $id . ')', 3);
