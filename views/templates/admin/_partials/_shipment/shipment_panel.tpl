@@ -594,10 +594,6 @@
     }
 </style>
 
-<pre>
-{$shipment|@var_dump}
-</pre>
-
 {include file="module:spedisciquishipping/views/templates/admin/_partials/_shipment/components/shipment_panel_modal.tpl"}
 
 <div class="sq-orders">

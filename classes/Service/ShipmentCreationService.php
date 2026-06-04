@@ -321,9 +321,9 @@ class ShipmentCreationService
     // ================================
 
     //=============================================================
-    // Persiste il risultato positivo in una transazione DB.
-    // Se qualcosa fallisce → rollback, nessuna modifica locale.
-    //??==========================================================
+     // Persiste il risultato positivo in una transazione DB.
+     // Se qualcosa fallisce → rollback, nessuna modifica locale.
+     //??==========================================================
     private function persistSuccess(
         int    $idShipment,
         array  $shipment,
@@ -358,7 +358,7 @@ class ShipmentCreationService
                 $insuranceValue
             );
 
-            if (!$updateInsurance) {
+            if(!$updateInsurance){
                 throw new RuntimeException("updateInsurance fallito per spedizione #{$idShipment}.");
             }
 
