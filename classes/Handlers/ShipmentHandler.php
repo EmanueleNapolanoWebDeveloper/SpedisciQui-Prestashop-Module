@@ -95,14 +95,22 @@ class ShipmentHandler
     {
         // recupero id sgipment
         $idShipment = (int) Tools::getValue('id_shipment');
+        // assicurazione
+        $insuranceEnabled = (bool) Tools::getValue('insurance_enabled');
+        $insuranceValue   = (float) Tools::getValue('insurance_value');
 
         if ($idShipment <= 0) {
             $this->redirectWithError('ID spedizione non valido.');
             return;
         }
 
+        if ($insuranceEnabled && $insuranceValue <= 0) {
+            $this->redirectWithError('Valore assicurazione non valido.');
+            return;
+        }
 
-        $result = $this->shipCreationService->createShipment(($idShipment));
+
+        $result = $this->shipCreationService->createShipment($idShipment, $insuranceEnabled, $insuranceValue);
 
         if (!$result->isSuccess()) {
             $this->redirectWithError($result->getErrorMessage());
@@ -110,11 +118,7 @@ class ShipmentHandler
         }
 
         $this->redirectWithSuccess(
-            sprintf(
-                'Spedizione creata. Tracking: ',
-                $idShipment,
-                $result->getTrackingNumber()
-            )
+            sprintf('Spedizione creata. Tracking: %s', $result->getTrackingNumber())
         );
     }
     //=================================================

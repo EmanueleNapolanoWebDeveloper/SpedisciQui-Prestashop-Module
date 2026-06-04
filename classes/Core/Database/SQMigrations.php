@@ -234,6 +234,8 @@ class SQMigrations
             `height`                 DECIMAL(10,2) DEFAULT NULL COMMENT \'cm\',
             `shipping_cost`          DECIMAL(10,2) DEFAULT NULL,
             `shipping_currency`      CHAR(3) DEFAULT NULL COMMENT \'ISO 4217\',
+            `insurance_enabled`      TINYINT(1) NOT NULL DEFAULT 0,
+            `insurance_value`        DECIMAL(20,6) NOT NULL DEFAULT 0,
             `api_response`           JSON DEFAULT NULL,
             `api_shipment_id`        VARCHAR(100) DEFAULT NULL COMMENT \'ID spedizione lato corriere\',
             `shipped_at`             DATETIME DEFAULT NULL COMMENT \'data effettiva ritiro\',

@@ -84,8 +84,6 @@ class ShipmentCreationService
                 throw new \InvalidArgumentException('Nessun indirizzo mittente trovato nella tabella spedisciqui_sender_address. Configuralo nel modulo.');
             }
 
-            PrestaShopLogger::addLog('parcel : ' . print_r($parcelData, true));
-
             if (empty($sender['firstname']) || empty($sender['lastname']) || empty($sender['address1']) || empty($sender['city']) || empty($sender['postcode'])) {
                 throw new \InvalidArgumentException('I dati del mittente estratti dal database sono incompleti (Nome, Indirizzo, Città o CAP mancanti).');
             }
@@ -180,8 +178,11 @@ class ShipmentCreationService
     //==================================================
     //CREAZIONE SHIPMENT
     //==================================================
-    public function createShipment(int $idShipment)
-    {
+    public function createShipment(
+        int $idShipment,
+        bool $insuranceEnabled,
+        float $insuranceValue
+    ) {
 
         // controllo
         if ($idShipment <= 0) {
@@ -222,7 +223,14 @@ class ShipmentCreationService
         $parcelData = $this->packageService->getParcelData($order);
 
         // costruzione payload
-        $payload = $this->buildShipmentPayload($order, $parcelData);
+        $payload = $this->buildShipmentPayload(
+            $order,
+            $parcelData,
+            [
+                'insurance_enabled' => $insuranceEnabled,
+                'insurance_value'   => $insuranceValue,
+            ]
+        );
 
         // recuper token per requesrt
         $token = (string) $this->credentialRepo->get()['access_token'];
@@ -230,18 +238,18 @@ class ShipmentCreationService
         // maschera token per sicurezza (opzionale ma consigliato)
         $maskedToken = substr($token, 0, 6) . '***' . substr($token, -4);
 
-        PrestaShopLogger::addLog(
-            'Token recuperato: ' . $token,
-            2
-        );
 
         PrestaShopLogger::addLog(
-            sprintf('[SpedisciQui] Invio payload spedizione #%d: %s', $idShipment, json_encode($payload)),
-            1,
-            null,
-            'Order',
-            (int) $shipment['id_order'],
-            true
+            sprintf(
+                "[SpedisciQui] Payload spedizione #%d:\n%s",
+                $idShipment,
+                json_encode(
+                    $payload,
+                    JSON_PRETTY_PRINT |
+                        JSON_UNESCAPED_UNICODE |
+                        JSON_UNESCAPED_SLASHES
+                )
+            )
         );
 
         $apiResponse = $this->apiClient->request(
@@ -372,7 +380,6 @@ class ShipmentCreationService
             );
 
             return ShipmentCreationResult::success($trackingNumber, $remoteShipmentId);
-            
         } catch (RuntimeException $e) {
             $db->execute('ROLLBACK');
 
