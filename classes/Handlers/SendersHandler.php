@@ -10,6 +10,7 @@ class SenderHandler
     private spedisciquishipping $module;
     private SenderRepository    $senderRepo;
     private SetupManager        $setupManager;
+    private SenderRenderer $senderRender;
     private string              $output = '';
 
 
@@ -19,11 +20,13 @@ class SenderHandler
     public function __construct(
         spedisciquishipping $module,
         SenderRepository    $senderRepo,
-        SetupManager        $setupManager
+        SetupManager        $setupManager,
+        SenderRenderer $senderRender,
     ) {
         $this->module       = $module;
         $this->senderRepo   = $senderRepo;
         $this->setupManager = $setupManager;
+        $this->senderRender = $senderRender;
     }
 
 
@@ -98,5 +101,52 @@ class SenderHandler
 
 
 
-    
+    //=============================================
+    // SUBMIT UPDATE SENDER - INIZIO
+    //=============================================
+    public function handleUpdateSender()
+    {
+        $idSender = (int) Tools::getValue('id_sender');
+
+        if (!$idSender) {
+            PrestaShopLogger::addLog('[SpedisciQui] handleUpdate — id_sender mancante', 3);
+            return;
+        }
+
+        $data = [
+            'id'           => $idSender, // ✅ deve esserci
+            'label'        => Tools::getValue('label'),
+            'company'      => Tools::getValue('company') ?: null,
+            'firstname'    => Tools::getValue('firstname'),
+            'lastname'     => Tools::getValue('lastname'),
+            'phone'        => Tools::getValue('phone'),
+            'phone_mobile' => Tools::getValue('phone_mobile') ?: null,
+            'email'        => Tools::getValue('email') ?: null,
+            'address1'     => Tools::getValue('address1'),
+            'address2'     => Tools::getValue('address2') ?: null,
+            'postcode'     => Tools::getValue('postcode'),
+            'city'         => Tools::getValue('city'),
+            'state_code'   => Tools::getValue('state_code') ?: null,
+            'country_iso'  => Tools::getValue('country_iso'),
+            'vat_number'   => Tools::getValue('vat_number') ?: null,
+            'is_default'   => (int) Tools::getValue('is_default'),
+            'is_active'    => (int) Tools::getValue('is_active'),
+            'date_upd'     => date('Y-m-d H:i:s'),
+        ];
+
+        $result = $this->senderRepo->updateSenderAddress($data);
+
+        if ($result) {
+            $this->output .= $this->module->displayConfirmation(
+                $this->module->l('Mittente aggiornato con successo.', 'spedisciquishipping')
+            );
+        } else {
+            $this->output .= $this->module->displayError(
+                $this->module->l('Errore durante l\'aggiornamento del mittente.', 'spedisciquishipping')
+            );
+        }
+    }
+    //=============================================
+    // SUBMIT UPDATE SENDER - fine
+    //=============================================
 }

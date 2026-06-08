@@ -212,7 +212,8 @@ class ShipmentServices
             'id_shipment'      => (int)    $row['id_shipment'],
             'id_order'         => (int)    $row['id_order'],
             'tracking_number'  => (string) ($row['tracking_number'] ?? '—'),
-            'label_path'       => $labelUrl,
+            'label_path' => $row['label_path'] ?? null,
+            'label_url'  => $this->buildLabelUrl($row['label_path'] ?? null),
             'carrier_code'     => (string) ($row['carrier_code']    ?? '—'),
             'service_code'     => (string) ($row['service_code']    ?? '—'),
             'status'           => (string) $row['status'],
@@ -350,6 +351,10 @@ class ShipmentServices
             . '&token='     . Tools::getAdminTokenLite('AdminModules')
             . '&action=list';
 
+        // url per mostrare/scaericare label
+        $labelUrl = $this->buildLabelUrl($shipment['label_path'] ?? null);
+
+
         $orderDetailUrl = ($idOrder && $order && \Validate::isLoadedObject($order))
             ? $this->context->link->getAdminLink(
                 'AdminOrders',
@@ -375,6 +380,8 @@ class ShipmentServices
                 ),
                 'shipping_cost'   => (float) ($shipment['shipping_cost'] ?? 0),
                 'tracking_number' => $shipment['tracking_number'] ?? '',
+                'label_path'      => $row['label_path'] ?? null,
+                'label_url'       => $labelUrl,
                 'date_add'        => $shipment['date_add'] ?? '',
                 'note'            => $shipment['note'] ?? '',  // opzionale
             ],
@@ -494,6 +501,16 @@ class ShipmentServices
             // log se necessario
         }
         return '';
+    }
+
+
+    private function buildLabelUrl(?string $path): string
+    {
+        if (!$path) {
+            return '';
+        }
+
+        return _PS_BASE_URL_ . __PS_BASE_URI__ . 'upload/spedisciqui/labels/' . basename($path);
     }
 
     private function buildAdminLink(): string

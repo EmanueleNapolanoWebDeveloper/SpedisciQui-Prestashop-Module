@@ -71,7 +71,15 @@ class ShipmentRepository
         // 2. Query sicura
         try {
             $sql = new DbQuery();
-            $sql->select('id, id_order, status, carrier_code, service_code,weight,shipping_cost')
+            $sql->select('id, 
+            id_order, 
+            status, 
+            carrier_code, 
+            service_code,
+            weight,
+            shipping_cost,
+            tracking_number,
+            label_path')
                 ->from('spedisciqui_shipments')
                 ->where('id = ' . (int) $idShipment);
 
@@ -86,6 +94,9 @@ class ShipmentRepository
                 return false;
             }
 
+            // normalizza link per path
+            $labelPath = $row['label_path'] ? (string)$row['label_path'] : null;
+
             // 4. Normalizzazione dati (opzionale ma utile)
             return [
                 'id_shipment'            => (int) $row['id'],
@@ -94,7 +105,9 @@ class ShipmentRepository
                 'carrier_code'  => $row['carrier_code'] ? (string) $row['carrier_code'] : null,
                 'service_code'  => $row['service_code'] ? (string) $row['service_code'] : null,
                 'weight' => $row['weight'] ? (float) $row['weight'] : null,
-                'shipping_cost' => $row['shipping_cost'] ? (string) $row['shipping_cost'] : null
+                'shipping_cost' => $row['shipping_cost'] ? (string) $row['shipping_cost'] : null,
+                'tracking_number' => $row['tracking_number'] ? (string) $row['tracking_number'] : null,
+                'label_path' => $labelPath,
             ];
         } catch (Exception $e) {
             // 5. Gestione errori DB

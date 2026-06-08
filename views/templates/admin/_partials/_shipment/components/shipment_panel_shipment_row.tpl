@@ -84,43 +84,24 @@
      </td>
 
      {* Azioni *}
+     {* Azioni *}
      <td>
          {if $shipment.status === 'pending'}
              <div class="sq-action-wrap">
-                 <a href="{$action}&action=shipmentReview&id_shipment={$shipment.id_shipment}" class="sq-btn-create">
+                 <a href="{$action}&action=shipmentReview&id_shipment={$shipment.id_shipment}"
+                     class="sq-btn-review">
                      <i class="icon-search"></i>
                      {l s='Crea spedizione' mod='spedisciquishipping'}
                  </a>
              </div>
-         {elseif $shipment.status === 'label_created'}
-             <form method="POST" action="{$action}" style="margin:0;">
-                 <input type="hidden" name="id_shipment" value="{$shipment.id_shipment}">
-
-                 <button type="submit" name="cancelShipment" class="sq-btn-cancel"
-                     onclick="return confirm('{l s='Annullare la spedizione?' mod='spedisciquishipping' js=1}');">
-                     <i class="icon-remove"></i>
-                     {l s='Annulla' mod='spedisciquishipping'}
-                 </button>
-             </form>
-
-             {* ── PDF ACTIONS ── *}
-             {if $shipment.status === 'label_created' && $shipment.label_path}
-                 <div class="sq-action-wrap" style="margin-top:6px;">
-
-                     {* VIEW PDF *}
-                     <a href="{$shipment.label_path}" target="_blank" class="sq-btn-create" style="background:#5a6a7a;">
-                         <i class="icon-eye"></i>
-                         {l s='Visualizza etichetta' mod='spedisciquishipping'}
-                     </a>
-
-                     {* DOWNLOAD PDF *}
-                     <a href="{$shipment.label_path}" download class="sq-btn-create" style="background:#1e7e34;">
-                         <i class="icon-download"></i>
-                         {l s='Scarica PDF' mod='spedisciquishipping'}
-                     </a>
-
-                 </div>
-             {/if}
+         {else}
+             <div class="sq-action-wrap">
+                 <a href="{$action}&action=shipmentDetail&id_shipment={$shipment.id_shipment}"
+                     class="sq-btn-detail">
+                     <i class="icon-list-alt"></i>
+                     {l s='Dettagli' mod='spedisciquishipping'}
+                 </a>
+             </div>
          {/if}
      </td>
 

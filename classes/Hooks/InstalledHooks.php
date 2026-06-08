@@ -30,90 +30,90 @@ class CustomCheckout
     // HOOK PER VISUALIZZARE AL CHECKOUT - INIZIO
     //========================================
 
-    public function hookDisplayCarrierExtraContent($params)
-    {
+    // public function hookDisplayCarrierExtraContent($params)
+    // {
 
-        PrestaShopLogger::addLog('Inizio display carrier');
+    //     PrestaShopLogger::addLog('Inizio display carrier');
 
-        if (!isset($params['carrier'])) {
-            return '';
-        }
+    //     if (!isset($params['carrier'])) {
+    //         return '';
+    //     }
 
-        $carrier          = $params['carrier'];
-        $currentCarrierId = (int)($carrier['id'] ?? 0);
-        $realCarriers     = $this->carrierRepo->getSavedCarriers();
+    //     $carrier          = $params['carrier'];
+    //     $currentCarrierId = (int)($carrier['id'] ?? 0);
+    //     $realCarriers     = $this->carrierRepo->getSavedCarriers();
 
-        if (empty($realCarriers)) {
-            PrestaShopLogger::addLog('Non passa realCarriers');
-            return '';
-        }
+    //     if (empty($realCarriers)) {
+    //         PrestaShopLogger::addLog('Non passa realCarriers');
+    //         return '';
+    //     }
 
-        // Ricerca carrier da lista
-        $matchedCarrier = null;
+    //     // Ricerca carrier da lista
+    //     $matchedCarrier = null;
 
-        foreach ($realCarriers as $carrierData) {
-            if ((int)$carrierData['id_carrier'] === $currentCarrierId) {
-                $matchedCarrier = $carrierData;
-                break;
-            }
-        }
+    //     foreach ($realCarriers as $carrierData) {
+    //         if ((int)$carrierData['id_carrier'] === $currentCarrierId) {
+    //             $matchedCarrier = $carrierData;
+    //             break;
+    //         }
+    //     }
 
-        // se ci sono carrier non del nostro modulo
-        if (!$matchedCarrier) {
-            return '';
-        }
+    //     // se ci sono carrier non del nostro modulo
+    //     if (!$matchedCarrier) {
+    //         return '';
+    //     }
 
-        // recupera prezzi solo se necessari
-        try {
-            $prices = (new CarrierApi(new ApiClient(new ConfigRepositories)))->getPriceFromApi();
-        } catch (Throwable $e) {
-            PrestaShopLogger::addLog('[SPEDISCIQUI] getPriceFromApi: ' . $e->getMessage(), 3);
-            $prices = [];
-        }
+    //     // recupera prezzi solo se necessari
+    //     try {
+    //         $prices = (new CarrierApi(new ApiClient(new ConfigRepositories)))->getPriceFromApi();
+    //     } catch (Throwable $e) {
+    //         PrestaShopLogger::addLog('[SPEDISCIQUI] getPriceFromApi: ' . $e->getMessage(), 3);
+    //         $prices = [];
+    //     }
 
-        PrestaShopLogger::addLog(
-            '[SPEDISCIQUI] prices dump: ' . json_encode($prices),
-            1
-        );
+    //     PrestaShopLogger::addLog(
+    //         '[SPEDISCIQUI] prices dump: ' . json_encode($prices),
+    //         1
+    //     );
 
-        $carrierCode = $matchedCarrier['carrier_code'];
+    //     $carrierCode = $matchedCarrier['carrier_code'];
 
-        // dati del carrier
-        $carrierPrice = $prices[$carrierCode]['price'] ?? null;
-        $insurancePrice = $prices[$carrierCode]['insurance'] ?? null;
-        $insuranceRequired = $prices[$carrierCode]['insurance_required'] ?? false;
+    //     // dati del carrier
+    //     $carrierPrice = $prices[$carrierCode]['price'] ?? null;
+    //     $insurancePrice = $prices[$carrierCode]['insurance'] ?? null;
+    //     $insuranceRequired = $prices[$carrierCode]['insurance_required'] ?? false;
 
-        // ritorno valori al front
-        $this->context->smarty->assign([
-            'spqCarrier'           => $matchedCarrier,
-            'spqCarrierPrice'      => $carrierPrice !== null
-                ? Tools::displayPrice($carrierPrice)
-                : null,
-            'spqInsurancePrice'    => $insurancePrice !== null
-                ? Tools::displayPrice($insurancePrice)
-                : null,
-            'spqInsuranceRequired' => $insuranceRequired,
-            'spqCarrierCode'       => $carrierCode,
-            'carrier'              => $carrier,
-        ]);
+    //     // ritorno valori al front
+    //     $this->context->smarty->assign([
+    //         'spqCarrier'           => $matchedCarrier,
+    //         'spqCarrierPrice'      => $carrierPrice !== null
+    //             ? Tools::displayPrice($carrierPrice)
+    //             : null,
+    //         'spqInsurancePrice'    => $insurancePrice !== null
+    //             ? Tools::displayPrice($insurancePrice)
+    //             : null,
+    //         'spqInsuranceRequired' => $insuranceRequired,
+    //         'spqCarrierCode'       => $carrierCode,
+    //         'carrier'              => $carrier,
+    //     ]);
 
-        PrestaShopLogger::addLog(
-            '[SPEDISCIQUI] carrier=' . $carrierCode .
-                ' price=' . var_export($carrierPrice, true) .
-                ' insurance=' . var_export($insurancePrice, true)
-        );
+    //     PrestaShopLogger::addLog(
+    //         '[SPEDISCIQUI] carrier=' . $carrierCode .
+    //             ' price=' . var_export($carrierPrice, true) .
+    //             ' insurance=' . var_export($insurancePrice, true)
+    //     );
 
-        // Inietto CSS
-        $this->context->controller->registerStylesheet(
-            'spedisciqui_carrier',
-            'modules/spedisciquishipping/views/css/checkout_carrier.css',
-            ['media' => 'all', 'priority' => 150]
-        );
+    //     // Inietto CSS
+    //     $this->context->controller->registerStylesheet(
+    //         'spedisciqui_carrier',
+    //         'modules/spedisciquishipping/views/css/checkout_carrier.css',
+    //         ['media' => 'all', 'priority' => 150]
+    //     );
 
-        return $this->module->fetch(
-            'module:spedisciquishipping/views/templates/hook/checkout/_partials/carrier_extra_content.tpl'
-        );
-    }
+    //     return $this->module->fetch(
+    //         'module:spedisciquishipping/views/templates/hook/checkout/_partials/carrier_extra_content.tpl'
+    //     );
+    // }
     //========================================
     // HOOK PER VISUALIZZARE AL CHECKOUT - FINE
     //========================================
@@ -283,60 +283,45 @@ class CustomCheckout
     // ======================================================
     // HOOK PER INIEZIONE CSS E JS IN COMPOENNTI - INIZIO
     // ======================================================
-    public function hookActionAdminControllerSetMedia(array $params): void
+    public function hookDisplayBackOfficeHeader(): string
     {
         if (Tools::getValue('configure') !== $this->module->name) {
-            return;
+            return '';
         }
 
-        /** @var \AdminController $controller */
+        /** @var \AdminControllerCore $controller */
         $controller = $this->context->controller;
 
-        $tab = Tools::getValue('tab', 'dashboard'); // default: dashboard
+        $css = $this->module->getPathUri() . 'views/css/';
+        $js  = $this->module->getPathUri() . 'views/js/';
 
-        // Asset comuni a tutto il modulo
-        $controller->addCSS(
-            $this->module->getPathUri() . 'views/css/common.css',
-            'all',
-            null,
-            false
-        );
+        $controller->addCSS($css . 'common.css',                    'all', null, false);
 
-        // Asset specifici per tab
-        switch ($tab) {
-            case 'dashboard':
-                $controller->addCSS(
-                    $this->module->getPathUri() . 'views/css/shipment_reviews.css',
-                    'all',
-                    null,
-                    false
-                );
-                $controller->addJS(
-                    $this->module->getPathUri() . 'views/js/shipment_reviews.js',
-                    false
-                );
-                break;
+        // caricamento styles Init
+        $controller->addCss($css . 'admin/initial/carrier_init_styles.css', 'all', null, false);
+        $controller->addCss($css . 'admin/initial/shipment_init_styles.css', 'all', null, false);
+        $controller->addCss($css . 'admin/initial/credential_init_styles.css', 'all', null, false);
+        $controller->addCss($css . 'admin/initial/package_init_styles.css', 'all', null, false);
+        $controller->addCss($css . 'admin/initial/sender_init_styles.css', 'all', null, false);
 
-            case 'tariffs':
-                $controller->addCSS(
-                    $this->module->getPathUri() . 'views/css/tariffs.css',
-                    'all',
-                    null,
-                    false
-                );
-                $controller->addJS(
-                    $this->module->getPathUri() . 'views/js/tariffs.js',
-                    false
-                );
-                break;
+        // css shipments
+        $controller->addCSS($css . 'admin/shipment/shipment_styles.css',          'all', null, false);
 
-            case 'settings':
-                $controller->addJS(
-                    $this->module->getPathUri() . 'views/js/settings.js',
-                    false
-                );
-                break;
-        }
+        // css Carriers Dash
+        $controller->addCSS($css . 'admin/carriers/carriers_styles.css', 'all', null, false);
+
+        // css Settings Dash
+        $controller->addCSS($css . 'admin/settings/settings_styles.css',   'all', null, false);
+
+
+        // CARICAMENTI JS SCRIPTS
+        $controller->addJS($js . 'admin/shipment/shipment_scripts.js', false);
+        $controller->addJS($js . 'admin/shipment/shipment_review.js', false);
+        $controller->addJS($js . 'admin/carriers/carriers_scripts.js',          false);
+        $controller->addJS($js . 'admin/settings/settings_scripts.js',         false);
+        
+
+        return '';
     }
     // ======================================================
     // HOOK PER INIEZIONE CSS E JS IN COMPOENNTI - FINE

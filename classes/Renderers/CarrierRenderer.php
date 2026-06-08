@@ -113,13 +113,6 @@ class CarrierRenderer
         string $carrierCode
     ): string {
 
-        PrestaShopLogger::addLog(
-            '[SpedisciQui] renderCarrierTariffConfig attivato',
-            1,
-            null,
-            'SpedisciQuiShipping'
-        );
-
         // recupero dati carrier
         $carrier = $this->carrierRepo->getCarrierByCode($carrierCode);
 

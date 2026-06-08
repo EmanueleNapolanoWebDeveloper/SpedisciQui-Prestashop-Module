@@ -77,7 +77,7 @@ class Uninstallation
     {
         $hooks = [
             'actionValidateOrder',
-            'actionAdminControllerSetMedia'
+            'displayBackOfficeHeader'
             //'displayCarrierExtraContent',
         ];
 

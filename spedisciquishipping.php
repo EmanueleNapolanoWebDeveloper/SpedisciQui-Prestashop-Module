@@ -94,7 +94,7 @@ class spedisciquishipping extends CarrierModule
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
         $this->bootstrap = true;
         $this->confirmUninstall = $this->l('Sei sicuro di voler disinstallare?');
-        $this->displayName = 'SpedisciQui Shipping Primo';
+        $this->displayName = 'SpedisciQui Shipping';
         $this->description = 'Modulo spedizioni customizzato';
 
 
@@ -281,13 +281,13 @@ class spedisciquishipping extends CarrierModule
         return $this->customCheckout->hookActionValidateOrder($params);
     }
 
-    public function hookActionAdminControllerSetMedia($params)
+    public function hookDisplayBackOfficeHeader($params)
     {
         if (!$this->customCheckout) {
             PrestaShopLogger::addLog('[SpedisciQui] customCheckout è NULL', 3);
             return '';
         }
 
-        return $this->customCheckout->hookActionAdminControllerSetMedia($params);
+        return $this->customCheckout->hookDisplayBackOfficeHeader($params);
     }
 }

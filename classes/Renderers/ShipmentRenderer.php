@@ -41,7 +41,7 @@ class ShipmentRenderer
         int    $limit        = 20,
         string $statusFilter = ''
     ) {
-            PrestaShopLogger::addLog('entro in render shipmentlist');
+        PrestaShopLogger::addLog('entro in render shipmentlist');
 
         $shipments = $this->shipmentRepo->getShipments();
 
@@ -57,6 +57,10 @@ class ShipmentRenderer
         $action = AdminController::$currentIndex
             . '&configure=' . $this->module->name
             . '&token='     . Tools::getAdminTokenLite('AdminModules');
+
+            // css
+        $css = $this->module->getPathUri() . 'views/css/';
+        $this->context->controller->addCSS($css . 'admin/shipment/shipment_styles.css', 'all', null, false);
 
         $this->context->smarty->assign([
             'shipments'       => $shipments,
@@ -95,6 +99,11 @@ class ShipmentRenderer
         }
 
         $this->context->smarty->assign('vm', $vm);
+
+        // css
+        $css = $this->module->getPathUri() . 'views/css/';
+        $this->context->controller->addCSS($css . 'admin/shipment/shipment_detail_styles.css', 'all', null, false);
+
 
         return $this->module->display(
             $this->module->getLocalPath(),

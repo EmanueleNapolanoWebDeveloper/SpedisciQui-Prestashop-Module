@@ -47,14 +47,15 @@ class DashboardRenderer
         $limit = max(1, min(100, $limit)); // safety cap
 
         $statusFilter = (string) Tools::getValue('status_filter', '');
-
         $idShop       = (int) Context::getContext()->shop->id ?: 1;
-
         $offset = ($page - 1) * $limit;
 
         $adminLink = AdminController::$currentIndex
             . '&configure=' . $this->module->name
             . '&token='     . Tools::getAdminTokenLite('AdminModules');
+
+        // RECUPERO INDIRIZZI SENDER SALVATI
+        $savedAddressSender = $this->senderRepo->getSenderAddress();
 
         // carrier
         $Carriers  = $this->carrierRepo->getCarriers();
@@ -73,7 +74,7 @@ class DashboardRenderer
             'savedCodes'      => $savedCodes,
             'action'          => $adminLink,
 
-            // orders panel
+            // shipment panel
             'shipments'       => array_map(
                 [$this->shipmentService, 'formatRow'],
                 $shipments
@@ -84,6 +85,14 @@ class DashboardRenderer
             'statusFilter'    => $statusFilter,
             'formAction'      => $adminLink,
             'orderDetailLink' => Context::getContext()->link->getAdminLink('AdminOrders'),
+
+            // settings
+            'sender' => $savedAddressSender,
+            'editSenderUrl' => $this->context->link->getAdminLink('AdminModules', true, [], [
+                'configure' => $this->module->name,
+                'action'    => 'editSender',
+                'id_sender' => (int)($savedAddressSender['id'] ?? 0),
+            ]),
         ];
     }
     //==========================================

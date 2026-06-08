@@ -34,9 +34,154 @@ class SenderRepository
     // //=============================================
     // // RECUPERO SENDER 
     // //=============================================
-    // public function getSender() {
+    public function getSenderAddress(): array|false
+    {
 
-    // }
+        $idShop = (int) $this->context->shop->id;
+
+        $sql = new DbQuery();
+
+        try {
+            $sql->select('*')
+                ->from('spedisciqui_sender_address')
+                ->where('is_active = 1')
+                ->where('id_shop = ' . $idShop);
+
+            $sender =  Db::getInstance()->getRow($sql);
+
+            if (empty($sender)) {
+                PrestaShopLogger::addLog(
+                    sprintf(
+                        '[SpedisciQui] Nessun mittente attivo trovato per shop #%d',
+                        $idShop
+                    ),
+                    2
+                );
+
+                return false;
+            }
+
+            return $sender;
+        } catch (Exception $e) {
+            PrestaShopLogger::addLog(
+                '[SpedisciQui] Errore recupero mittente: ' . $e->getMessage(),
+                3
+            );
+
+            return false;
+        }
+    }
+
+
+
+    // //=============================================
+    // // RECUPERO SENDER DA ID
+    // //=============================================
+    public function getSenderAddressById(int $idSender): array|false
+    {
+
+        $idShop = (int) $this->context->shop->id;
+
+        $sql = new DbQuery();
+
+        try {
+            $sql->select('*')
+                ->from('spedisciqui_sender_address')
+                ->where('is_active = 1')
+                ->where('id = ' . (int)$idSender)
+                ->where('id_shop = ' . (int)$idShop);
+
+            $sender =  Db::getInstance()->getRow($sql);
+
+            if (empty($sender)) {
+                PrestaShopLogger::addLog(
+                    sprintf(
+                        '[SpedisciQui] Nessun mittente attivo trovato per shop #%d',
+                        $idShop
+                    ),
+                    2
+                );
+
+                return false;
+            }
+
+            return $sender;
+        } catch (Exception $e) {
+            PrestaShopLogger::addLog(
+                '[SpedisciQui] Errore recupero mittente: ' . $e->getMessage(),
+                3
+            );
+
+            return false;
+        }
+    }
+
+
+
+    // //=============================================
+    // // MODIFICA SENDER 
+    // //=============================================
+    public function updateSenderAddress(array $data): bool
+    {
+
+        PrestaShopLogger::addLog(
+            print_r($data, true),
+            3
+        );
+
+        // controllo dati
+        if (empty($data) || !$data) {
+            PrestaShopLogger::addLog(
+                '[SpedisciQui] Dati per upload Sender Mancanti!',
+                3
+            );
+            return false;
+        }
+
+        // controllo id sender
+        if (empty($data['id'])) {
+            PrestaShopLogger::addLog(
+                '[SpedisciQui] ID Sender mancante!',
+                3
+            );
+
+            return false;
+        }
+
+        $idSenderAddress = (int) $data['id'];
+        $db = Db::getInstance();
+
+        unset($data['id']);
+
+        try {
+            $result = $db->update(
+                'spedisciqui_sender_address',
+                $data,
+                '`id` = ' . $idSenderAddress
+            );
+
+            if (!$result) {
+                PrestaShopLogger::addLog(
+                    '[SPedisciQUi] Errore durante aggiornamento del Mittente # ' . $idSenderAddress,
+                    3
+                );
+
+                return false;
+            }
+
+            return true;
+        } catch (Exception $e) {
+            PrestaShopLogger::addLog(
+                '[SpedisciQui] Errore dell\'aggiornamento mittente: ' . $e->getMessage(),
+                3
+            );
+            return false;
+        }
+    }
+
+
+
+
 
     //=============================================
     // SALVATAGGIO SENDER

@@ -83,7 +83,6 @@ class ContentHandler
 
         // 5. handlers
         $this->credentialsHandler = new CredentialsHandlers($module, $this->credentialsRepo, $this->setupManager);
-        $this->senderHandler      = new SenderHandler($module, $this->senderRepo, $this->setupManager);
         $this->packHandler        = new PackageHandler($module, $this->packRepo, $this->setupManager);
         $this->carrierHandler     = new CarrierHandlers($this->module, $this->carrierRepo, $this->setupManager, $carrierServices);
         $this->dashboardHandler = new DashboardHandlers($this->carrierRepo, $this->module, $this->shipmentRepo, $this->senderRepo, $shipmentService);
@@ -95,13 +94,13 @@ class ContentHandler
         $this->packageRenderer     = new PackageRenderer($this->module, $this->packRepo);
         $this->carrierRenderer     = new CarrierRenderer($this->module, $this->carrierRepo, $carrierServices);
         $this->dashboardRender     = new DashboardRenderer(
-            $this->module, 
+            $this->module,
             $this->context,
             $this->carrierRepo,
             $this->shipmentRepo,
             $this->senderRepo,
             $shipmentService
-            );
+        );
 
         $this->shipmentRenderer    = new ShipmentRenderer(
             $this->shipmentRepo,
@@ -128,12 +127,7 @@ class ContentHandler
             $apiClient,
         );
 
-        PrestaShopLogger::addLog(
-            '[SQ-DEBUG] ContentHandler costruito. ShipmentRepo class: ' . get_class($this->shipmentRepo),
-            1,
-            null,
-            'SpedisciQuiShipping'
-        );
+        $this->senderHandler      = new SenderHandler($module, $this->senderRepo, $this->setupManager, $this->senderRenderer);
     }
 
 
@@ -188,10 +182,42 @@ class ContentHandler
             );
         }
 
-        //detaglio psedizione
+
+
+        // ----------------------------------------------
+        // modifica mittente
+        // ----------------------------------------------
+
+        if (Tools::getValue('action') === 'editSender') {
+            $idSender = (int) Tools::getValue('id_sender');
+            return $output . $this->dashboardRender->renderWithContent(
+                $this->senderRenderer->renderSenderUpdateForm($idSender, [
+                    'back_url' => $this->context->link->getAdminLink('AdminModules', true, [], [
+                        'configure' => $this->module->name,
+                    ]),
+                ])
+            );
+        }
+
+
+        // ----------------------------------------------
+        // review / creazione spedizione
+        // ----------------------------------------------
         if ($this->isShipmentReview()) {
             return $output . $this->shipmentHandler->handleShipmentReview();
         }
+
+        // ----------------------------------------------
+        // dettaglio spedizione
+        // ----------------------------------------------
+        if ($this->isShipmentDetail()) {
+            $idShipment = (int) Tools::getValue('id_shipment');
+
+            return $output . $this->dashboardRender->renderWithContent(
+                $this->shipmentRenderer->renderShipmentDetail($idShipment)
+            );
+        }
+
 
         $dashboardData = $this->dashboardRender->buildDashboardData();
 
@@ -226,6 +252,11 @@ class ContentHandler
         // submit Default Sender
         if (Tools::isSubmit('submitSpedisciQuiSender')) {
             $this->senderHandler->handleSubmit();
+            $this->redirectAfterSubmit();
+        }
+
+        if (Tools::isSubmit('updateSender')) {
+            $this->senderHandler->handleUpdateSender();
             $this->redirectAfterSubmit();
         }
 
@@ -335,6 +366,19 @@ class ContentHandler
     //========================================================
     // VIEW DEL SHIPMENT? - FINE
     //========================================================
+
+
+    //========================================================
+    // VIEW DEL SHIPMENT REVIEW - INIZIO
+    //========================================================
+    private function isShipmentDetail(): bool
+    {
+        return Tools::getValue('action', '') === 'shipmentDetail';
+    }
+    //========================================================
+    // VIEW DEL SHIPMENT REVIEW - FINE
+    //========================================================
+
 
 
 

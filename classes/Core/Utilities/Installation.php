@@ -66,7 +66,7 @@ class Installation
     {
         $hooks = [
             'actionValidateOrder',
-            'actionAdminControllerSetMedia'
+            'displayBackOfficeHeader'
             //'displayCarrierExtraContent',
         ];
 
