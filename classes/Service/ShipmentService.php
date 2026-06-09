@@ -333,17 +333,6 @@ class ShipmentServices
             ? $this->carrierRepo->getCarrierByCode($carrierCode)
             : null;
 
-        // // ─── OPTIONS ─────────────────────────────────────────────────────────────
-        // // Opzioni disponibili per questo tipo di spedizione
-        // $availableOptions = $this->optionsRepo->getAvailableOptions(
-        //     $carrierCode,
-        //     $shipment['service_code'] ?? null
-        // ) ?? [];
-
-        // // Opzioni già selezionate/salvate per questa spedizione
-        // $selectedOptions = $this->optionsRepo->getSelectedOptions($shipmentId) ?? [];
-
-
 
         // ─── FORM URLs ───────────────────────────────────────────────────────────
         $actionUrl = $this->buildAdminLink();
@@ -397,7 +386,7 @@ class ShipmentServices
                     (float) $order->total_paid_tax_incl,
                     $currency
                 ),
-                'total_paid_raw'  => round((float) $order->total_paid_tax_incl, 2),// ← aggiungi
+                'total_paid_raw'  => round((float) $order->total_paid_tax_incl, 2), // ← aggiungi
                 'currency'        => $currency ? $currency->iso_code : '',
                 'payment_method'  => $order->payment ?? '',
                 'payment_status'  => $order->getCurrentOrderState()
