@@ -65,12 +65,19 @@ class DashboardRenderer
         // shipments
         $shipments      = $this->shipmentRepo->getShipments($idShop, $statusFilter, $limit, $offset);
         $totalShipments = $this->shipmentService->countShipments($idShop, $statusFilter);
+        $configuredCarrier = $this->carrierRepo->getConfiguredCarrierCodes();
+
+        PrestaShopLogger::addLog(
+            print_r($configuredCarrier, true),
+            2
+        );
 
 
         return [
             // carrier panel
             'carriers'        => $Carriers,
-            'savedCarriers' => $savedCarriers,
+            'configuredCodes' => $configuredCarrier,
+            'savedCarriers'   => $savedCarriers,
             'savedCodes'      => $savedCodes,
             'action'          => $adminLink,
 

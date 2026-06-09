@@ -180,7 +180,7 @@ class ShipmentCreationService
     //==================================================
     public function createShipment(
         int $idShipment,
-        bool $insuranceEnabled,
+        int $insuranceEnabled,
         float $insuranceValue
     ) {
 
@@ -217,6 +217,32 @@ class ShipmentCreationService
 
         if (!Validate::isLoadedObject($order)) {
             throw new \RuntimeException('Ordine #' . $shipment['id_order'] . 'non trovato');
+        }
+
+        // validazione assicurazione
+        if ($insuranceEnabled) {
+
+            $orderTotal = (float) $order->total_paid;
+
+            if ($insuranceValue <= 0) {
+                return ShipmentCreationResult::failure(
+                    'Il Valore deve essere maggiore di 0.'
+                );
+            }
+
+            if ($insuranceValue > $orderTotal) {
+                return ShipmentCreationResult::failure(
+                    sprintf(
+                        'Il valore assicurato (%.2f€) supera il totale dell\'ordine (%.2f€).',
+                        $insuranceValue,
+                        $orderTotal
+                    )
+                );
+            }
+
+            $insuranceValue = round($insuranceValue, 2);
+        } else {
+            $insuranceValue = 0.0;
         }
 
         // carico parcel data
@@ -321,9 +347,9 @@ class ShipmentCreationService
     // ================================
 
     //=============================================================
-     // Persiste il risultato positivo in una transazione DB.
-     // Se qualcosa fallisce → rollback, nessuna modifica locale.
-     //??==========================================================
+    // Persiste il risultato positivo in una transazione DB.
+    // Se qualcosa fallisce → rollback, nessuna modifica locale.
+    //??==========================================================
     private function persistSuccess(
         int    $idShipment,
         array  $shipment,
@@ -358,7 +384,7 @@ class ShipmentCreationService
                 $insuranceValue
             );
 
-            if(!$updateInsurance){
+            if (!$updateInsurance) {
                 throw new RuntimeException("updateInsurance fallito per spedizione #{$idShipment}.");
             }
 

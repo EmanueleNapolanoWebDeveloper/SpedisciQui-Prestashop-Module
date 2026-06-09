@@ -22,6 +22,15 @@
                 </p>
             </div>
         </div>
+
+        {* IMPORTO VALORE ASSICURATIVO *}
+        {assign var="insuranceMax" value=$vm.order.total_paid_raw|floatval}
+        {assign var="insuranceVal" value=$vm.order.total_paid_raw|floatval}
+        {* Il valore iniziale non può superare il max *}
+        {if $insuranceVal > $insuranceMax}
+            {assign var="insuranceVal" value=$insuranceMax}
+        {/if}
+
         <div id="sq-insurance-section" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #edf0f3;">
             <label class="sr-field-label" for="sq-insured-value">
                 {l s='Valore dichiarato da assicurare (€)' mod='spedisciquishipping'}
@@ -30,7 +39,8 @@
                 <div class="sr-euro-wrap">
                     <span class="sr-euro-sym">€</span>
                     <input type="number" id="sq-insured-value" name="insurance_value" class="sr-value-input" min="0.01"
-                        max="99999.99" step="0.01" value="{$vm.order.total_paid|floatval}" placeholder="0.00"
+                        max="{$insuranceMax|string_format:'%.2f'}" step="0.01" value="{$insuranceVal|string_format:'%.2f'}"
+                        placeholder="0.00" data-max="{$insuranceMax|string_format:'%.2f'}"
                         oninput="sqUpdateInsuranceSummary()">
                 </div>
                 <span id="sq-insurance-summary" style="font-size:12px;color:#5a6a7a;"></span>
@@ -38,10 +48,12 @@
             <div class="sr-notice" style="margin-top:10px;">
                 <i class="icon-info-circle"></i>
                 <span>
-                    {l s='Il valore assicurato non può superare il valore reale della merce. Verrà verificato in fase di sinistro.' mod='spedisciquishipping'}
+                    {l s='Il valore assicurato non può superare il valore reale della merce (%s€). Verrà verificato in fase di sinistro.' sprintf=[$insuranceMax|string_format:'%.2f'] mod='spedisciquishipping'}
                 </span>
             </div>
         </div>
+
+        {* FINE IMPORT ASSICURATIVO *}
     </div>
 {else}
     {* REVIEW ASSICURAZIONE *}

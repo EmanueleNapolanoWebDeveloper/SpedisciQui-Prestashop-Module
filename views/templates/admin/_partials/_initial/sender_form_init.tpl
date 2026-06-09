@@ -1,33 +1,41 @@
 {* views/templates/admin/_partials/initial/sender_form_init.tpl *}
 
+<div class="sq-sender-update-wrap">
 
-<form method="post" action="{$action}">
-    <div class="sq-card">
-
-        <div class="sq-card-header">
-            <div class="sq-card-header-icon">
-                <i class="icon-home"></i>
-            </div>
-            <div>
-                <h2>{l s='Indirizzo mittente' mod='spedisciquishipping'}</h2>
-                <p>{l s='Usato come mittente predefinito per le spedizioni' mod='spedisciquishipping'}</p>
-            </div>
+    {* ── Alerts ── *}
+    {if isset($data.success) && $data.success}
+        <div class="sq-alert sq-alert-success">
+            <i class="icon-check"></i>
+            <span>{l s='Indirizzo mittente salvato con successo.' mod='spedisciquishipping'}</span>
         </div>
+    {/if}
+    {if isset($data.error) && $data.error}
+        <div class="sq-alert sq-alert-danger">
+            <i class="icon-warning-sign"></i>
+            <span>{$data.error|escape:'html':'UTF-8'}</span>
+        </div>
+    {/if}
 
-        <div class="sq-card-body">
+    <form method="POST" action="{$action|escape:'html':'UTF-8'}" id="sq-sender-init-form">
 
-            {* IDENTIFICAZIONE *}
-            <p class="sq-section-label">
-                <i class="icon-credit-card"></i>
+        <input type="hidden" name="submitSpedisciQuiSender" value="1">
+
+        {* ══════════════════════════════════════════
+           SEZIONE 1 — Identificazione
+        ══════════════════════════════════════════ *}
+        <div class="sq-form-section">
+            <p class="sq-form-section-title">
+                <i class="icon-tag"></i>
                 {l s='Identificazione' mod='spedisciquishipping'}
             </p>
-            <div class="sq-grid sq-grid-2">
-                <div class="sq-field">
-                    <label class="sq-label" for="sender_label">
+
+            <div class="sq-form-row">
+                <div class="sq-form-group sq-col-half">
+                    <label class="sq-form-label" for="sender_label">
                         {l s='Tipo indirizzo' mod='spedisciquishipping'}
-                        <span style="color:#c0392b"> *</span>
+                        <span class="sq-required">*</span>
                     </label>
-                    <select class="sq-select" id="sender_label" name="SQ_SENDER_LABEL" required>
+                    <select class="sq-form-control" id="sender_label" name="SQ_SENDER_LABEL" required>
                         <option value="Sede principale" {if $sender.label == 'Sede principale'}selected{/if}>
                             {l s='Sede principale' mod='spedisciquishipping'}
                         </option>
@@ -44,139 +52,229 @@
                             {l s='Altro' mod='spedisciquishipping'}
                         </option>
                     </select>
+                    <p class="sq-form-hint">
+                        {l s='Nome interno per riconoscere questo mittente (es. Sede principale, Magazzino Roma).' mod='spedisciquishipping'}
+                    </p>
                 </div>
-                <div class="sq-field">
-                    <label class="sq-label" for="sender_company">
+
+                <div class="sq-form-group sq-col-half">
+                    <label class="sq-form-label" for="sender_company">
                         {l s='Azienda' mod='spedisciquishipping'}
-                        <span class="sq-opt">({l s='opzionale' mod='spedisciquishipping'})</span>
                     </label>
-                    <input class="sq-input" type="text" id="sender_company" name="SQ_SENDER_COMPANY"
-                        placeholder="Acme SRL" value="{$sender.company|escape:'htmlall':'UTF-8'}">
+                    <input type="text" id="sender_company" name="SQ_SENDER_COMPANY" class="sq-form-control"
+                        placeholder="Acme SRL" value="{$sender.company|default:''|escape:'html':'UTF-8'}"
+                        maxlength="150">
                 </div>
             </div>
 
-            <div class="sq-divider"></div>
+            <div class="sq-form-row">
+                <div class="sq-form-group sq-col-half">
+                    <label class="sq-form-label" for="sender_vat">
+                        {l s='Partita IVA' mod='spedisciquishipping'}
+                    </label>
+                    <input type="text" id="sender_vat" name="SQ_SENDER_VAT_NUMBER" class="sq-form-control"
+                        placeholder="IT12345678901" value="{$sender.vat_number|default:''|escape:'html':'UTF-8'}"
+                        maxlength="50">
+                </div>
+            </div>
+        </div>
 
-            {* INTESTAZIONE *}
-            <p class="sq-section-label">
+        {* ══════════════════════════════════════════
+           SEZIONE 2 — Referente
+        ══════════════════════════════════════════ *}
+        <div class="sq-form-section">
+            <p class="sq-form-section-title">
                 <i class="icon-user"></i>
-                {l s='Intestazione' mod='spedisciquishipping'}
+                {l s='Referente' mod='spedisciquishipping'}
             </p>
-            <div class="sq-grid sq-grid-2">
-                <div class="sq-field">
-                    <label class="sq-label" for="sender_name">
+
+            <div class="sq-form-row">
+                <div class="sq-form-group sq-col-half">
+                    <label class="sq-form-label" for="sender_name">
                         {l s='Nome' mod='spedisciquishipping'}
-                        <span style="color:#c0392b"> *</span>
+                        <span class="sq-required">*</span>
                     </label>
-                    <input class="sq-input" type="text" id="sender_name" name="SQ_SENDER_FIRSTNAME" placeholder="Mario"
-                        value="{$sender.name|escape:'htmlall':'UTF-8'}" required>
+                    <input type="text" id="sender_name" name="SQ_SENDER_FIRSTNAME" class="sq-form-control"
+                        placeholder="Mario" value="{$sender.name|default:''|escape:'html':'UTF-8'}" maxlength="100"
+                        required>
                 </div>
-                <div class="sq-field">
-                    <label class="sq-label" for="sender_surname">
+
+                <div class="sq-form-group sq-col-half">
+                    <label class="sq-form-label" for="sender_surname">
                         {l s='Cognome' mod='spedisciquishipping'}
-                        <span style="color:#c0392b"> *</span>
+                        <span class="sq-required">*</span>
                     </label>
-                    <input class="sq-input" type="text" id="sender_surname" name="SQ_SENDER_LASTNAME"
-                        placeholder="Rossi" value="{$sender.surname|escape:'htmlall':'UTF-8'}" required>
+                    <input type="text" id="sender_surname" name="SQ_SENDER_LASTNAME" class="sq-form-control"
+                        placeholder="Rossi" value="{$sender.surname|default:''|escape:'html':'UTF-8'}" maxlength="100"
+                        required>
                 </div>
             </div>
 
-            <div class="sq-divider"></div>
-
-            {* CONTATTI *}
-            <p class="sq-section-label">
-                <i class="icon-phone"></i>
-                {l s='Contatti' mod='spedisciquishipping'}
-            </p>
-            <div class="sq-grid sq-grid-2">
-                <div class="sq-field">
-                    <label class="sq-label" for="sender_phone">
+            <div class="sq-form-row">
+                <div class="sq-form-group sq-col-half">
+                    <label class="sq-form-label" for="sender_phone">
                         {l s='Telefono' mod='spedisciquishipping'}
-                        <span style="color:#c0392b"> *</span>
+                        <span class="sq-required">*</span>
                     </label>
-                    <input class="sq-input" type="tel" id="sender_phone" name="SQ_SENDER_PHONE"
-                        placeholder="+39 081 123 4567" value="{$sender.phone|escape:'htmlall':'UTF-8'}" required>
+                    <input type="tel" id="sender_phone" name="SQ_SENDER_PHONE" class="sq-form-control"
+                        placeholder="+39 081 123 4567" value="{$sender.phone|default:''|escape:'html':'UTF-8'}"
+                        maxlength="20" required>
                 </div>
-                <div class="sq-field">
-                    <label class="sq-label" for="sender_email">
-                        {l s='Email' mod='spedisciquishipping'}
-                        <span class="sq-opt">({l s='opzionale' mod='spedisciquishipping'})</span>
+
+                <div class="sq-form-group sq-col-half">
+                    <label class="sq-form-label" for="sender_phone_mobile">
+                        {l s='Cellulare' mod='spedisciquishipping'}
                     </label>
-                    <input class="sq-input" type="email" id="sender_email" name="SQ_SENDER_EMAIL"
-                        placeholder="mario@esempio.it" value="{$sender.email|escape:'htmlall':'UTF-8'}">
+                    <input type="tel" id="sender_phone_mobile" name="SQ_SENDER_PHONE_MOBILE" class="sq-form-control"
+                        placeholder="+39 333 123 4567" value="{$sender.phone_mobile|default:''|escape:'html':'UTF-8'}"
+                        maxlength="20">
                 </div>
             </div>
 
-            <div class="sq-divider"></div>
+            <div class="sq-form-row">
+                <div class="sq-form-group sq-col-full">
+                    <label class="sq-form-label" for="sender_email">
+                        {l s='Email' mod='spedisciquishipping'}
+                    </label>
+                    <input type="email" id="sender_email" name="SQ_SENDER_EMAIL" class="sq-form-control"
+                        placeholder="mario@esempio.it" value="{$sender.email|default:''|escape:'html':'UTF-8'}"
+                        maxlength="150">
+                </div>
+            </div>
+        </div>
 
-            {* INDIRIZZO *}
-            <p class="sq-section-label">
+        {* ══════════════════════════════════════════
+           SEZIONE 3 — Indirizzo
+        ══════════════════════════════════════════ *}
+        <div class="sq-form-section">
+            <p class="sq-form-section-title">
                 <i class="icon-map-marker"></i>
                 {l s='Indirizzo' mod='spedisciquishipping'}
             </p>
-            <div class="sq-field" style="margin-bottom:14px;">
-                <label class="sq-label" for="sender_address">
-                    {l s='Via / Piazza' mod='spedisciquishipping'}
-                    <span style="color:#c0392b"> *</span>
-                </label>
-                <input class="sq-input" type="text" id="sender_address" name="SQ_SENDER_ADDRESS1"
-                    placeholder="Via Roma 1" value="{$sender.address|escape:'htmlall':'UTF-8'}" required>
+
+            <div class="sq-form-row">
+                <div class="sq-form-group sq-col-full">
+                    <label class="sq-form-label" for="sender_address">
+                        {l s='Via / Piazza' mod='spedisciquishipping'}
+                        <span class="sq-required">*</span>
+                    </label>
+                    <input type="text" id="sender_address" name="SQ_SENDER_ADDRESS1" class="sq-form-control"
+                        placeholder="Via Roma 1" value="{$sender.address|default:''|escape:'html':'UTF-8'}"
+                        maxlength="255" required>
+                </div>
             </div>
 
-            <div class="sq-grid sq-grid-3">
-                <div class="sq-field">
-                    <label class="sq-label" for="sender_city">
-                        {l s='Città' mod='spedisciquishipping'}
-                        <span style="color:#c0392b"> *</span>
+            <div class="sq-form-row">
+                <div class="sq-form-group sq-col-full">
+                    <label class="sq-form-label" for="sender_address2">
+                        {l s='Indirizzo (riga 2)' mod='spedisciquishipping'}
                     </label>
-                    <input class="sq-input" type="text" id="sender_city" name="SQ_SENDER_CITY" placeholder="Napoli"
-                        value="{$sender.city|escape:'htmlall':'UTF-8'}" required>
+                    <input type="text" id="sender_address2" name="SQ_SENDER_ADDRESS2" class="sq-form-control"
+                        placeholder="{l s='Interno, scala, piano... (opzionale)' mod='spedisciquishipping'}"
+                        value="{$sender.address2|default:''|escape:'html':'UTF-8'}" maxlength="255">
                 </div>
-                <div class="sq-field">
-                    <label class="sq-label" for="sender_zip">
+            </div>
+
+            <div class="sq-form-row">
+                <div class="sq-form-group sq-col-quarter">
+                    <label class="sq-form-label" for="sender_zip">
                         {l s='CAP' mod='spedisciquishipping'}
-                        <span style="color:#c0392b"> *</span>
+                        <span class="sq-required">*</span>
                     </label>
-                    <input class="sq-input" type="text" id="sender_zip" name="SQ_SENDER_POSTCODE" placeholder="80100"
-                        value="{$sender.zip|escape:'htmlall':'UTF-8'}" required>
+                    <input type="text" id="sender_zip" name="SQ_SENDER_POSTCODE" class="sq-form-control"
+                        placeholder="80100" value="{$sender.zip|default:''|escape:'html':'UTF-8'}" maxlength="12"
+                        required>
                 </div>
-                <div class="sq-field">
-                    <label class="sq-label" for="sender_prov">
+
+                <div class="sq-form-group sq-col-half">
+                    <label class="sq-form-label" for="sender_city">
+                        {l s='Città' mod='spedisciquishipping'}
+                        <span class="sq-required">*</span>
+                    </label>
+                    <input type="text" id="sender_city" name="SQ_SENDER_CITY" class="sq-form-control"
+                        placeholder="Napoli" value="{$sender.city|default:''|escape:'html':'UTF-8'}" maxlength="100"
+                        required>
+                </div>
+
+                <div class="sq-form-group sq-col-quarter">
+                    <label class="sq-form-label" for="sender_prov">
                         {l s='Provincia' mod='spedisciquishipping'}
-                        <span style="color:#c0392b"> *</span>
                     </label>
-                    <input class="sq-input" type="text" id="sender_prov" name="SQ_SENDER_STATE" placeholder="NA"
-                        maxlength="5" value="{$sender.prov|escape:'htmlall':'UTF-8'}" required>
+                    <input type="text" id="sender_prov" name="SQ_SENDER_STATE" class="sq-form-control" placeholder="NA"
+                        value="{$sender.prov|default:''|escape:'html':'UTF-8'}" maxlength="10">
                 </div>
             </div>
 
-            <div class="sq-field" style="margin-top:14px;">
-                <label class="sq-label" for="sender_country">
-                    {l s='Paese' mod='spedisciquishipping'}
-                </label>
-                <input class="sq-input" type="text" id="sender_country" name="SQ_SENDER_COUNTRY_ISO" placeholder="IT"
-                    maxlength="2" style="max-width:90px;"
-                    value="{$sender.country|default:'IT'|escape:'htmlall':'UTF-8'}">
-                <span class="sq-hint">
-                    <i class="icon-info-sign"></i>
-                    {l s='Codice ISO 3166-1 alpha-2 — es. IT, FR, DE' mod='spedisciquishipping'}
-                </span>
+            <div class="sq-form-row">
+                <div class="sq-form-group sq-col-quarter">
+                    <label class="sq-form-label" for="sender_country">
+                        {l s='Paese (ISO)' mod='spedisciquishipping'}
+                        <span class="sq-required">*</span>
+                    </label>
+                    <input type="text" id="sender_country" name="SQ_SENDER_COUNTRY_ISO" class="sq-form-control"
+                        placeholder="IT" value="{$sender.country|default:'IT'|escape:'html':'UTF-8'}" maxlength="2"
+                        required>
+                    <p class="sq-form-hint">
+                        {l s='Codice ISO 3166-1 alpha-2 — es. IT, FR, DE' mod='spedisciquishipping'}
+                    </p>
+                </div>
             </div>
-
         </div>
 
-        <div class="sq-footer">
-            {* Campi non visibili ma letti dall'handler *}
-            <input type="hidden" name="SQ_SENDER_PHONE_MOBILE" value="{$sender.phone_mobile|escape:'htmlall':'UTF-8'}">
-            <input type="hidden" name="SQ_SENDER_ADDRESS2" value="{$sender.address2|escape:'htmlall':'UTF-8'}">
-            <input type="hidden" name="SQ_SENDER_VAT_NUMBER" value="{$sender.vat_number|escape:'htmlall':'UTF-8'}">
-            <input type="hidden" name="SQ_SENDER_ID_COUNTRY" value="110">
+        {* ══════════════════════════════════════════
+           SEZIONE 4 — Impostazioni
+        ══════════════════════════════════════════ *}
+        <div class="sq-form-section">
+            <p class="sq-form-section-title">
+                <i class="icon-cog"></i>
+                {l s='Impostazioni' mod='spedisciquishipping'}
+            </p>
 
-            <button type="submit" name="submitSpedisciQuiSender" class="sq-btn">
+            <div class="sq-form-row">
+                <div class="sq-form-group sq-col-half">
+                    <div class="sq-toggle-wrap">
+                        <label class="sq-toggle-label" for="sender_default">
+                            <input type="hidden" name="SQ_SENDER_IS_DEFAULT" value="0">
+                            <input type="checkbox" id="sender_default" name="SQ_SENDER_IS_DEFAULT" value="1"
+                                {if $sender.is_default}checked{/if}>
+                            <span class="sq-toggle-text">
+                                {l s='Mittente predefinito' mod='spedisciquishipping'}
+                            </span>
+                        </label>
+                        <p class="sq-form-hint">
+                            {l s='Verrà usato come mittente di default per le nuove spedizioni.' mod='spedisciquishipping'}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="sq-form-group sq-col-half">
+                    <div class="sq-toggle-wrap">
+                        <label class="sq-toggle-label" for="sender_active">
+                            <input type="hidden" name="SQ_SENDER_IS_ACTIVE" value="0">
+                            <input type="checkbox" id="sender_active" name="SQ_SENDER_IS_ACTIVE" value="1"
+                                {if $sender.is_active|default:1}checked{/if}>
+                            <span class="sq-toggle-text">
+                                {l s='Mittente attivo' mod='spedisciquishipping'}
+                            </span>
+                        </label>
+                        <p class="sq-form-hint">
+                            {l s='I mittenti inattivi non vengono proposti nella creazione spedizioni.' mod='spedisciquishipping'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {* ── Campi hidden legacy ── *}
+        <input type="hidden" name="SQ_SENDER_ID_COUNTRY" value="110">
+
+        {* ── Actions ── *}
+        <div class="sq-form-actions">
+            <button type="submit" class="sq-btn sq-btn-primary" id="sq-sender-init-submit">
                 <i class="icon-arrow-right"></i>
                 {l s='Salva e continua' mod='spedisciquishipping'}
             </button>
         </div>
 
-    </div>
-</form>
+    </form>
+</div>

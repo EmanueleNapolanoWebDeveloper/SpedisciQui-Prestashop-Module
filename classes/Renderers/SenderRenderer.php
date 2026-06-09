@@ -56,6 +56,10 @@ class SenderRenderer
             'action' => $action,
         ]);
 
+        $css = $this->module->getPathUri() . 'views/css/';
+        $this->context->controller->addCSS($css . 'admin/settings/sender/sender_update_form.css', 'all', null, false);
+
+
         return $this->module->display(
             $this->module->getLocalPath(),
             'views/templates/admin/_partials/_initial/sender_form_init.tpl'

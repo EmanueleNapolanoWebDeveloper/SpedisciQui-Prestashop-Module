@@ -38,6 +38,8 @@ class ContentHandler
     private PackageServices $packageService;
     private ShipmentCreationService $shipmentCreationService;
 
+    private CarrierApi $carrierApi;
+
 
     //==========================================
     // COSTRUTTORE
@@ -50,6 +52,7 @@ class ContentHandler
         // 1. configurazione base
         $configRepo    = new ConfigRepositories($this->context);
         $apiClient     = new ApiClient($configRepo);
+        $carrierApi = new CarrierApi($apiClient);
         $moduleAdminLink = AdminController::$currentIndex
             . '&configure=' . $this->module->name
             . '&token='     . Tools::getAdminTokenLite('AdminModules');
@@ -59,7 +62,7 @@ class ContentHandler
         $this->credentialsRepo = new CredentialsRepositories($this->context, $apiClient);
         $this->senderRepo      = new SenderRepository($this->context);
         $this->packRepo        = new PackageRepository($this->context);
-        $this->carrierRepo     = new CarrierRepository(new CarrierApi($apiClient), $this->credentialsRepo, $this->module);
+        $this->carrierRepo     = new CarrierRepository($carrierApi, $this->credentialsRepo, $this->module);
         $this->shipmentRepo = new ShipmentRepository();
 
         // 3. setup manager (ora $credentialsRepo esiste)
@@ -84,7 +87,13 @@ class ContentHandler
         // 5. handlers
         $this->credentialsHandler = new CredentialsHandlers($module, $this->credentialsRepo, $this->setupManager);
         $this->packHandler        = new PackageHandler($module, $this->packRepo, $this->setupManager);
-        $this->carrierHandler     = new CarrierHandlers($this->module, $this->carrierRepo, $this->setupManager, $carrierServices);
+        $this->carrierHandler     = new CarrierHandlers(
+            $this->module,
+            $this->carrierRepo,
+            $this->setupManager,
+            $carrierServices,
+            $carrierApi
+        );
         $this->dashboardHandler = new DashboardHandlers($this->carrierRepo, $this->module, $this->shipmentRepo, $this->senderRepo, $shipmentService);
 
 

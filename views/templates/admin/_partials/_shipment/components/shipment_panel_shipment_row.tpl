@@ -84,7 +84,6 @@
      </td>
 
      {* Azioni *}
-     {* Azioni *}
      <td>
          {if $shipment.status === 'pending'}
              <div class="sq-action-wrap">

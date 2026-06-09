@@ -41,6 +41,8 @@ class ShipmentServices
         'Awaiting bank wire payment' => 'pending',
         'Refunded'               => 'refunded',
     ];
+    private const INSURANCE_VALUE_MIN = 0.01;
+    private const INSURANCE_VALUE_MAX = 99999.99;
 
     //=================================================
     // CLACOLA COSTO DI SPEDIZIONE TRAMITE PESO
@@ -395,6 +397,7 @@ class ShipmentServices
                     (float) $order->total_paid_tax_incl,
                     $currency
                 ),
+                'total_paid_raw'  => round((float) $order->total_paid_tax_incl, 2),// ← aggiungi
                 'currency'        => $currency ? $currency->iso_code : '',
                 'payment_method'  => $order->payment ?? '',
                 'payment_status'  => $order->getCurrentOrderState()
@@ -472,6 +475,7 @@ class ShipmentServices
             'payment_method' => '',
             'payment_status' => '',
             'payment_label'  => '',
+            'total_paid_raw' => 0.0,
         ];
     }
 
@@ -518,5 +522,57 @@ class ShipmentServices
         return AdminController::$currentIndex
             . '&configure=' . $this->module->name
             . '&token='     . Tools::getAdminTokenLite('AdminModules');
+    }
+
+
+    //========================================================
+    // Valida e sanitizza il valore assicurato.
+    //========================================================
+
+    public function validateInsuranceValue(array $postData, int $orderId): array
+    {
+        // 1. Presenza del campo
+        if (!isset($postData['insurance_value']) || $postData['insurance_value'] === '') {
+            return ['value' => 0.0, 'error' => null]; // campo opzionale: 0 = nessuna assicurazione
+        }
+
+        // 2. Tipo numerico
+        $raw = $postData['insurance_value'];
+        if (!is_numeric($raw)) {
+            return ['value' => 0.0, 'error' => $this->module->l('Il valore assicurato non è valido.')];
+        }
+
+        $value = (float) $raw;
+
+        // 3. Minimo assoluto
+        if ($value < self::INSURANCE_VALUE_MIN) {
+            return ['value' => 0.0, 'error' => $this->module->l('Il valore assicurato deve essere almeno 0,01 €.')];
+        }
+
+        // 4. Massimo assoluto (guard di sicurezza indipendente dall'ordine)
+        if ($value > self::INSURANCE_VALUE_MAX) {
+            return [
+                'value' => 0.0,
+                'error' => $this->module->l('Il valore assicurato supera il massimo consentito.')
+            ];
+        }
+
+        // 5. Massimo relativo all'ordine — recuperato fresh dal DB, MAI dal POST
+        $order = new Order((int) $orderId);
+        if (!Validate::isLoadedObject($order)) {
+            return ['value' => 0.0, 'error' => $this->module->l('Ordine non trovato.')];
+        }
+
+        $orderTotal = (float) $order->total_paid; // o total_products, dipende dalla tua logica
+        if ($value > $orderTotal) {
+            // Correggi silenziosamente al massimo (stesso comportamento del JS)
+            // Oppure restituisci errore: scelta tua in base all'UX desiderata
+            $value = $orderTotal;
+        }
+
+        // 6. Arrotonda a 2 decimali per evitare floating-point drift nel DB
+        $value = round($value, 2);
+
+        return ['value' => $value, 'error' => null];
     }
 }

@@ -9,6 +9,7 @@ class CarrierHandlers
     private CarrierRepository   $carrierRepo;
     private SetupManager        $setupManager;
     private CarrierServices $carrierService;
+    private CarrierApi $carrierApi;
     private string $output = '';
 
 
@@ -19,16 +20,18 @@ class CarrierHandlers
         spedisciquishipping $module,
         CarrierRepository   $carrierRepo,
         SetupManager        $setupManager,
-        CarrierServices $carrierService
+        CarrierServices $carrierService,
+        CarrierApi $carrierApi
     ) {
         $this->module       = $module;
         $this->carrierRepo  = $carrierRepo;
         $this->setupManager = $setupManager;
         $this->carrierService = $carrierService;
+        $this->carrierApi = $carrierApi;
     }
 
 
-    
+
 
     //==========================================
     // ENTRY POINT - INZIO
@@ -141,6 +144,7 @@ class CarrierHandlers
 
         // Feedback successo — avanza solo se zero errori
         if ($saved > 0 && $errors === 0) {
+            $this->carrierApi->invalidateCache();
             $this->setupManager->advance();
             $this->output .= $this->module->displayConfirmation(
                 sprintf(
@@ -179,6 +183,8 @@ class CarrierHandlers
             );
             return;
         }
+
+        $this->carrierApi->invalidateCache();
 
         $this->output = $this->module->displayConfirmation(
             sprintf($this->module->l('Corriere %s rimosso correttamente.'), $code)
@@ -229,6 +235,7 @@ class CarrierHandlers
         $success = $this->carrierService->saveTariffs($carrierCode, $rows);
 
         if ($success) {
+            $this->carrierApi->invalidateCache();
             $this->output .= $this->module->displayConfirmation(
                 $this->module->l('Tariffe salvate con successo.')
             );
