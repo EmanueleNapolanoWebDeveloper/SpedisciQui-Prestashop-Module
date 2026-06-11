@@ -78,6 +78,7 @@ class spedisciquishipping extends CarrierModule
     protected CarrierServices $carrierService;
     protected ShipmentServices $shipmentService;
     protected ShipmentRepository $shipmentRepo;
+    protected PackageRepository $packRepo;
     public int $id_carrier = 0;
 
     // ================================================================
@@ -120,10 +121,16 @@ class spedisciquishipping extends CarrierModule
                 $this
             );
 
+            $this->packRepo = new PackageRepository();
+
+
+
             $this->customCheckout = new CustomCheckout(
                 $this,
                 $this->carrierRepo,
-                $this->apiClient
+                $this->apiClient,
+                $this->packRepo,
+                $this->shipmentService
             );
 
             $this->carrierService = new CarrierServices(

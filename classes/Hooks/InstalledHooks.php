@@ -11,16 +11,22 @@ class CustomCheckout
     private Context $context;
     private CarrierRepository $carrierRepo;
     private ApiClient $apiClient;
+    private PackageRepository $packageRepo;
+    private ShipmentServices $shipmentService;
 
     public function __construct(
         spedisciquishipping $module,
         CarrierRepository $carrierRepo,
-        ApiClient $apiClient
+        ApiClient $apiClient,
+        PackageRepository $packageRepo,
+        ShipmentServices $shipmentService
     ) {
         $this->module = $module;
         $this->context = Context::getContext();
         $this->carrierRepo = $carrierRepo;
         $this->apiClient = $apiClient;
+        $this->packageRepo = $packageRepo;
+        $this->shipmentService = $shipmentService;
     }
 
 
@@ -191,22 +197,11 @@ class CustomCheckout
                 true
             );
 
-            // dimensiona pacchi default
-            $packageRepo    = new PackageServices();
-            $defaultPackage = $packageRepo->getDefault((int) $order->id_shop);
+            // dimensiona pacchi default          
+            $defaultPackage = $this->packageRepo->getDefault((int) $order->id_shop);
 
             // calcolo dimensioni carrello
-            $dimensions = new ShipmentServices(
-                $this->carrierRepo,
-                new CarrierServices($this->carrierRepo),
-                new ShipmentRepository(),
-                new CredentialsRepositories(
-                    $this->context,
-                    $this->apiClient
-                ),
-                $this->context,
-                $this->module
-            )->calculatePackageDimensions($cart, $defaultPackage);
+            $dimensions = $this->shipmentService->calculatePackageDimensions($cart, $defaultPackage);
 
             $idShipment = $shipmentRepo->createShipment([
                 'id_order'               => (int)    $order->id,
@@ -319,7 +314,7 @@ class CustomCheckout
         $controller->addJS($js . 'admin/shipment/shipment_review.js', false);
         $controller->addJS($js . 'admin/carriers/carriers_scripts.js',          false);
         $controller->addJS($js . 'admin/settings/settings_scripts.js',         false);
-        
+
 
         return '';
     }

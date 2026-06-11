@@ -37,6 +37,8 @@ class ContentHandler
     // servies
     private PackageServices $packageService;
     private ShipmentCreationService $shipmentCreationService;
+    private CredentialServices $credentialService;
+    private SenderServices $senderService;
 
     private CarrierApi $carrierApi;
 
@@ -81,12 +83,22 @@ class ContentHandler
         );
 
         $this->packageService = new PackageServices();
+        $this->credentialService = new CredentialServices();
+        $this->senderService = new SenderServices();
 
 
 
         // 5. handlers
-        $this->credentialsHandler = new CredentialsHandlers($module, $this->credentialsRepo, $this->setupManager);
-        $this->packHandler        = new PackageHandler($module, $this->packRepo, $this->setupManager);
+        $this->credentialsHandler = new CredentialsHandlers(
+            $module, 
+            $this->credentialsRepo, 
+            $this->credentialService,
+            $this->setupManager);
+
+        $this->packHandler        = new PackageHandler($module, 
+        $this->packRepo, 
+        $this->setupManager);
+
         $this->carrierHandler     = new CarrierHandlers(
             $this->module,
             $this->carrierRepo,
@@ -94,7 +106,13 @@ class ContentHandler
             $carrierServices,
             $carrierApi
         );
-        $this->dashboardHandler = new DashboardHandlers($this->carrierRepo, $this->module, $this->shipmentRepo, $this->senderRepo, $shipmentService);
+
+        $this->dashboardHandler = new DashboardHandlers(
+            $this->carrierRepo, 
+            $this->module, 
+            $this->shipmentRepo, 
+            $this->senderRepo, 
+            $shipmentService);
 
 
         // 6. renderers
@@ -136,7 +154,11 @@ class ContentHandler
             $apiClient,
         );
 
-        $this->senderHandler      = new SenderHandler($module, $this->senderRepo, $this->setupManager, $this->senderRenderer);
+        $this->senderHandler      = new SenderHandler(
+            $module, 
+            $this->senderRepo, 
+            $this->setupManager, 
+            $this->senderService);
     }
 
 

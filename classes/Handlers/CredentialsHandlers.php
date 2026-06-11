@@ -9,6 +9,7 @@ class CredentialsHandlers
 {
     private spedisciquishipping     $module;
     private CredentialsRepositories $credentialsRepo;
+    private CredentialServices $credentialService;
     private SetupManager            $setupManager;
     private string                  $output = '';
 
@@ -20,10 +21,12 @@ class CredentialsHandlers
     public function __construct(
         spedisciquishipping     $module,
         CredentialsRepositories $credentialsRepo,
+        CredentialServices $credentialService,
         SetupManager            $setupManager
     ) {
         $this->module          = $module;
         $this->credentialsRepo = $credentialsRepo;
+        $this->credentialService = $credentialService;
         $this->setupManager    = $setupManager;
     }
 
@@ -61,7 +64,7 @@ class CredentialsHandlers
             return; // ← stop, non avanza
         }
 
-        if (!new CredentialServices()->validateToken($token)) {
+        if (!$this->credentialService->validateToken($token)) {
             $this->output = $this->module->displayError(
                 $this->module->l('Token non valido o formato errato.')
             );
@@ -86,5 +89,5 @@ class CredentialsHandlers
     //===========================================
     // SUBMIT TOKEN - FINE
     //===========================================
-    
+
 }

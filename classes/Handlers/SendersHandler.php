@@ -10,7 +10,7 @@ class SenderHandler
     private spedisciquishipping $module;
     private SenderRepository    $senderRepo;
     private SetupManager        $setupManager;
-    private SenderRenderer $senderRender;
+    private SenderServices $senderService;
     private string              $output = '';
 
 
@@ -21,12 +21,12 @@ class SenderHandler
         spedisciquishipping $module,
         SenderRepository    $senderRepo,
         SetupManager        $setupManager,
-        SenderRenderer $senderRender,
+        SenderServices $senderService,
     ) {
         $this->module       = $module;
         $this->senderRepo   = $senderRepo;
         $this->setupManager = $setupManager;
-        $this->senderRender = $senderRender;
+        $this->senderService = $senderService;
     }
 
 
@@ -70,7 +70,7 @@ class SenderHandler
         ];
 
         // validazione
-        $errors = new SenderServices()->validate($data);
+        $errors = $this->senderService->validate($data);
 
         if (!empty($errors)) {
             foreach ($errors as $error) {

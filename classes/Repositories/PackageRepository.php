@@ -11,6 +11,24 @@ class PackageRepository
     const TABLE_NAME = 'spedisciqui_package';
 
 
+      //=============================================
+    // RECUPERO PACKAGE DEFAULT
+    //=============================================
+    public function getDefault(?int $idShop = null): ?array
+    {
+
+        $idShop = $idShop ?? (int) Context::getContext()->shop->id;
+
+        $row = Db::getInstance()->getRow(
+            'SELECT * FROM `' . _DB_PREFIX_ . self::TABLE_NAME . '`
+         WHERE `id_shop` = ' . (int) $idShop . '
+         AND `is_default` = 1'
+        );
+
+        return $row ?: null;
+    }
+
+
     // ================================================================
     // SALVA DATI PACKAGE DEFAULT (INSERT O UPDATE)
     // ================================================================
