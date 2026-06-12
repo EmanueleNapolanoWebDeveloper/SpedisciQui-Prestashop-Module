@@ -4,7 +4,7 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-class CustomCheckout
+class InstalledHooks
 {
 
     private spedisciquishipping $module;

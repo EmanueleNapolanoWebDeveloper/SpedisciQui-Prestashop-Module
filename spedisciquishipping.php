@@ -1,5 +1,10 @@
 <?php
 
+PrestaShopLogger::addLog(
+    '[spedisciqui] Inizio moduleo',
+    1
+);
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -26,6 +31,8 @@ require __DIR__ . '/classes/Repositories/CredentialsRepositories.php';
 require __DIR__ . '/classes/Repositories/SenderRepository.php';
 require __DIR__ . '/classes/Repositories/CarrierRepository.php';
 require __DIR__ . '/classes/Repositories/ShipmentRepository.php';
+require __DIR__ . '/classes/Repositories/PackageRepository.php';
+
 
 
 // services
@@ -71,7 +78,7 @@ class spedisciquishipping extends CarrierModule
 
     protected SQMigrations $SQMigrations;
     protected ConfigRepositories $config;
-    protected $customCheckout;
+    protected InstalledHooks $installedHooks;
     protected ApiClient $apiClient;
     protected CredentialsRepositories $credentials;
     protected CarrierRepository $carrierRepo;
@@ -87,6 +94,14 @@ class spedisciquishipping extends CarrierModule
 
     public function __construct()
     {
+
+        PrestaShopLogger::addLog(
+            '[SPedisciQui] costruttore partitto"',
+            1
+        );
+
+
+
         $this->name = 'spedisciquishipping';
         $this->tab = 'shipping_logistics';
         $this->version = '1.0.0';
@@ -124,15 +139,6 @@ class spedisciquishipping extends CarrierModule
             $this->packRepo = new PackageRepository();
 
 
-
-            $this->customCheckout = new CustomCheckout(
-                $this,
-                $this->carrierRepo,
-                $this->apiClient,
-                $this->packRepo,
-                $this->shipmentService
-            );
-
             $this->carrierService = new CarrierServices(
                 $this->carrierRepo
             );
@@ -148,12 +154,19 @@ class spedisciquishipping extends CarrierModule
                 $this->credentials,
                 $context,
                 $this
-                );
+            );
 
 
             $this->shipmentRepo->setShipmentService($this->shipmentService);
 
 
+            $this->installedHooks = new InstalledHooks(
+                $this,
+                $this->carrierRepo,
+                $this->apiClient,
+                $this->packRepo,
+                $this->shipmentService
+            );
         } catch (Exception $e) {
             PrestaShopLogger::addLog(
                 '[SpedisciQui] COSTRUTTORE CRASH: ' . $e->getMessage()
@@ -169,6 +182,11 @@ class spedisciquishipping extends CarrierModule
     // ================================================================
     public function install(): bool
     {
+
+        PrestaShopLogger::addLog(
+            '[PSedisciQui] Installer partito',
+            1
+        );
 
         if (!parent::install()) {
             return false;
@@ -280,21 +298,21 @@ class spedisciquishipping extends CarrierModule
 
     public function hookActionValidateOrder($params)
     {
-        if (!$this->customCheckout) {
-            PrestaShopLogger::addLog('[SpedisciQui] customCheckout è NULL', 3);
+        if (!$this->installedHooks) {
+            PrestaShopLogger::addLog('[SpedisciQui] installedHooks è NULL', 3);
             return '';
         }
 
-        return $this->customCheckout->hookActionValidateOrder($params);
+        return $this->installedHooks->hookActionValidateOrder($params);
     }
 
     public function hookDisplayBackOfficeHeader($params)
     {
-        if (!$this->customCheckout) {
-            PrestaShopLogger::addLog('[SpedisciQui] customCheckout è NULL', 3);
+        if (!$this->installedHooks) {
+            PrestaShopLogger::addLog('[SpedisciQui] installedHooks è NULL', 3);
             return '';
         }
 
-        return $this->customCheckout->hookDisplayBackOfficeHeader($params);
+        return $this->installedHooks->hookDisplayBackOfficeHeader($params);
     }
 }
