@@ -1,10 +1,5 @@
 <?php
 
-PrestaShopLogger::addLog(
-    '[spedisciqui] Inizio moduleo',
-    1
-);
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -13,19 +8,18 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require __DIR__ . '/../vendor/autoload.php';
 }
 
+// Core e API
 require __DIR__ . '/classes/Core/Database/SQMigrations.php';
 require __DIR__ . '/classes/Core/API/ApiClient.php';
 require __DIR__ . '/classes/Core/API/CarrierApi.php';
 
-
-
-// utilities
+// Utilities
 require __DIR__ . '/classes/Core/Utilities/Installation.php';
 require __DIR__ . '/classes/Core/Utilities/Uninstallation.php';
 require __DIR__ . '/classes/Core/Utilities/SetupManage.php';
 require __DIR__ . '/classes/Core/Utilities/SetupSteps.php';
 
-// repositories
+// Repositories
 require __DIR__ . '/classes/Repositories/ConfigRepositories.php';
 require __DIR__ . '/classes/Repositories/CredentialsRepositories.php';
 require __DIR__ . '/classes/Repositories/SenderRepository.php';
@@ -33,49 +27,31 @@ require __DIR__ . '/classes/Repositories/CarrierRepository.php';
 require __DIR__ . '/classes/Repositories/ShipmentRepository.php';
 require __DIR__ . '/classes/Repositories/PackageRepository.php';
 
+// Services
+require __DIR__ . '/src/Service/CredentialServices.php';
+require __DIR__ . '/src/Service/PackageServices.php';
+require __DIR__ . '/src/Service/CarrierServices.php';
+require __DIR__ . '/src/Service/SenderServices.php';
+require __DIR__ . '/src/Service/ShipmentService.php';
+require __DIR__ . '/src/Service/ShipmentCreationService.php';
+require __DIR__ . '/src/Service/LabelService.php';
 
+// Renderers (Solo quelli effettivamente utilizzati)
+require __DIR__ . '/src/Renderers/CredentialsRenderer.php';
+require __DIR__ . '/src/Renderers/SenderRenderer.php';
+require __DIR__ . '/src/Renderers/CarrierRenderer.php';
+require __DIR__ . '/src/Renderers/ShipmentRenderer.php';
+require __DIR__ . '/src/Renderers/PackageRenderer.php';
 
-// services
-require __DIR__ . '/classes/Service/CredentialServices.php';
-require __DIR__ . '/classes/Service/PackageServices.php';
-require __DIR__ . '/classes/Service/CarrierServices.php';
-require __DIR__ . '/classes/Service/SenderServices.php';
-require __DIR__ . '/classes/Service/ShipmentService.php';
-require __DIR__ . '/classes/Service/ShipmentCreationService.php';
-require __DIR__ . '/classes/Service/LabelService.php';
+// Hooks
+require __DIR__ . '/src/Hooks/InstalledHooks.php';
 
-
-
-// renderets
-require __DIR__ . '/classes/Renderers/CredentialsRenderer.php';
-require __DIR__ . '/classes/Renderers/SenderRenderer.php';
-require __DIR__ . '/classes/Renderers/CarrierRenderer.php';
-require __DIR__ . '/classes/Renderers/DashboardRenderer.php';
-require __DIR__ . '/classes/Renderers/ShipmentRenderer.php';
-
-
-// handlers
-require __DIR__ . '/classes/Handlers/ContentHandler.php';
-require __DIR__ . '/classes/Handlers/CredentialsHandlers.php';
-require __DIR__ . '/classes/Handlers/SendersHandler.php';
-require __DIR__ . '/classes/Handlers/CarrierHandlers.php';
-require __DIR__ . '/classes/Handlers/DashboardHandlers.php';
-require __DIR__ . '/classes/Handlers/ShipmentHandler.php';
-
-
-// hooks
-require __DIR__ . '/classes/Hooks/InstalledHooks.php';
-
-//DTo
+// DTO
 require __DIR__ . '/classes/Core/API/DTO/ApiResponse.php';
 require __DIR__ . '/classes/Core/API/DTO/ShipmentCreationResult.php';
 
-
-
-
 class spedisciquishipping extends CarrierModule
 {
-
     protected SQMigrations $SQMigrations;
     protected ConfigRepositories $config;
     protected InstalledHooks $installedHooks;
@@ -83,7 +59,7 @@ class spedisciquishipping extends CarrierModule
     protected CredentialsRepositories $credentials;
     protected CarrierRepository $carrierRepo;
     protected CarrierServices $carrierService;
-    protected ShipmentServices $shipmentService;
+    protected ShipmentServices $shipmentService; // Corretto nome classe (Services)
     protected ShipmentRepository $shipmentRepo;
     protected PackageRepository $packRepo;
     public int $id_carrier = 0;
@@ -91,17 +67,8 @@ class spedisciquishipping extends CarrierModule
     // ================================================================
     // COSTRUTTORE
     // ================================================================
-
     public function __construct()
     {
-
-        PrestaShopLogger::addLog(
-            '[SPedisciQui] costruttore partitto"',
-            1
-        );
-
-
-
         $this->name = 'spedisciquishipping';
         $this->tab = 'shipping_logistics';
         $this->version = '1.0.0';
@@ -113,21 +80,14 @@ class spedisciquishipping extends CarrierModule
         $this->displayName = 'SpedisciQui Shipping';
         $this->description = 'Modulo spedizioni customizzato';
 
-
         parent::__construct();
 
         try {
             $context = Context::getContext();
 
             $this->config = new ConfigRepositories($context);
-
             $this->apiClient = new ApiClient($this->config);
-
-            $this->credentials = new CredentialsRepositories(
-                $context,
-                $this->apiClient
-            );
-
+            $this->credentials = new CredentialsRepositories($context, $this->apiClient);
             $this->SQMigrations = new SQMigrations();
 
             $this->carrierRepo = new CarrierRepository(
@@ -137,15 +97,8 @@ class spedisciquishipping extends CarrierModule
             );
 
             $this->packRepo = new PackageRepository();
-
-
-            $this->carrierService = new CarrierServices(
-                $this->carrierRepo
-            );
-
-
+            $this->carrierService = new CarrierServices($this->carrierRepo);
             $this->shipmentRepo = new ShipmentRepository();
-
 
             $this->shipmentService = new ShipmentServices(
                 $this->carrierRepo,
@@ -156,9 +109,7 @@ class spedisciquishipping extends CarrierModule
                 $this
             );
 
-
             $this->shipmentRepo->setShipmentService($this->shipmentService);
-
 
             $this->installedHooks = new InstalledHooks(
                 $this,
@@ -173,21 +124,14 @@ class spedisciquishipping extends CarrierModule
                     . ' in ' . $e->getFile() . ':' . $e->getLine(),
                 3
             );
-        };
+        }
     }
-
 
     // ================================================================
     // INSTALLAZIONE MODULO
     // ================================================================
     public function install(): bool
     {
-
-        PrestaShopLogger::addLog(
-            '[PSedisciQui] Installer partito',
-            1
-        );
-
         if (!parent::install()) {
             return false;
         }
@@ -195,15 +139,14 @@ class spedisciquishipping extends CarrierModule
         $installation = new Installation(
             $this,
             $this->SQMigrations,
-            $this->config,
+            $this->config
         );
 
         return $installation->install();
     }
 
-
     // ================================================================
-    // DISINSTALLAZIONE MDOULO
+    // DISINSTALLAZIONE MODULO
     // ================================================================
     public function uninstall(): bool
     {
@@ -220,7 +163,6 @@ class spedisciquishipping extends CarrierModule
         return $uninstallation->uninstall();
     }
 
-
     // ================================================================
     // FUNZIONE PER PRELEVARE SMARTY 
     // ================================================================
@@ -229,25 +171,30 @@ class spedisciquishipping extends CarrierModule
         return $this->context->smarty;
     }
 
-
     // ================================================================
-    // CONTENT DEL MODULO
+    // CONTENT DEL MODULO (Pulsante "Configura" nel BO)
     // ================================================================
     public function getContent()
     {
+        $setupManager = new SetupManager($this->config, $this->credentials);
 
-        $handler = new ContentHandler($this);
-        return $handler->handle();
+        // Se lo step di configurazione iniziale non è completato, manda l'utente al Setup
+        if ($setupManager->current() !== SetupSteps::DONE) {
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminSpedisciQuiSetup'));
+        } else {
+            // Altrimenti mandalo direttamente alla Dashboard di controllo principale
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminSpedisciQuiDashboard'));
+        }
+        
+        return '';
     }
 
-
     // ================================================================
-    // FUNZIONE PER PREZZO FINALE SPEDIZIONE (ABSTRACT METHOD DI CARRIERMODULO)
+    // FUNZIONE PER PREZZO FINALE SPEDIZIONE (ABSTRACT METHOD DI CARRIERMODULE)
     // ================================================================
     public function getOrderShippingCost($params, $shippingCost): float|false
     {
         $cart = $params;
-
         $carrierId = (int) $this->id_carrier;
 
         if ($carrierId <= 0) {
@@ -265,37 +212,17 @@ class spedisciquishipping extends CarrierModule
         return $this->shipmentService->getRateShippingCost($cart, $carrierId);
     }
 
-
-
     // ================================================================
-    // FUNZIONE PER PREZZO FINALE SPEDIZIONE (ABSTRACT METHOD DI CARRIERMODULO)
+    // FUNZIONE PER PREZZO FINALE SPEDIZIONE ESTERNA
     // ================================================================
     public function getOrderShippingCostExternal($params): float|false
     {
-
         return $this->getOrderShippingCost($params, 0);
     }
 
-
-
-
-    // ================================================================
     // ================================================================
     // HOOKS
     // ================================================================
-    // ================================================================
-
-
-    // public function hookDisplayCarrierExtraContent($params)
-    // {
-    //     if (!$this->customCheckout) {
-    //         PrestaShopLogger::addLog('[SpedisciQui] customCheckout è NULL', 3);
-    //         return '';
-    //     }
-
-    //     return $this->customCheckout->hookDisplayCarrierExtraContent($params);
-    // }
-
     public function hookActionValidateOrder($params)
     {
         if (!$this->installedHooks) {

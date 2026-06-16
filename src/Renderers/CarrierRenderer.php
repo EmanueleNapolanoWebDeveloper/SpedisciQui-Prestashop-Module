@@ -34,22 +34,21 @@ class CarrierRenderer
     // =============================================
     // RENDERIZZA LISTA CORRIERI CONFIG - INIZIO
     // =============================================
-    public function renderCarrierForm(): string
+    public function renderCarrierForm(string $formAction): string
     {
-        $carriers = $this->carrierRepo->getCarriers();
 
-        $action = AdminController::$currentIndex
-            . '&configure=' . $this->module->name
-            . '&token='     . Tools::getAdminTokenLite('AdminModules');
+        $this->addCss('carrier_init_styles.css');
+
+        $carriers = $this->carrierRepo->getCarriers();
 
         $this->context->smarty->assign([
             'carriers' => $carriers ?? [],
-            'action'   => $action,
+            'action'   => $formAction,
+            'setupStep'  => SetupSteps::CARRIER
         ]);
 
-        return $this->module->display(
-            $this->module->getLocalPath(),
-            'views/templates/admin/_partials/_initial/carrier_list_init.tpl'
+        $this->context->controller->setTemplate(
+            '../modules/spedisciquishipping/views/templates/admin/setup/carrier_list_init.tpl'
         );
     }
     // =============================================
@@ -180,4 +179,15 @@ class CarrierRenderer
     // =============================================
     // RENDERIZZA CONFIGURAZIONE CORREIRE - FINE
     // =============================================
+
+
+
+// =============================================
+    //HELPERS
+    // =============================================
+    private function addCss(string $filename): void
+    {
+        $cssPath = $this->module->getPathUri() . 'views/css/admin/initial/';
+        $this->context->controller->addCSS($cssPath . $filename, 'all', null, false);
+    }
 }

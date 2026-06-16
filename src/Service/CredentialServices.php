@@ -1,5 +1,9 @@
 <?php
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 class CredentialServices
 {
 
@@ -12,7 +16,7 @@ class CredentialServices
     {
         $this->apiClient = new ApiClient(new ConfigRepositories());
         $this->context = Context::getContext();
-        $this->credentialRepo = new CredentialsRepositories($this->context,$this->apiClient);
+        $this->credentialRepo = new CredentialsRepositories($this->context, $this->apiClient);
     }
 
 
@@ -20,10 +24,45 @@ class CredentialServices
     //===========================================
     //CONTROLLO CARATTERI
     //===========================================
-
     private function isTokenFormatValid(string $token): bool
     {
-        return strlen($token) >= 20 && preg_match('/^[a-zA-Z0-9\-_\.]+$/', $token);
+         if (empty($token)) {
+            return false;
+        }
+
+
+            return (bool) preg_match('/^\d+\|[a-zA-Z0-9]{40,}$/', $token);
+    }
+
+
+
+    //===========================================
+    //CALCOLO GIORNI SCADENZA
+    //===========================================
+    public function computeExpiryDate(int $months = 1): string
+    {
+        return date('Y-m-d H:i:s', strtotime('+' . $months . ' month'));
+    }
+
+
+    //===========================================
+    //STATO DEL TOKEN
+    //===========================================
+      public function getTokenStatus(): string
+    {
+        $credentials = $this->credentialRepo->get();
+
+        if ($credentials === null) {
+            return 'none';
+        }
+
+        $daysLeft = $this->daysUntilExpiry();
+
+        if ($daysLeft === null)  return 'none';
+        if ($daysLeft === 0)     return 'expired';
+        if ($daysLeft <= 7)      return 'expiring';
+
+        return 'active';
     }
 
 
@@ -35,12 +74,20 @@ class CredentialServices
     {
         // 1. controllo formato
         if (!$this->isTokenFormatValid($token)) {
+            PrestaShopLogger::addLog(
+                '[spedisciqui] errroe isTokenFormatValid',
+                2
+            );
             return false;
         }
 
         $validationApi = $this->apiClient->validateTokenFromApi($token);
 
         if (!$validationApi) {
+            PrestaShopLogger::addLog(
+                '[spedisciqui] errroe validationAPi',
+                2
+            );
             return false;
         }
 
@@ -48,11 +95,19 @@ class CredentialServices
         $credentials = $this->credentialRepo->get();
 
         if (!$credentials || empty($credentials['access_token'])) {
+            PrestaShopLogger::addLog(
+                '[spedisciqui] errroe credentials',
+                2
+            );
             return true; // primo inserimento, quindi valido
         }
 
         // 3. confronto token (opzionale ma consigliato)
         if ($credentials['access_token'] !== $token) {
+            PrestaShopLogger::addLog(
+                '[spedisciqui] errroe token diverso',
+                2
+            );
             // token diverso da quello salvato
             return true;
         }
@@ -78,7 +133,13 @@ class CredentialServices
             return null;
         }
 
-        $diff = strtotime($credentials['expires_at']) - time();
-        return max(0, (int) ceil($diff / 86400));
+        $expiryTs = strtotime($credentials['expires_at']);
+
+        if ($expiryTs === false) {
+            return null;
+        }
+
+        $diff = $expiryTs - time();
+        return $diff > 0 ? (int) ceil($diff / 86400) : 0;
     }
 }

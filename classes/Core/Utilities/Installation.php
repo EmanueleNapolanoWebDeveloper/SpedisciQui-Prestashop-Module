@@ -37,6 +37,10 @@ class Installation
                 throw new Exception('Migrazioni tabelle fallite!');
             }
 
+            if (!$this->installTabs()) {
+                throw new Exception('Installazione Tab/Controller fallita!');
+            }
+
             $this->registerModuleHooks();
 
             // 3. Config default
@@ -54,6 +58,61 @@ class Installation
     //=============================================
     // HANDLER DI INSTALLAZIONE -FINE
     //=============================================
+
+
+    //=============================================
+    // REGISTRAZIONE CONTROLLER (TABS)
+    //=============================================
+    private function installTabs(): bool
+    {
+        // Definiamo i controller da installare
+        $tabsData = [
+            [
+                'className'  => 'AdminSpedisciQuiDashboard',
+                'parentTab'  => 'AdminParentShipping', // Sotto il menu "Spedizione" di PrestaShop
+                'name'       => 'SpedisciQui Dashboard',
+                'active'     => true
+            ],
+            [
+                'className'  => 'AdminSpedisciQuiSetup',
+                'parentTab'  => -1, // -1 significa "Nascosto". L'utente ci arriva solo via redirect
+                'name'       => 'SpedisciQui Setup',
+                'active'     => true
+            ]
+        ];
+
+        foreach ($tabsData as $tabSpec) {
+            // Se il tab esiste già, evitammo duplicati
+            $idTab = (int) Tab::getIdFromClassName($tabSpec['className']);
+            if ($idTab > 0) {
+                continue;
+            }
+
+            $tab = new Tab();
+            $tab->class_name = $tabSpec['className'];
+            $tab->module     = $this->module->name;
+            $tab->active     = $tabSpec['active'];
+            
+            // Trova l'ID del tab genitore (es. la sezione Spedizioni nativa)
+            if (is_string($tabSpec['parentTab'])) {
+                $tab->id_parent = (int) Tab::getIdFromClassName($tabSpec['parentTab']);
+            } else {
+                $tab->id_parent = (int) $tabSpec['parentTab'];
+            }
+
+            // Assegna il nome in tutte le lingue installate nel negozio
+            $tab->name = [];
+            foreach (Language::getLanguages(true) as $lang) {
+                $tab->name[$lang['id_lang']] = $tabSpec['name'];
+            }
+
+            if (!$tab->add()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
 
 

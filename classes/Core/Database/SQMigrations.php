@@ -212,6 +212,7 @@ class SQMigrations
             `label_pages`            TINYINT NOT NULL DEFAULT 1,
             `status`                 ENUM(
                 \'pending\',
+                \'request_send\',
                 \'label_created\',
                 \'picked_up\',
                 \'in_transit\',

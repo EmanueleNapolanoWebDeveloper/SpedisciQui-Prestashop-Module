@@ -29,8 +29,11 @@ class PackageRenderer
     // =============================================
     // RENDERIZZA FORM PER PACKAGE - INZIO
     // =============================================
-    public function renderPackageForm(): string
+    public function renderPackageForm(string $formAction): string
     {
+
+        $this->addCss('package_init_styles.css');
+
         $context = Context::getContext();
 
         // Recupera il pacco default (o valori vuoti se non esiste)
@@ -43,21 +46,29 @@ class PackageRenderer
             'is_default' => 1,
         ];
 
-        $action = AdminController::$currentIndex
-            . '&configure=' . $this->module->name
-            . '&token='     . Tools::getAdminTokenLite('AdminModules');
+        
 
         $context->smarty->assign([
             'package' => $package,
-            'action'  => $action,
+            'action'  => $formAction,
+            'setupStep' => SetupSteps::PACKAGE,
         ]);
 
-        return $this->module->display(
-            $this->module->getLocalPath(),
-            'views/templates/admin/_partials/_initial/package_init.tpl'
+        $context->controller->setTemplate(
+            '../modules/spedisciquishipping/views/templates/admin/setup/package_config.tpl'
         );
     }
     // =============================================
     // RENDERIZZA FORM PER PACKAGE - FINE
     // =============================================
+
+
+    //==========================================
+    // HELPERS - ADD CSS 
+    //==========================================
+    private function addCss(string $filename): void
+    {
+        $cssPath = $this->module->getPathUri() . 'views/css/admin/initial';
+        $this->context->controller->addCSS($cssPath . $filename, 'all', null, false);
+    }
 }

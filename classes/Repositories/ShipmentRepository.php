@@ -11,6 +11,7 @@ class ShipmentRepository
     //------------------------------------------------------------
     private const ALLOWED_STATUSES = [
         'pending',
+        'request_send',
         'label_created',
         'picked_up',
         'in_transit',
@@ -71,15 +72,18 @@ class ShipmentRepository
         // 2. Query sicura
         try {
             $sql = new DbQuery();
-            $sql->select('id, 
-            id_order, 
-            status, 
-            carrier_code, 
-            service_code,
-            weight,
-            shipping_cost,
-            tracking_number,
-            label_path')
+           $sql->select('id, 
+                 id_order, 
+                 status, 
+                 carrier_code, 
+                 service_code,
+                 weight,
+                 shipping_cost,
+                 tracking_number,
+                 label_path,
+                 api_shipment_id,
+                 insurance_enabled,
+                 insurance_value')
                 ->from('spedisciqui_shipments')
                 ->where('id = ' . (int) $idShipment);
 
@@ -108,6 +112,7 @@ class ShipmentRepository
                 'shipping_cost' => $row['shipping_cost'] ? (string) $row['shipping_cost'] : null,
                 'tracking_number' => $row['tracking_number'] ? (string) $row['tracking_number'] : null,
                 'label_path' => $labelPath,
+                'api_shipment_id' => $row['api_shipment_id'] ? (string) $row['api_shipment_id'] : null,
             ];
         } catch (Exception $e) {
             // 5. Gestione errori DB

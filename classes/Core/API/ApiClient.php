@@ -77,13 +77,40 @@ class ApiClient
 
 
         try {
+
             $response = $this->client->get('/api/auth/verify', [
                 'headers' => [
                     'Authorization' => "Bearer {$token}",
                 ],
             ]);
 
-            $isValid = $response->getStatusCode() === 200;
+            PrestaShopLogger::addLog(
+                '[SQ] validateToken REQUEST: ' . json_encode([
+                    'url' => $this->baseUrl . '/api/auth/verify',
+                    'token_first_chars' => substr($token, 0, 15) . '...',
+                ]),
+                1
+            );
+
+
+
+            $statusCode = $response->getStatusCode();
+
+            if ($statusCode !== 200) {
+                PrestaShopLogger::addLog(
+                    '[spedisciqui] fallito reposnse',
+                    2
+                );
+            }
+
+            $responseBody = (string) $response->getBody();
+
+            PrestaShopLogger::addLog(
+                '[SpedisciQui] Risposta API - Stato: ' . $statusCode . ' - Body: ' . $responseBody,
+                1
+            );
+
+            $isValid = $statusCode === 200;
 
             if ($isValid) {
                 \ConfigRepositories::set(self::TOKEN_CACHE_KEY_EXP, time() + self::TOKEN_CACHE_TTL);
@@ -171,6 +198,7 @@ class ApiClient
                 'timeout' => $timeout,
                 'headers' => [
                     'Authorization' => "Bearer {$token}",
+                    'Content-Type' => 'application/json',
                     'Accept' => 'application/json'
                 ],
             ];

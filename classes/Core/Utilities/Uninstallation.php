@@ -36,6 +36,10 @@ class Uninstallation
     {
         try {
 
+            if (!$this->uninstallTabs()) {
+                \PrestaShopLogger::addLog('[SpedisciQui UNINSTALL] Errore durante la rimozione dei Tab.', 2);
+            }
+
             // rimozione dati carrier da tabelle
             $this->carrierRepo->removeAllCarriers();
 
@@ -66,6 +70,33 @@ class Uninstallation
     //=============================================
 
 
+
+
+    //=============================================
+    // RIMOZIONE CONTROLLER (TABS)
+    //=============================================
+    private function uninstallTabs(): bool
+    {
+        // I nomi esatti delle classi dei tuoi controller da rimuovere
+        $classNames = [
+            'AdminSpedisciQuiDashboard',
+            'AdminSpedisciQuiSetup'
+        ];
+
+        foreach ($classNames as $className) {
+            $idTab = (int) \Tab::getIdFromClassName($className);
+
+            // Se il Tab esiste nel database, lo eliminiamo
+            if ($idTab > 0) {
+                $tab = new \Tab($idTab);
+                if (!$tab->delete()) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
 
 
 

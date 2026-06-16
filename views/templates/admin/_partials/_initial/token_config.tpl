@@ -1,3 +1,4 @@
+
 <div class="sq-cred panel">
 
     {* ── Header ── *}
