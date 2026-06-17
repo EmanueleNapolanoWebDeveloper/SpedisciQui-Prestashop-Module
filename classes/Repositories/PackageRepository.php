@@ -11,7 +11,7 @@ class PackageRepository
     const TABLE_NAME = 'spedisciqui_package';
 
 
-      //=============================================
+    //=============================================
     // RECUPERO PACKAGE DEFAULT
     //=============================================
     public function getDefault(?int $idShop = null): ?array
@@ -43,15 +43,15 @@ class PackageRepository
 
 
         $row = [
-            'name'       => pSQL(trim($data['name'] ?? 'Default')),
-            'height'     => (float) ($data['height'] ?? 1.0),
-            'length'      => (float) ($data['length'] ?? 30.0),
-            'width'      => (float) ($data['width'] ?? 20.0),
-            'weight'     => (float) ($data['weight'] ?? 10.0),
+            'name' => pSQL(trim($data['name'] ?? 'Default')),
+            'height' => (float) ($data['height'] ?? 1.0),
+            'length' => (float) ($data['length'] ?? 30.0),
+            'width' => (float) ($data['width'] ?? 20.0),
+            'weight' => (float) ($data['weight'] ?? 10.0),
             'is_default' => (int) ($data['is_default'] ?? 0),
         ];
 
-        $db  = Db::getInstance();
+        $db = Db::getInstance();
 
 
         try {
@@ -129,10 +129,10 @@ class PackageRepository
     // HELPER PER PRESTALOGGER
     // =================================================
     private function log(
-        string  $message,
-        int     $severity = 3,
-        string  $objectType = '',
-        int     $objectId = 0
+        string $message,
+        int $severity = 3,
+        string $objectType = '',
+        int $objectId = 0
     ): void {
         PrestaShopLogger::addLog(
             '[SpedisciQui] ' . $message,
@@ -163,12 +163,12 @@ class PackageRepository
     private function normalizePackageRow(array $row): array
     {
         return [
-            'name'       => (string) $row['name'],
-            'height'     => (float)  $row['height'],
-            'length'     => (float)  $row['length'],
-            'width'      => (float)  $row['width'],
-            'weight'     => (float)  $row['weight'],
-            'is_default' => (int)    $row['is_default'],
+            'name' => (string) $row['name'],
+            'height' => (float) $row['height'],
+            'length' => (float) $row['length'],
+            'width' => (float) $row['width'],
+            'weight' => (float) $row['weight'],
+            'is_default' => (int) $row['is_default'],
         ];
     }
 }

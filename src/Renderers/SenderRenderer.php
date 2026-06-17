@@ -13,10 +13,10 @@ class SenderRenderer
     // COSTRUTTORE
     //==========================================
     public function __construct(
-        spedisciquishipping $module, 
-        Context $context)
-    {
-        $this->module     = $module;
+        spedisciquishipping $module,
+        Context $context
+    ) {
+        $this->module = $module;
         $this->context = $context;
     }
 
@@ -26,11 +26,11 @@ class SenderRenderer
     //==========================================
     // RENDER FORM PER INSERIMENTO MITTENTE (ADDRESS SHOP) - INIZIO
     //==========================================
-    public function renderSenderForm(array $sender , string $formAction): string
+    public function renderSenderForm(array $sender, string $formAction): string
     {
 
         // CSS per componente
-        $this->addCss('/views/css/admin/initial/sender_init_styles.css');
+        $this->addCss('sender_init_styles.css');
 
         $this->context->smarty->assign([
             'sender' => $sender,
@@ -53,12 +53,12 @@ class SenderRenderer
     // RENDER FORM PER UPDATE MITTENTE (ADDRESS SHOP) - INIZIO
     //==========================================
     public function renderSenderUpdateForm(
-        array $sender, 
+        array $sender,
         string $formAction,
-        array $data): string|false
-    {
+        array $data
+    ): string|false {
 
-    $this->addCss('/sender_init_styles.css');
+        $this->addCss('/sender_init_styles.css');
 
         $this->context->smarty->assign([
             'sender' => $sender,
@@ -82,7 +82,8 @@ class SenderRenderer
     //==========================================
     private function addCss(string $filename): void
     {
-        $cssPath = $this->module->getPathUri() . 'views/css/admin/initial/';
-        $this->context->controller->addCSS($cssPath . $filename, 'all', null, false);
+        $cssPath = $this->module->getPathUri() . 'views/css/admin/initial/' . $filename;
+
+        $this->context->controller->addCSS($cssPath, 'all', null, false);
     }
 }

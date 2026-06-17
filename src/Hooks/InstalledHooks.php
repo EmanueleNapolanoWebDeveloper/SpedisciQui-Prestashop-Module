@@ -278,46 +278,46 @@ class InstalledHooks
     // ======================================================
     // HOOK PER INIEZIONE CSS E JS IN COMPOENNTI - INIZIO
     // ======================================================
-    public function hookDisplayBackOfficeHeader(): string
-    {
-        if (Tools::getValue('configure') !== $this->module->name) {
-            return '';
-        }
+    // public function hookDisplayBackOfficeHeader(): string
+    // {
+    //     if (Tools::getValue('configure') !== $this->module->name) {
+    //         return '';
+    //     }
 
-        /** @var \AdminControllerCore $controller */
-        $controller = $this->context->controller;
+    //     /** @var \AdminControllerCore $controller */
+    //     $controller = $this->context->controller;
 
-        $css = $this->module->getPathUri() . 'views/css/';
-        $js  = $this->module->getPathUri() . 'views/js/';
+    //     $css = $this->module->getPathUri() . 'views/css/';
+    //     $js  = $this->module->getPathUri() . 'views/js/';
 
-        $controller->addCSS($css . 'common.css',                    'all', null, false);
+    //     $controller->addCSS($css . 'common.css',                    'all', null, false);
 
-        // caricamento styles Init
-        $controller->addCss($css . 'admin/initial/carrier_init_styles.css', 'all', null, false);
-        $controller->addCss($css . 'admin/initial/shipment_init_styles.css', 'all', null, false);
-        $controller->addCss($css . 'admin/initial/credential_init_styles.css', 'all', null, false);
-        $controller->addCss($css . 'admin/initial/package_init_styles.css', 'all', null, false);
-        $controller->addCss($css . 'admin/initial/sender_init_styles.css', 'all', null, false);
+    //     // caricamento styles Init
+    //     $controller->addCss($css . 'admin/initial/carrier_init_styles.css', 'all', null, false);
+    //     $controller->addCss($css . 'admin/initial/shipment_init_styles.css', 'all', null, false);
+    //     $controller->addCss($css . 'admin/initial/credential_init_styles.css', 'all', null, false);
+    //     $controller->addCss($css . 'admin/initial/package_init_styles.css', 'all', null, false);
+    //     $controller->addCss($css . 'admin/initial/sender_init_styles.css', 'all', null, false);
 
-        // css shipments
-        $controller->addCSS($css . 'admin/shipment/shipment_styles.css',          'all', null, false);
+    //     // css shipments
+    //     $controller->addCSS($css . 'admin/shipment/shipment_styles.css',          'all', null, false);
 
-        // css Carriers Dash
-        $controller->addCSS($css . 'admin/carriers/carriers_styles.css', 'all', null, false);
+    //     // css Carriers Dash
+    //     $controller->addCSS($css . 'admin/carriers/carriers_styles.css', 'all', null, false);
 
-        // css Settings Dash
-        $controller->addCSS($css . 'admin/settings/settings_styles.css',   'all', null, false);
-
-
-        // CARICAMENTI JS SCRIPTS
-        $controller->addJS($js . 'admin/shipment/shipment_scripts.js', false);
-        $controller->addJS($js . 'admin/shipment/shipment_review.js', false);
-        $controller->addJS($js . 'admin/carriers/carriers_scripts.js',          false);
-        $controller->addJS($js . 'admin/settings/settings_scripts.js',         false);
+    //     // css Settings Dash
+    //     $controller->addCSS($css . 'admin/settings/settings_styles.css',   'all', null, false);
 
 
-        return '';
-    }
+    //     // CARICAMENTI JS SCRIPTS
+    //     $controller->addJS($js . 'admin/shipment/shipment_scripts.js', false);
+    //     $controller->addJS($js . 'admin/shipment/shipment_review.js', false);
+    //     $controller->addJS($js . 'admin/carriers/carriers_scripts.js',          false);
+    //     $controller->addJS($js . 'admin/settings/settings_scripts.js',         false);
+
+
+    //     return '';
+    // }
     // ======================================================
     // HOOK PER INIEZIONE CSS E JS IN COMPOENNTI - FINE
     // ======================================================

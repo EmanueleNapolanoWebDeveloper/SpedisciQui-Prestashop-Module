@@ -8,7 +8,7 @@ if (!defined('_PS_VERSION_')) {
 class CarrierRenderer
 {
     private spedisciquishipping $module;
-    private CarrierRepository   $carrierRepo;
+    private CarrierRepository $carrierRepo;
     private $context;
     private CarrierServices $carrierService;
 
@@ -19,10 +19,10 @@ class CarrierRenderer
     // =============================================
     public function __construct(
         spedisciquishipping $module,
-        CarrierRepository   $carrierRepo,
+        CarrierRepository $carrierRepo,
         CarrierServices $carrierService
     ) {
-        $this->module      = $module;
+        $this->module = $module;
         $this->carrierRepo = $carrierRepo;
         $this->context = Context::getContext();
         $this->carrierService = $carrierService;
@@ -34,22 +34,20 @@ class CarrierRenderer
     // =============================================
     // RENDERIZZA LISTA CORRIERI CONFIG - INIZIO
     // =============================================
-    public function renderCarrierForm(string $formAction): string
+    public function renderCarrierForm(string $formAction, array $carriers): string
     {
 
-        $this->addCss('carrier_init_styles.css');
-
-        $carriers = $this->carrierRepo->getCarriers();
+        $this->addCss('carrier_init_styles.css');        
 
         $this->context->smarty->assign([
             'carriers' => $carriers ?? [],
-            'action'   => $formAction,
-            'setupStep'  => SetupSteps::CARRIER
+            'action' => $formAction,
+            'setupStep' => SetupSteps::CARRIER
         ]);
 
-        $this->context->controller->setTemplate(
-            '../modules/spedisciquishipping/views/templates/admin/setup/carrier_list_init.tpl'
-        );
+        $templatePath = _PS_MODULE_DIR_ . 'spedisciquishipping/views/templates/admin/_partials/_initial/carrier_list_init.tpl';
+
+        return $this->context->smarty->fetch($templatePath);
     }
     // =============================================
     // RENDERIZZA LISTA CORRIERI CONFIG - FINE
@@ -62,9 +60,9 @@ class CarrierRenderer
     // =============================================
     public function renderCarrierDash(): string
     {
-        $carriers      = $this->carrierRepo->getCarriers();
+        $carriers = $this->carrierRepo->getCarriers();
         $savedCarriers = $this->carrierRepo->getSavedCarriers();
-        $savedCodes    = array_column($savedCarriers, 'carrier_code');
+        $savedCodes = array_column($savedCarriers, 'carrier_code');
 
         $baseUrl = AdminController::$currentIndex
             . '&configure=' . $this->module->name
@@ -86,12 +84,12 @@ class CarrierRenderer
         $actionUrl = $baseUrl;
 
         $this->context->smarty->assign([
-            'carriers'          => $carriers ?? [],
-            'savedCarriers'     => $savedCarriers ?? [],
-            'savedCodes'        => $savedCodes,
-            'module_name'       => $this->module->name,
+            'carriers' => $carriers ?? [],
+            'savedCarriers' => $savedCarriers ?? [],
+            'savedCodes' => $savedCodes,
+            'module_name' => $this->module->name,
             'module_action_url' => $baseUrl,
-            'action'            => $actionUrl,
+            'action' => $actionUrl,
         ]);
 
         return '';
@@ -182,7 +180,7 @@ class CarrierRenderer
 
 
 
-// =============================================
+    // =============================================
     //HELPERS
     // =============================================
     private function addCss(string $filename): void

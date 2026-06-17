@@ -10,7 +10,8 @@ class PackageRenderer
 
 
     private spedisciquishipping $module;
-    private PackageRepository   $packRepo;
+    private PackageRepository $packRepo;
+    private Context $context;
 
 
     // =============================================
@@ -18,10 +19,12 @@ class PackageRenderer
     // =============================================
     public function __construct(
         spedisciquishipping $module,
-        PackageRepository   $packRepo
+        PackageRepository $packRepo,
+        Context $context,
     ) {
-        $this->module   = $module;
+        $this->module = $module;
         $this->packRepo = $packRepo;
+        $this->context = $context;
     }
 
 
@@ -29,34 +32,27 @@ class PackageRenderer
     // =============================================
     // RENDERIZZA FORM PER PACKAGE - INZIO
     // =============================================
-    public function renderPackageForm(string $formAction): string
+    public function renderPackageForm(array $package, string $formAction): string
     {
-
+        // 1. Carica il CSS specifico usando l'helper interno
         $this->addCss('package_init_styles.css');
 
-        $context = Context::getContext();
+        // 2. Utilizza il contesto iniettato nella classe (evita Context::getContext() statico)
+        $smarty = $this->context->smarty;
 
-        // Recupera il pacco default (o valori vuoti se non esiste)
-        $package = $this->packRepo->getDefault() ?? [
-            'name'       => 'Default',
-            'weight'     => '1.000',
-            'length'     => '30.00',
-            'width'      => '20.00',
-            'height'     => '10.00',
-            'is_default' => 1,
-        ];
-
-        
-
-        $context->smarty->assign([
+        // 3. Assegna le variabili a Smarty
+        $smarty->assign([
             'package' => $package,
-            'action'  => $formAction,
+            'action' => $formAction,
+            // Assicurati che la classe SetupSteps sia importata o usa il namespace corretto
             'setupStep' => SetupSteps::PACKAGE,
         ]);
 
-        $context->controller->setTemplate(
-            '../modules/spedisciquishipping/views/templates/admin/setup/package_config.tpl'
-        );
+        // 4. Definisci il percorso assoluto usando la costante nativa di PrestaShop
+        $templatePath = _PS_MODULE_DIR_ . 'spedisciquishipping/views/templates/admin/_partials/_initial/package_init.tpl';
+
+        // 5. RITORNA la stringa HTML (soddisfa il tipo di ritorno : string)
+        return $smarty->fetch($templatePath);
     }
     // =============================================
     // RENDERIZZA FORM PER PACKAGE - FINE
@@ -68,7 +64,8 @@ class PackageRenderer
     //==========================================
     private function addCss(string $filename): void
     {
-        $cssPath = $this->module->getPathUri() . 'views/css/admin/initial';
-        $this->context->controller->addCSS($cssPath . $filename, 'all', null, false);
+        $cssPath = $this->module->getPathUri() . 'views/css/admin/initial/' . $filename;
+
+        $this->context->controller->addCSS($cssPath, 'all', null, false);
     }
 }

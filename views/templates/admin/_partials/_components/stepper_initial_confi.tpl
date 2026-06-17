@@ -1,5 +1,5 @@
  <div class="sq-stepper">
-     {assign var="current_step" value=$setup_step|default:0}
+     {assign var="current_step" value=$setupStep|default:0}
 
      <div class="sq-step {if $current_step > 0}done{elseif $current_step == 0}active{/if}" style="width:120px;">
          <div class="sq-step-circle">{if $current_step > 0}✓{else}1{/if}</div>

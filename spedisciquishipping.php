@@ -233,13 +233,13 @@ class spedisciquishipping extends CarrierModule
         return $this->installedHooks->hookActionValidateOrder($params);
     }
 
-    public function hookDisplayBackOfficeHeader($params)
-    {
-        if (!$this->installedHooks) {
-            PrestaShopLogger::addLog('[SpedisciQui] installedHooks è NULL', 3);
-            return '';
-        }
+    // public function hookDisplayBackOfficeHeader($params)
+    // {
+    //     if (!$this->installedHooks) {
+    //         PrestaShopLogger::addLog('[SpedisciQui] installedHooks è NULL', 3);
+    //         return '';
+    //     }
 
-        return $this->installedHooks->hookDisplayBackOfficeHeader($params);
-    }
+    //     return $this->installedHooks->hookDisplayBackOfficeHeader($params);
+    // }
 }

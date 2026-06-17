@@ -10,90 +10,92 @@
         </div>
     </div>
 
-    {if !$carriers}
+    {if !isset($carriers) || !$carriers || empty($carriers)}
         <div class="sq-alert">
             <i class="icon-warning-sign"></i>
             {l s='Nessun corriere disponibile. Verifica la connessione API.' mod='spedisciquishipping'}
         </div>
     {else}
         <form method="post" action="{$action|escape:'htmlall':'UTF-8'}">
+            {* Token e controller di sicurezza per PrestaShop BO *}
+            <input type="hidden" name="controller" value="AdminSpedisciQuiSetup" />
+            <input type="hidden" name="token" value="{$smarty.get.token|escape:'htmlall':'UTF-8'}" />
 
             <table class="sq-table">
                 <thead>
                     <tr>
                         <th></th>
-                        <th>{l s='Logo' mod='spedisciquishipping'}</th>
                         <th>{l s='Corriere' mod='spedisciquishipping'}</th>
                         <th>{l s='Servizio' mod='spedisciquishipping'}</th>
-                        <th>{l s='Tipo' mod='spedisciquishipping'}</th>
-                        <th>{l s='Consegna' mod='spedisciquishipping'}</th>
+                        <th>{l s='Tempi di Consegna' mod='spedisciquishipping'}</th>
+                        <th>{l s='Peso Max' mod='spedisciquishipping'}</th>
                         <th>{l s='Destinazione' mod='spedisciquishipping'}</th>
+                        <th>{l s='Assicurazione' mod='spedisciquishipping'}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {foreach from=$carriers item=carrier}
+                        {assign var="carrier_name" value=$carrier.name|default:'Corriere'|escape:'htmlall':'UTF-8'}
+                        {assign var="carrier_code" value=$carrier.code|default:''|escape:'htmlall':'UTF-8'}
+                        {assign var="carrier_service" value=$carrier.service|default:''|escape:'htmlall':'UTF-8'}
+
                         <tr>
+                            {* Checkbox di selezione *}
                             <td>
-                                <input type="checkbox"
-                                    name="selected_carriers[]"
-                                    value="{$carrier.code|escape:'htmlall':'UTF-8'}"
-                                    data-name="{$carrier.name|escape:'htmlall':'UTF-8'}">
-                            </td>
-                            <td>
-                                {if $carrier.logo_url}
-                                    <img class="sq-carrier-logo"
-                                        src="{$carrier.logo_url|escape:'htmlall':'UTF-8'}"
-                                        alt="{$carrier.name|escape:'htmlall':'UTF-8'}">
-                                {else}
-                                    <span class="sq-badge sq-badge-default">
-                                        {$carrier.name|escape:'htmlall':'UTF-8'}
-                                    </span>
+                                {if $carrier_code}
+                                    <input type="checkbox" name="selected_carriers[]" value="{$carrier_code}" data-name="{$carrier_name}" {if isset($carrier.active) && $carrier.active == 1}checked{/if}>
                                 {/if}
                             </td>
+
+                            {* Nome Corriere e Codice *}
                             <td>
-                                <div class="sq-carrier-name">
-                                    {$carrier.name|escape:'htmlall':'UTF-8'}
+                                <div class="sq-carrier-name" style="font-weight: bold;">
+                                    {$carrier_name}
                                 </div>
-                                <div class="sq-carrier-code">
-                                    {$carrier.code|escape:'htmlall':'UTF-8'}
+                                <div class="sq-carrier-code" style="font-size: 11px; color: #7f8c8d;">
+                                    {$carrier_code}
                                 </div>
                             </td>
-                            <td>{$carrier.service_title|escape:'htmlall':'UTF-8'}</td>
+
+                            {* Servizio (es: Express Courier) *}
                             <td>
-                                {if $carrier.type === 'national'}
-                                    <span class="sq-badge sq-badge-national">
-                                        <i class="icon-map-marker"></i>
-                                        {l s='Nazionale' mod='spedisciquishipping'}
-                                    </span>
-                                {else}
-                                    <span class="sq-badge sq-badge-intl">
-                                        <i class="icon-globe"></i>
-                                        {l s='Internazionale' mod='spedisciquishipping'}
-                                    </span>
-                                {/if}
+                                <span class="sq-badge sq-badge-default">
+                                    {$carrier_service}
+                                </span>
                             </td>
+
+                            {* Tempi di consegna (mappato su delay dell'API) *}
                             <td>
                                 <span class="sq-delivery-days">
                                     <i class="icon-time"></i>
-                                    {$carrier.delivery_days|escape:'htmlall':'UTF-8'}
-                                    {l s='giorni' mod='spedisciquishipping'}
+                                    {$carrier.delay|default:'--'|escape:'htmlall':'UTF-8'}
                                 </span>
                             </td>
+
+                            {* Peso Massimo (mappato su max_weight_kg dell'API) *}
                             <td>
-                                {if $carrier.destination === 'home'}
-                                    <span class="sq-badge sq-badge-home">
-                                        <i class="icon-home"></i>
-                                        {l s='Domicilio' mod='spedisciquishipping'}
-                                    </span>
-                                {elseif $carrier.destination === 'pickup_point'}
-                                    <span class="sq-badge sq-badge-pickup">
-                                        <i class="icon-map-marker"></i>
-                                        {l s='Punto ritiro' mod='spedisciquishipping'}
+                                {$carrier.max_weight_kg|default:'--'|escape:'htmlall':'UTF-8'} kg
+                            </td>
+
+                            {* Destinazione (Dotta dal nome del servizio o codice) *}
+                            <td>
+                                {if $carrier_service|lower|strstr:"ritiro" || $carrier_code|lower|strstr:"locker"}
+                                    <span class="sq-badge sq-badge-pickup" style="background-color: #e67e22; color: white; padding: 3px 6px; border-radius: 3px;">
+                                        <i class="icon-map-marker"></i> {l s='Punto ritiro' mod='spedisciquishipping'}
                                     </span>
                                 {else}
-                                    <span class="sq-badge sq-badge-default">
-                                        {$carrier.destination|escape:'htmlall':'UTF-8'}
+                                    <span class="sq-badge sq-badge-home" style="background-color: #2ecc71; color: white; padding: 3px 6px; border-radius: 3px;">
+                                        <i class="icon-home"></i> {l s='Domicilio' mod='spedisciquishipping'}
                                     </span>
+                                {/if}
+                            </td>
+
+                            {* Assicurazione Disponibile *}
+                            <td style="text-align: center;">
+                                {if isset($carrier.is_insurance_available) && $carrier.is_insurance_available == 1}
+                                    <span style="color: #2ecc71;"><i class="icon-check"></i> {l s='Sì' mod='spedisciquishipping'}</span>
+                                {else}
+                                    <span style="color: #95a5a6;"><i class="icon-remove"></i> {l s='No' mod='spedisciquishipping'}</span>
                                 {/if}
                             </td>
                         </tr>
@@ -101,7 +103,7 @@
                 </tbody>
             </table>
 
-            <div class="sq-footer">
+            <div class="sq-footer" style="margin-top: 20px;">
                 <button type="submit" name="submitSpedisciQuiCarriers" class="sq-btn">
                     <i class="icon-arrow-right"></i>
                     {l s='Salva corrieri selezionati' mod='spedisciquishipping'}

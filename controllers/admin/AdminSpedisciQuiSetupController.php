@@ -1,7 +1,5 @@
 <?php
 
-use ModuleAdminController;
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -44,7 +42,6 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
     public function __construct()
     {
         $this->bootstrap = true;
-        $this->table = 'configuration';
         $this->identifier = 'id_configuration';
 
         parent::__construct();
@@ -58,12 +55,12 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
         $carrierApi = new CarrierApi($apiClient);
 
         // credenziali
-        $this->credentialRepo = new CredentialsRepositories($context,$apiClient);
+        $this->credentialRepo = new CredentialsRepositories($context, $apiClient);
         $this->credentialService = new CredentialServices(
             $this->credentialRepo,
             $apiClient
         );
-        $this->credentialRenderer = new CredentialsRenderer($this->module,$this->credentialRepo);
+        $this->credentialRenderer = new CredentialsRenderer($this->module, $this->credentialRepo);
         $this->setupManager = new SetupManager(
             $configRepo,
             $this->credentialRepo
@@ -77,7 +74,7 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
         // package
         $this->packRepo = new PackageRepository();
         $this->packageService = new PackageServices();
-        $this->packageRenderer = new PackageRenderer($this->module, $this->packRepo);
+        $this->packageRenderer = new PackageRenderer($this->module, $this->packRepo, $this->context);
 
         // carriers
         $this->carrierRepo = new CarrierRepository(
@@ -99,6 +96,13 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
     {
         parent::initContent();
 
+        $this->addCSS(
+            $this->module->getPathUri() . 'views/css/admin/layouts/initial_config_styles.css',
+            'all',
+            null,
+            false
+        );
+
         // step da mostrare
         $currentStep = $this->setupManager->current();
 
@@ -111,8 +115,30 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
             return;
         }
 
-        // renderizza step corrente se non è cpmpletato
-        $this->renderSetupSteps($currentStep);
+        $stepHtml = $this->renderSetupSteps($currentStep);
+
+        // 2. Assegna al layout — 'content' perché il layout usa {$content nofilter}
+        $this->context->smarty->assign([
+            'content' => $stepHtml,
+            'setup_step' => $currentStep,
+            'module_dir' => $this->module->getLocalPath(),
+        ]);
+
+        $this->content = $this->context->smarty->fetch(
+            _PS_MODULE_DIR_ . 'spedisciquishipping/views/templates/admin/layouts/initial_config_layout.tpl'
+        );
+
+    }
+
+
+
+    public function display(): void
+    {
+        // Assegna il nostro HTML renderizzato al {$content nofilter}
+        // che il layout base del BO (layout.tpl) già contiene
+        $this->context->smarty->assign('content', $this->content);
+
+        parent::display();
     }
 
 
@@ -252,6 +278,7 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
 
         if (!empty($errors)) {
             foreach ($errors as $error) {
+                PrestaShopLogger::addLog('[SpedisciQui] Errore validazione pacco: ' . $error, 3);
                 $this->errors[] = $this->module->l($error);
             }
             return;
@@ -259,12 +286,15 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
 
         // Salvataggio
         if (!$this->packRepo->savePackage(null, $data)) {
+            PrestaShopLogger::addLog('[SpedisciQui] Errore packRepo->savePackage fallito', 3);
             $this->errors[] = $this->module->l('Errore durante il salvataggio del pacco.');
             return;
         }
 
         // Avanza step setup
         $this->setupManager->advance();
+
+        PrestaShopLogger::addLog('[SpedisciQui] Pacco salvato. Avanzo lo step.', 1);
 
         $this->confirmations[] = $this->module->l('Dati pacco salvato con successo.');
 
@@ -340,11 +370,12 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
 
 
     // =========================================================
-    // PREPARAZIONE DATI PER RENDERER
+    // PREPARAZIONE DATI PER RENDERERING
     // =========================================================
 
+
     // CREDENTIALS
-    private function renderCredentialStep(): void
+    private function renderCredentialStep(): string
     {
 
         $credentials = $this->credentialRepo->get();
@@ -357,39 +388,47 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
             'status' => $this->credentialService->getTokenStatus(),
         ];
 
-       $this->credentialRenderer->renderCredentialsForm($tokenData, $formAction);
+        return $this->credentialRenderer->renderCredentialsForm($tokenData, $formAction);
     }
 
 
 
     // SENDER
-    private function renderSenderStep(): void
+    private function renderSenderStep(): string
     {
         $existing = $this->senderRepo->getDefault();
         $sender = $this->senderService->normalizeForView($existing ?? []);
         $formAction = $this->context->link->getAdminLink('AdminSpedisciQuiSetup');
 
-        $this->senderRenderer->renderSenderForm($sender, $formAction);
+        return $this->senderRenderer->renderSenderForm($sender, $formAction);
     }
 
 
     // PACKAGE
-    private function renderPackageStep(): void
+    private function renderPackageStep(): string
     {
+        $formAction = $this->context->link->getAdminLink('AdminSpedisciQuiSetup');
 
-        $formAction = $this->context->link->getAdminLink('AdminSpedisciQuiStep');
+        $existingPackage = $this->packRepo->getDefault() ?? [];
 
-        $this->packageRenderer->renderPackageForm($formAction);
+        return $this->packageRenderer->renderPackageForm($existingPackage, $formAction);
     }
 
 
     // CARRIERS
-    private function renderCarriersStep(): void
+    private function renderCarriersStep(): string
     {
 
         $formAction = $this->context->link->getAdminLink('AdminSpedisciQuiStep');
 
-        $this->carrierRenderer->renderCarrierForm($formAction);
+        $carriers = $this->carrierRepo->getCarriers();
+
+        PrestaShopLogger::addLog(
+            'existingpackage: ' . print_r($carriers, true),
+            1
+        );
+
+        return $this->carrierRenderer->renderCarrierForm($formAction, $carriers);
     }
 
 
@@ -404,36 +443,20 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
     // RENDERING DEGLI STEP
     // =========================================================
 
-    private function renderSetupSteps(string $step): void
+    private function renderSetupSteps(string $step): string
     {
         switch ($step) {
-
-            // CASO 1 - TOKEN
             case SetupSteps::TOKEN:
-                $this->renderCredentialStep();
-                break;
-
-            // CASO 2 - INSERIMENTO MITTENTE
+                return $this->renderCredentialStep();   // ← return
             case SetupSteps::SENDER:
-                $this->renderSenderStep();
-                break;
-
-            // CASO 3 - INSERIMENTO PACCHI DEFAULT
+                return $this->renderSenderStep();
             case SetupSteps::PACKAGE:
-                $this->renderPackageStep();
-                break;
-
-            // CASO 4 - LISTA CARRIER DA API E SALVATAGGIO
+                return $this->renderPackageStep();
             case SetupSteps::CARRIER:
-                $this->renderCarriersStep();
-                break;
-
-            // DEFAULT - RICOMINCIA DA TOKEN
+                return $this->renderCarriersStep();
             default:
                 $this->setupManager->reset();
-                $this->renderTokenStep;
-                break;
+                return $this->renderCredentialStep();   // ← non $this->renderTokenStep
         }
-        ;
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-if (!defined(_PS_VERSION_)) {
+if (!defined('_PS_VERSION_')) {
     exit;
 }
 
@@ -32,7 +32,6 @@ class AdminSpedisciQuiDashboardController extends ModuleAdminController
     public function __construct()
     {
         $this->bootstrap = true;
-
 
         parent::__construct();
 
@@ -74,7 +73,7 @@ class AdminSpedisciQuiDashboardController extends ModuleAdminController
 
         // 3. Inizializzazione Renderers
         $this->carrierRenderer = new CarrierRenderer($this->module, $this->carrierRepo, $this->carrierService);
-        $this->senderRenderer = new SenderRenderer($this->module, $this->senderRepo, $this->context);
+        $this->senderRenderer = new SenderRenderer($this->module, $this->context);
         $this->shipmentRenderer = new ShipmentRenderer($this->shipmentRepo, $this->module, $this->context, $shipmentService);
     }
 
@@ -86,44 +85,46 @@ class AdminSpedisciQuiDashboardController extends ModuleAdminController
     {
         parent::initContent();
 
-        // guard di sicurezza se setup non completo
+
+        $this->addCSS(
+            $this->module->getPathUri() . 'views/css/admin/layouts/dashboard_styles.css',
+            'all',
+            null,
+            false
+        );
+
         if ($this->setupManager->current() !== SetupSteps::DONE) {
-            Tools::redirectAdmin(
-                $this->context->link->getAdminLink('AdminSpedisciQuiSetup')
-            );
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminSpedisciQuiSetup'));
             return;
         }
 
         $formAction = $this->context->link->getAdminLink('AdminSpedisciQuiDashboard');
 
-
-
-        // ---------------------------------------------------------
-        // SOTTO-VISTA: Configurazione Tariffe del Corriere
-        // ---------------------------------------------------------
         if (Tools::getValue('carrier_code', '') !== '') {
             $carrierCode = Tools::getValue('carrier_code', '');
             $this->content = $this->carrierRenderer->renderCarrierTariffConfig($carrierCode, $formAction);
             return;
         }
 
-
-
         // ---------------------------------------------------------
-        // SOTTO-VISTA: Modifica Indirizzo Mittente (Form di Update)
+        // SOTTO-VISTA: Modifica Indirizzo Mittente (FIX FIRMA)
         // ---------------------------------------------------------
         if (Tools::getValue('action') === 'editSender') {
             $idSender = (int) Tools::getValue('id_sender');
-            $this->content = $this->senderRenderer->renderSenderUpdateForm($idSender, ['back_url' => $formAction . '&active_tab=sender']);
+
+            // Recuperiamo i dati del mittente specifico da passare al form di modifica
+            $senderData = $this->senderRepo->getSenderAddress();
+
+            // FIX: Adesso passiamo i parametri allineati alla firma del Renderer (array $sender, string $formAction, array $data)
+            $this->content = $this->senderRenderer->renderSenderUpdateForm(
+                $senderData,
+                $formAction,
+                ['back_url' => $formAction . '&active_tab=senders']
+            );
             return;
         }
 
-
-        // ---------------------------------------------------------
-        // SOTTO-VISTA: Review Spedizione (Dettaglio pre-invio API o visualizzazione)
-        // ---------------------------------------------------------
         if (Tools::getValue('action') === 'shipmentReview' || Tools::getValue('action') === 'ShipmentDetails') {
-            // Unificato il controllo per evitare conflitti di parametri (is_shipment / id_shipment)
             $idShipment = (int) Tools::getValue('id_shipment', Tools::getValue('is_shipment', 0));
 
             if ($idShipment <= 0) {
@@ -136,7 +137,6 @@ class AdminSpedisciQuiDashboardController extends ModuleAdminController
             return;
         }
 
-        // Dashboard Principale (Default)
         $this->renderMainDashboard($formAction);
     }
 
@@ -372,16 +372,43 @@ class AdminSpedisciQuiDashboardController extends ModuleAdminController
     {
         $activeTab = Tools::getValue('active_tab', 'shipments');
 
+        // Configurazione iniziale "Scudo di sicurezza" per Smarty
         $tplData = [
             'formAction' => $formAction,
             'active_tab' => $activeTab,
-            'module_name' => $this->module->name
+            'module_name' => $this->module->name,
+
+            // Strutture Dati Generali
+            'user' => null,
+            'carriers' => [],
+            'savedCarriers' => [],
+            'savedCodes' => [],
+            'senders' => [],
+            'sender' => [], // <-- Inizializzato come array vuoto per evitare crash
+            'shipments' => [],
+
+            // Variabili di Filtro e Stato dei Sotto-Componenti
+            'statusFilter' => Tools::getValue('status_filter', ''),
+            'searchText' => Tools::getValue('search_text', ''),
+
+            // Variabili di Routing
+            'action' => Tools::getValue('action', ''),
+            'token' => $this->token,
+            'module_action_url' => $formAction,
+            'editSenderUrl' => $formAction . '&action=editSender',
         ];
 
-        // Caricamento condizionale basato sul tab attivo per ottimizzare le risorse
+        // Recupero globale/preventivo dei dati del mittente (serve sia nel tab specifico che nei widget layout)
+        $senderAddressData = $this->senderRepo->getSenderAddress();
+        if (is_array($senderAddressData) && !empty($senderAddressData)) {
+            $tplData['sender'] = $senderAddressData;  // Singolo mittente attivo configurato
+            $tplData['senders'] = [$senderAddressData]; // Collezione per iterazioni {foreach}
+        }
+
+        // Caricamento condizionale delle restanti sorgenti dati
         switch ($activeTab) {
             case 'shipments':
-                $tplData['ordersToEvade'] = $this->shipmentRepo->getOrdersToEvade();
+                $tplData['shipments'] = $this->shipmentRepo->getShipments();
                 break;
 
             case 'carriers':
@@ -399,13 +426,28 @@ class AdminSpedisciQuiDashboardController extends ModuleAdminController
                 $tplData['savedCodes'] = $savedCodes;
                 break;
 
-            case 'sender':
-                $tplData['senders'] = $this->senderRepo->getAll();
+            case 'senders':
+                // savedCarriers serve anche nel settings panel
+                $savedCarriers = $this->carrierRepo->getSavedCarriers();
+                foreach ($savedCarriers as &$carrier) {
+                    $carrier['configure_url'] = $formAction . '&carrier_code=' . urlencode($carrier['carrier_code']);
+                }
+                unset($carrier);
+                $tplData['savedCarriers'] = $savedCarriers ?? [];
+                $tplData['savedCodes'] = array_column($savedCarriers, 'carrier_code');
                 break;
         }
 
         $this->context->smarty->assign($tplData);
-        $this->setTemplate('../modules/spedisciquishipping/views/templates/admin/dashboard/main.tpl');
+
+        $templatePath = _PS_MODULE_DIR_ . 'spedisciquishipping/views/templates/admin/layouts/dashboard_layout.tpl';
+        $this->content = $this->context->smarty->fetch($templatePath);
     }
 
+
+    public function display(): void
+    {
+        $this->context->smarty->assign('content', $this->content);
+        parent::display();
+    }
 }

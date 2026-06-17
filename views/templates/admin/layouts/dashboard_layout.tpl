@@ -3,7 +3,7 @@
     <div class="panel-heading">
         <i class="icon-truck"></i>
         {l s='SpedisciQui — Dashboard' mod='spedisciquishipping'}
-        {if $user && isset($user.user.name)}
+        {if isset($user) && isset($user.user) && isset($user.user.name)}
             <span class="badge" style="margin-left:10px; background:#1e7e34;">
                 {$user.user.name|escape:'htmlall':'UTF-8'}
             </span>
@@ -12,10 +12,10 @@
     <div class="panel-body" style="padding:0;">
 
         {* ── SE c'è una view contestuale (es. config tariffe) la mostra direttamente *}
-        {if isset($content) && $content !== ''}
+        {if isset($sq_subview) && $sq_subview !== ''}
 
             <div style="padding:24px;">
-                {$content nofilter}
+                {$sq_subview nofilter}
             </div>
 
             {* ── ALTRIMENTI mostra la dashboard normale con i tab *}
@@ -38,7 +38,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="#tab-settings" data-toggle="tab">
+                    <a href="#tab-senders" data-toggle="tab">
                         <i class="icon-cogs"></i>
                         {l s='Impostazioni' mod='spedisciquishipping'}
                     </a>
@@ -47,15 +47,21 @@
 
             <div class="tab-content" style="padding:24px;">
                 <div class="tab-pane active" id="tab-orders">
-                    {include file="module:spedisciquishipping/views/templates/admin/_partials/_shipment/shipment_panel.tpl"}
+                    {include
+                        file="module:spedisciquishipping/views/templates/admin/_partials/_shipment/shipment_panel.tpl"
+                    }
                 </div>
 
                 <div class="tab-pane" id="tab-carriers">
-                    {include file="module:spedisciquishipping/views/templates/admin/_partials/_carrier/carrier_panel.tpl"}
+                    {include
+                        file="module:spedisciquishipping/views/templates/admin/_partials/_carrier/carrier_panel.tpl"
+                    }
                 </div>
 
                 <div class="tab-pane" id="tab-settings">
-                    {include file="module:spedisciquishipping/views/templates/admin/_partials/_settings/settings_panel.tpl"}
+                    {include
+                        file="module:spedisciquishipping/views/templates/admin/_partials/_settings/settings_panel.tpl"
+                    }
                 </div>
             </div>
 

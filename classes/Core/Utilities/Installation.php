@@ -125,7 +125,7 @@ class Installation
     {
         $hooks = [
             'actionValidateOrder',
-            'displayBackOfficeHeader'
+            //'displayBackOfficeHeader'
             //'displayCarrierExtraContent',
         ];
 
