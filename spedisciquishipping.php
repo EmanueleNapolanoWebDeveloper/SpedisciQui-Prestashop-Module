@@ -121,7 +121,7 @@ class spedisciquishipping extends CarrierModule
         } catch (Exception $e) {
             PrestaShopLogger::addLog(
                 '[SpedisciQui] COSTRUTTORE CRASH: ' . $e->getMessage()
-                    . ' in ' . $e->getFile() . ':' . $e->getLine(),
+                . ' in ' . $e->getFile() . ':' . $e->getLine(),
                 3
             );
         }
@@ -136,11 +136,11 @@ class spedisciquishipping extends CarrierModule
             return false;
         }
 
-        $installation = new Installation(
-            $this,
-            $this->SQMigrations,
-            $this->config
-        );
+        $context = Context::getContext();
+        $config = new ConfigRepositories($context);
+        $migrations = new SQMigrations();
+
+        $installation = new Installation($this, $migrations, $config);
 
         return $installation->install();
     }
@@ -185,7 +185,7 @@ class spedisciquishipping extends CarrierModule
             // Altrimenti mandalo direttamente alla Dashboard di controllo principale
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminSpedisciQuiDashboard'));
         }
-        
+
         return '';
     }
 
@@ -196,6 +196,11 @@ class spedisciquishipping extends CarrierModule
     {
         $cart = $params;
         $carrierId = (int) $this->id_carrier;
+
+        PrestaShopLogger::addLog(
+            'entrato in getorderShippingCost',
+            1
+        );
 
         if ($carrierId <= 0) {
             PrestaShopLogger::addLog(

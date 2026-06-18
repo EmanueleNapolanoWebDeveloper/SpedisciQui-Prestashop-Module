@@ -27,7 +27,7 @@ class ShipmentServices
         Context $context,
         spedisciquishipping $module
     ) {
-        $this->carrierRepo    = $carrierRepo;
+        $this->carrierRepo = $carrierRepo;
         $this->carrierServices = $carrierServices;
         $this->shipmentRepo = $shipmentRepo;
         $this->credentialRepo = $credentialRepo;
@@ -37,9 +37,9 @@ class ShipmentServices
 
 
     private const PAYMENT_STATUS_MAP = [
-        'Payment accepted'       => 'paid',
+        'Payment accepted' => 'paid',
         'Awaiting bank wire payment' => 'pending',
-        'Refunded'               => 'refunded',
+        'Refunded' => 'refunded',
     ];
     private const INSURANCE_VALUE_MIN = 0.01;
     private const INSURANCE_VALUE_MAX = 99999.99;
@@ -51,6 +51,7 @@ class ShipmentServices
     public function getRateShippingCost(Cart $cart, int $idCarrier): float|false
     {
         try {
+            // 1. Validazione ID Corriere di base
             if ($idCarrier <= 0) {
                 PrestaShopLogger::addLog(
                     sprintf('[SpedisciQui] id_carrier non valido: %d | Cart #%d', $idCarrier, $cart->id),
@@ -63,13 +64,35 @@ class ShipmentServices
                 return false;
             }
 
+            // 2. Controllo Carrello e Peso (Protezione contro carrelli vuoti)
+            if (!$cart->id || !Cart::getNbProducts($cart->id)) {
+                return false; // Silenzioso, è normale durante l'inizializzazione del checkout
+            }
+
             $totalWeight = (float) $cart->getTotalWeight();
 
+            // 💡 NOTA DI DEBUG: Assicurati che getCarrierById interroghi il DB 
+            // usando l'id_reference se l'id_carrier nativo di PS cambia ad ogni modifica.
             $carrier = $this->carrierRepo->getCarrierById($idCarrier);
 
-            if (empty($carrier) || empty($carrier['service_code'])) {
+            if (empty($carrier)) {
                 PrestaShopLogger::addLog(
-                    sprintf('[SpedisciQui] Carrier #%d non trovato | Cart #%d', $idCarrier, $cart->id),
+                    sprintf('[SpedisciQui] Carrier #%d non trovato nel mapping del modulo | Cart #%d', $idCarrier, $cart->id),
+                    2,
+                    null,
+                    'Cart',
+                    (int) $cart->id,
+                    true // Abbassato a Warning (2) perché può succedere con i carrier nativi disattivati
+                );
+                return false;
+            }
+
+            // Recuperiamo i codici (Usa preferibilmente il codice univoco del corriere)
+            $carrierCode = !empty($carrier['carrier_code']) ? (string) $carrier['carrier_code'] : (string) $carrier['service_code'];
+
+            if (empty($carrierCode)) {
+                PrestaShopLogger::addLog(
+                    sprintf('[SpedisciQui] Codice identificativo mancante per Carrier #%d | Cart #%d', $idCarrier, $cart->id),
                     3,
                     null,
                     'Cart',
@@ -79,19 +102,28 @@ class ShipmentServices
                 return false;
             }
 
-            $carrierCode = (string) $carrier['service_code'];
-
+            // 3. Calcolo Tariffa applicabile
             $tariff = $this->carrierServices->getApplicableTariff($carrierCode, $totalWeight);
 
             if ($tariff === false || !isset($tariff['tariff'])) {
+                // Log informativo (Severity 1): utilissimo in debug per capire se mancano le fasce di peso nel DB
+                PrestaShopLogger::addLog(
+                    sprintf('[SpedisciQui] Nessuna fascia tariffaria trovata per Code: %s e Peso: %.3f kg | Cart #%d', $carrierCode, $totalWeight, $cart->id),
+                    1,
+                    null,
+                    'Cart',
+                    (int) $cart->id,
+                    true
+                );
                 return false;
             }
 
             $shippingCost = (float) $tariff['tariff'];
 
+            // 4. Controllo anomalie sul prezzo
             if ($shippingCost < 0.0) {
                 PrestaShopLogger::addLog(
-                    sprintf('[SpedisciQui] Tariffa negativa (%.4f) | Code: %s | Cart #%d', $shippingCost, $carrierCode, $cart->id),
+                    sprintf('[SpedisciQui] Tariffa negativa rilevata (%.4f) | Code: %s | Cart #%d', $shippingCost, $carrierCode, $cart->id),
                     3,
                     null,
                     'Cart',
@@ -101,11 +133,13 @@ class ShipmentServices
                 return false;
             }
 
+            // Ritorna il costo finale corretto
             return $shippingCost;
+
         } catch (\Throwable $e) {
             PrestaShopLogger::addLog(
                 sprintf(
-                    '[SpedisciQui] Eccezione | Cart #%d | %s in %s:%d',
+                    '[SpedisciQui] Eccezione critica | Cart #%d | %s in %s:%d',
                     $cart->id,
                     $e->getMessage(),
                     $e->getFile(),
@@ -130,13 +164,13 @@ class ShipmentServices
         $products = $cart->getProducts();
 
         $totalLength = 0.0;
-        $totalWidth  = 0.0;
+        $totalWidth = 0.0;
         $totalHeight = 0.0;
 
         if (empty($products)) {
             return [
                 'length' => (float) ($defaultPackage['length'] ?? 0),
-                'width'  => (float) ($defaultPackage['width']  ?? 0),
+                'width' => (float) ($defaultPackage['width'] ?? 0),
                 'height' => (float) ($defaultPackage['height'] ?? 0),
             ];
         }
@@ -146,8 +180,8 @@ class ShipmentServices
 
             // PS salva le dimensioni in ps_product come width, height, depth
             // depth in PS = lunghezza fisica del pacco
-            $pLength = (float) ($product['depth']  ?? 0); // PS chiama "depth" la lunghezza
-            $pWidth  = (float) ($product['width']  ?? 0);
+            $pLength = (float) ($product['depth'] ?? 0); // PS chiama "depth" la lunghezza
+            $pWidth = (float) ($product['width'] ?? 0);
             $pHeight = (float) ($product['height'] ?? 0);
 
             // Fallback al package default se il prodotto non ha dimensioni
@@ -163,7 +197,7 @@ class ShipmentServices
 
             // length/width: prendo il massimo (il pacco deve contenere il prodotto più grande)
             $totalLength = max($totalLength, $pLength);
-            $totalWidth  = max($totalWidth,  $pWidth);
+            $totalWidth = max($totalWidth, $pWidth);
 
             // height: sommo per la quantità (prodotti impilati)
             $totalHeight += $pHeight * $qty;
@@ -171,7 +205,7 @@ class ShipmentServices
 
         return [
             'length' => round($totalLength, 2),
-            'width'  => round($totalWidth,  2),
+            'width' => round($totalWidth, 2),
             'height' => round($totalHeight, 2),
         ];
     }
@@ -211,27 +245,27 @@ class ShipmentServices
         }
 
         return [
-            'id_shipment'      => (int)    $row['id_shipment'],
-            'id_order'         => (int)    $row['id_order'],
-            'tracking_number'  => (string) ($row['tracking_number'] ?? '—'),
+            'id_shipment' => (int) $row['id_shipment'],
+            'id_order' => (int) $row['id_order'],
+            'tracking_number' => (string) ($row['tracking_number'] ?? '—'),
             'label_path' => $row['label_path'] ?? null,
-            'label_url'  => $this->buildLabelUrl($row['label_path'] ?? null),
-            'carrier_code'     => (string) ($row['carrier_code']    ?? '—'),
-            'service_code'     => (string) ($row['service_code']    ?? '—'),
-            'status'           => (string) $row['status'],
-            'status_label'     => $this->getStatusLabel((string) $row['status']),
-            'status_class'     => $this->getStatusClass((string) $row['status']),
-            'payment_status'   => $this->resolvePaymentStatus((string) ($row['order_state_name'] ?? '')),
-            'payment_method'   => (string) ($row['payment_method'] ?? ''),
-            'total_paid'       => number_format((float) $row['total_paid'], 2, ',', '.'),
-            'currency'         => (string) ($row['shipping_currency'] ?? 'EUR'),
-            'customer_name'    => (string) ($row['customer_name']   ?? '—'),
-            'customer_email'   => (string) ($row['customer_email']  ?? ''),
-            'delivery_city'    => (string) ($row['delivery_city']   ?? ''),
+            'label_url' => $this->buildLabelUrl($row['label_path'] ?? null),
+            'carrier_code' => (string) ($row['carrier_code'] ?? '—'),
+            'service_code' => (string) ($row['service_code'] ?? '—'),
+            'status' => (string) $row['status'],
+            'status_label' => $this->getStatusLabel((string) $row['status']),
+            'status_class' => $this->getStatusClass((string) $row['status']),
+            'payment_status' => $this->resolvePaymentStatus((string) ($row['order_state_name'] ?? '')),
+            'payment_method' => (string) ($row['payment_method'] ?? ''),
+            'total_paid' => number_format((float) $row['total_paid'], 2, ',', '.'),
+            'currency' => (string) ($row['shipping_currency'] ?? 'EUR'),
+            'customer_name' => (string) ($row['customer_name'] ?? '—'),
+            'customer_email' => (string) ($row['customer_email'] ?? ''),
+            'delivery_city' => (string) ($row['delivery_city'] ?? ''),
             'delivery_country' => (string) ($row['delivery_country_iso'] ?? ''),
-            'weight'           => number_format((float) ($row['weight'] ?? 0), 3, ',', '.'),
-            'shipping_cost'    => number_format((float) ($row['shipping_cost'] ?? 0), 2, ',', '.'),
-            'date_add'         => $row['date_add']
+            'weight' => number_format((float) ($row['weight'] ?? 0), 3, ',', '.'),
+            'shipping_cost' => number_format((float) ($row['shipping_cost'] ?? 0), 2, ',', '.'),
+            'date_add' => $row['date_add']
                 ? date('d/m/Y H:i', strtotime($row['date_add']))
                 : '—',
         ];
@@ -243,16 +277,16 @@ class ShipmentServices
     public function getStatusLabel(string $status): string
     {
         return match ($status) {
-            'pending'          => 'In attesa',
-            'label_created'    => 'Label creata',
-            'picked_up'        => 'Ritirato',
-            'in_transit'       => 'In transito',
+            'pending' => 'In attesa',
+            'label_created' => 'Label creata',
+            'picked_up' => 'Ritirato',
+            'in_transit' => 'In transito',
             'out_for_delivery' => 'In consegna',
-            'delivered'        => 'Consegnato',
-            'failed'           => 'Fallito',
-            'cancelled'        => 'Annullato',
-            'returned'         => 'Reso',
-            default            => ucfirst($status),
+            'delivered' => 'Consegnato',
+            'failed' => 'Fallito',
+            'cancelled' => 'Annullato',
+            'returned' => 'Reso',
+            default => ucfirst($status),
         };
     }
 
@@ -262,16 +296,16 @@ class ShipmentServices
     public function getStatusClass(string $status): string
     {
         return match ($status) {
-            'pending'          => 'warning',
-            'label_created'    => 'info',
+            'pending' => 'warning',
+            'label_created' => 'info',
             'picked_up',
-            'in_transit'       => 'primary',
+            'in_transit' => 'primary',
             'out_for_delivery' => 'primary',
-            'delivered'        => 'success',
+            'delivered' => 'success',
             'failed',
-            'cancelled'        => 'danger',
-            'returned'         => 'secondary',
-            default            => 'secondary',
+            'cancelled' => 'danger',
+            'returned' => 'secondary',
+            default => 'secondary',
         };
     }
 
@@ -303,8 +337,8 @@ class ShipmentServices
         }
 
         // ─── ORDER (PrestaShop nativo) ───────────────────────────────────────────
-        $idOrder  = (int) ($shipment['id_order'] ?? 0);
-        $order    = $idOrder ? new \Order($idOrder) : null;
+        $idOrder = (int) ($shipment['id_order'] ?? 0);
+        $order = $idOrder ? new \Order($idOrder) : null;
 
         // Valuta collegata all'ordine
         $currency = ($order && \Validate::isLoadedObject($order))
@@ -329,7 +363,7 @@ class ShipmentServices
         // ─── CARRIER (repository custom del modulo) ───────────────────────────────
         // Assumiamo che il carrier sia identificato da carrier_code nella spedizione
         $carrierCode = $shipment['carrier_code'] ?? null;
-        $carrier     = $carrierCode
+        $carrier = $carrierCode
             ? $this->carrierRepo->getCarrierByCode($carrierCode)
             : null;
 
@@ -339,7 +373,7 @@ class ShipmentServices
 
         $backUrl = AdminController::$currentIndex
             . '&configure=' . $this->module->name
-            . '&token='     . Tools::getAdminTokenLite('AdminModules')
+            . '&token=' . Tools::getAdminTokenLite('AdminModules')
             . '&action=list';
 
         // url per mostrare/scaericare label
@@ -360,81 +394,81 @@ class ShipmentServices
 
             // ── shipment ──────────────────────────────────────────────────────────
             'shipment' => [
-                'id_shipment'     => (int) ($shipment['id_shipment'] ?? $shipmentId),
-                'status'          => $shipment['status'] ?? 'unknown',
-                'status_label'    => $this->getStatusLabel($shipment['status'] ?? ''),
-                'status_class'    => $this->getStatusClass($shipment['status'] ?? ''),
-                'weight'          => (float) ($shipment['weight'] ?? 0),
-                'base_cost'       => $this->formatPrice(
+                'id_shipment' => (int) ($shipment['id_shipment'] ?? $shipmentId),
+                'status' => $shipment['status'] ?? 'unknown',
+                'status_label' => $this->getStatusLabel($shipment['status'] ?? ''),
+                'status_class' => $this->getStatusClass($shipment['status'] ?? ''),
+                'weight' => (float) ($shipment['weight'] ?? 0),
+                'base_cost' => $this->formatPrice(
                     (float) ($shipment['base_cost'] ?? 0),
                     $currency
                 ),
-                'shipping_cost'   => (float) ($shipment['shipping_cost'] ?? 0),
+                'shipping_cost' => (float) ($shipment['shipping_cost'] ?? 0),
                 'tracking_number' => $shipment['tracking_number'] ?? '',
-                'label_path'      => $row['label_path'] ?? null,
-                'label_url'       => $labelUrl,
-                'date_add'        => $shipment['date_add'] ?? '',
-                'note'            => $shipment['note'] ?? '',  // opzionale
+                'label_path' => $row['label_path'] ?? null,
+                'label_url' => $labelUrl,
+                'date_add' => $shipment['date_add'] ?? '',
+                'note' => $shipment['note'] ?? '',  // opzionale
             ],
 
             // ── order ─────────────────────────────────────────────────────────────
             'order' => ($order && \Validate::isLoadedObject($order)) ? [
-                'id_order'        => (int) $order->id,
-                'reference'       => $order->reference ?? '',
-                'date_add'        => $order->date_add ?? '',
-                'total_paid'      => $this->formatPrice(
+                'id_order' => (int) $order->id,
+                'reference' => $order->reference ?? '',
+                'date_add' => $order->date_add ?? '',
+                'total_paid' => $this->formatPrice(
                     (float) $order->total_paid_tax_incl,
                     $currency
                 ),
-                'total_paid_raw'  => round((float) $order->total_paid_tax_incl, 2), // ← aggiungi
-                'currency'        => $currency ? $currency->iso_code : '',
-                'payment_method'  => $order->payment ?? '',
-                'payment_status'  => $order->getCurrentOrderState()
+                'total_paid_raw' => round((float) $order->total_paid_tax_incl, 2), // ← aggiungi
+                'currency' => $currency ? $currency->iso_code : '',
+                'payment_method' => $order->payment ?? '',
+                'payment_status' => $order->getCurrentOrderState()
                     ? $order->getCurrentOrderState()->name[$this->context->language->id] ?? ''
                     : '',
-                'payment_label'   => $this->getPaymentLabel($order),
+                'payment_label' => $this->getPaymentLabel($order),
             ] : $this->getEmptyOrder(),
 
             // ── recipient ─────────────────────────────────────────────────────────
             'recipient' => ($address && \Validate::isLoadedObject($address)) ? [
                 'full_name' => trim(
                     ($address->firstname ?? '') . ' ' .
-                        ($address->lastname  ?? '')
+                    ($address->lastname ?? '')
                 ),
-                'company'   => $address->company  ?? '',   // opzionale
-                'address1'  => $address->address1 ?? '',
-                'address2'  => $address->address2 ?? '',   // opzionale
-                'city'      => $address->city     ?? '',
-                'postcode'  => $address->postcode ?? '',
-                'province'  => $address->id_state
+                'company' => $address->company ?? '',   // opzionale
+                'address1' => $address->address1 ?? '',
+                'address2' => $address->address2 ?? '',   // opzionale
+                'city' => $address->city ?? '',
+                'postcode' => $address->postcode ?? '',
+                'province' => $address->id_state
                     ? \State::getNameById((int) $address->id_state) ?? ''
                     : '',
-                'country'   => $countryName,
-                'phone'     => $address->phone ?? $address->phone_mobile ?? '',
+                'country' => $countryName,
+                'phone' => $address->phone ?? $address->phone_mobile ?? '',
             ] : $this->getEmptyRecipient(),
 
             // ── carrier ───────────────────────────────────────────────────────────
             'carrier' => [
-                'carrier_code'   => $shipment['carrier_code']  ?? '',
-                'service_code'   => $shipment['service_code']  ?? '',
-                'service_name'   => $carrier['service_name']   ?? '',   // opzionale
+                'carrier_code' => $shipment['carrier_code'] ?? '',
+                'service_code' => $shipment['service_code'] ?? '',
+                'service_name' => $carrier['service_name'] ?? '',   // opzionale
                 'estimated_days' => $carrier['estimated_days'] ?? null, // opzionale
-                'logo_url'       => $carrier['logo_url']       ?? '',   // opzionale
+                'logo_url' => $carrier['logo_url'] ?? '',   // opzionale
             ],
 
             // ── options ───────────────────────────────────────────────────────────
             'options' => [
                 'available' => [],
-                'selected'  => [],
+                'selected' => [],
             ],
 
             // ── form ──────────────────────────────────────────────────────────────
             'form' => [
-                'action_url'       => $actionUrl,
-                'back_url'         => $backUrl,
+                'action_url' => $actionUrl,
+                'back_url' => $backUrl,
                 'order_detail_url' => $orderDetailUrl,
-                'id_shipment'      => (int) ($shipment['id_shipment'] ?? $shipmentId),
-                'base_cost_raw'    => (float) ($shipment['base_cost'] ?? 0),
+                'id_shipment' => (int) ($shipment['id_shipment'] ?? $shipmentId),
+                'base_cost_raw' => (float) ($shipment['base_cost'] ?? 0),
             ],
         ];
     }
@@ -456,14 +490,14 @@ class ShipmentServices
     private function getEmptyOrder(): array
     {
         return [
-            'id_order'       => 0,
-            'reference'      => '',
-            'date_add'       => '',
-            'total_paid'     => '',
-            'currency'       => '',
+            'id_order' => 0,
+            'reference' => '',
+            'date_add' => '',
+            'total_paid' => '',
+            'currency' => '',
             'payment_method' => '',
             'payment_status' => '',
-            'payment_label'  => '',
+            'payment_label' => '',
             'total_paid_raw' => 0.0,
         ];
     }
@@ -472,14 +506,14 @@ class ShipmentServices
     {
         return [
             'full_name' => '',
-            'company'   => '',
-            'address1'  => '',
-            'address2'  => '',
-            'city'      => '',
-            'postcode'  => '',
-            'province'  => '',
-            'country'   => '',
-            'phone'     => '',
+            'company' => '',
+            'address1' => '',
+            'address2' => '',
+            'city' => '',
+            'postcode' => '',
+            'province' => '',
+            'country' => '',
+            'phone' => '',
         ];
     }
 
@@ -510,7 +544,7 @@ class ShipmentServices
     {
         return AdminController::$currentIndex
             . '&configure=' . $this->module->name
-            . '&token='     . Tools::getAdminTokenLite('AdminModules');
+            . '&token=' . Tools::getAdminTokenLite('AdminModules');
     }
 
 

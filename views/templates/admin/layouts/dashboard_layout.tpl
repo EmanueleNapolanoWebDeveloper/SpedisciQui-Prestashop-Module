@@ -58,7 +58,7 @@
                     }
                 </div>
 
-                <div class="tab-pane" id="tab-settings">
+                <div class="tab-pane" id="tab-senders">
                     {include
                         file="module:spedisciquishipping/views/templates/admin/_partials/_settings/settings_panel.tpl"
                     }

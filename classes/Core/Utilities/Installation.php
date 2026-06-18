@@ -18,9 +18,9 @@ class Installation
         SQMigrations $SQMigrations,
         ConfigRepositories $config
     ) {
-        $this->module       = $module;
+        $this->module = $module;
         $this->SQMigrations = $SQMigrations;
-        $this->config       = $config;
+        $this->config = $config;
     }
 
 
@@ -65,50 +65,82 @@ class Installation
     //=============================================
     private function installTabs(): bool
     {
-        // Definiamo i controller da installare
         $tabsData = [
             [
-                'className'  => 'AdminSpedisciQuiDashboard',
-                'parentTab'  => 'AdminParentShipping', // Sotto il menu "Spedizione" di PrestaShop
-                'name'       => 'SpedisciQui Dashboard',
-                'active'     => true
+                'className' => 'AdminSpedisciQuiCarriers',
+                'parentTab' => 'AdminParentShipping',
+                'name' => 'Corrieri SpedisciQui',
+                'active' => true,
             ],
             [
-                'className'  => 'AdminSpedisciQuiSetup',
-                'parentTab'  => -1, // -1 significa "Nascosto". L'utente ci arriva solo via redirect
-                'name'       => 'SpedisciQui Setup',
-                'active'     => true
-            ]
+                'className' => 'AdminSpedisciQuiShipments',
+                'parentTab' => 'AdminParentOrders',
+                'name' => 'Ordini SpedisciQui',
+                'active' => true,
+            ],
+            [
+                'className' => 'AdminSpedisciQuiSender',
+                'parentTab' => 'ShopParameters',
+                'name' => 'Mittente SpedisciQui',
+                'active' => true,
+            ],
+            [
+                'className' => 'AdminSpedisciQuiSetup',
+                'parentTab' => -1,
+                'name' => 'SpedisciQui Setup',
+                'active' => true,
+            ],
         ];
 
         foreach ($tabsData as $tabSpec) {
-            // Se il tab esiste già, evitammo duplicati
             $idTab = (int) Tab::getIdFromClassName($tabSpec['className']);
+
             if ($idTab > 0) {
-                continue;
+                $existingTab = new Tab($idTab);
+                if ($existingTab->module !== $this->module->name) {
+                    PrestaShopLogger::addLog(
+                        sprintf('[SpedisciQui] Tab orfano %s — eliminazione in corso.', $tabSpec['className']),
+                        2
+                    );
+                    $existingTab->delete();
+                } else {
+                    PrestaShopLogger::addLog(
+                        sprintf('[SpedisciQui] Tab %s già installato correttamente.', $tabSpec['className']),
+                        1
+                    );
+                    continue;
+                }
             }
 
             $tab = new Tab();
             $tab->class_name = $tabSpec['className'];
-            $tab->module     = $this->module->name;
-            $tab->active     = $tabSpec['active'];
-            
-            // Trova l'ID del tab genitore (es. la sezione Spedizioni nativa)
+            $tab->module = $this->module->name;
+            $tab->active = (bool) $tabSpec['active'];
+
             if (is_string($tabSpec['parentTab'])) {
-                $tab->id_parent = (int) Tab::getIdFromClassName($tabSpec['parentTab']);
+                $parentId = (int) Tab::getIdFromClassName($tabSpec['parentTab']);
+                $tab->id_parent = $parentId > 0 ? $parentId : 0;
             } else {
                 $tab->id_parent = (int) $tabSpec['parentTab'];
             }
 
-            // Assegna il nome in tutte le lingue installate nel negozio
             $tab->name = [];
             foreach (Language::getLanguages(true) as $lang) {
                 $tab->name[$lang['id_lang']] = $tabSpec['name'];
             }
 
             if (!$tab->add()) {
+                PrestaShopLogger::addLog(
+                    sprintf('[SpedisciQui] Errore salvataggio tab %s.', $tabSpec['className']),
+                    3
+                );
                 return false;
             }
+
+            PrestaShopLogger::addLog(
+                sprintf('[SpedisciQui] Tab %s installato con successo.', $tabSpec['className']),
+                1
+            );
         }
 
         return true;
@@ -152,8 +184,8 @@ class Installation
     {
         $defaults = [
             'SPEDISCIQUI_DEFAULT_CURRENCY' => 'EUR',
-            'SPEDISCIQUI_TIMEOUT'          => 30,
-            'SPEDISCIQUI_SETUP_STEP'       => 0,
+            'SPEDISCIQUI_TIMEOUT' => 30,
+            'SPEDISCIQUI_SETUP_STEP' => 0,
             'SPEDISCIQUI_API_URL' => '',
         ];
 

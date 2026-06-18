@@ -34,9 +34,14 @@ class CarrierRepository
     // ==========================================
     public function getCarriers(): ?array
     {
-        $credentials       = $this->credentialsRepo->get();
+        $credentials = $this->credentialsRepo->get();
 
-        $token       = $credentials['access_token'] ?? '';
+        PrestaShopLogger::addLog(
+            '[SpedisciQui] getCarriers — credentials: ' . print_r($credentials, true),
+            1
+        );
+
+        $token = $credentials['access_token'] ?? '';
 
         if (empty($token)) {
             PrestaShopLogger::addLog('[SpedisciQui] getCarriers — token mancante', 3);
@@ -71,7 +76,7 @@ class CarrierRepository
             $sql = new DbQuery();
             $sql->select('id_carrier, carrier_code, service_code, carrier_name,id_spedisciqui_carrier')
                 ->from('spedisciqui_carrier')
-                ->where('`id_carrier` = ' . (int)$carrierId);
+                ->where('`id_carrier` = ' . (int) $carrierId);
 
             $row = Db::getInstance()->getRow($sql);
             return is_array($row) ? $row : [];
@@ -131,15 +136,15 @@ class CarrierRepository
     {
 
         // Validazione campi obbligatori
-        if (empty($carrierData['code']) || empty($carrierData['name'])) {
+        if (empty($carrierData['carrier_code']) || empty($carrierData['carrier_name'])) {
             $this->log('saveCarrierInPS: campi obbligatori mancanti (code/name)', 3);
             return false;
         }
 
         // Evita duplicati
-        if ($this->getCarrierByCode($carrierData['code'])) {
+        if ($this->getCarrierByCode($carrierData['carrier_code'])) {
             PrestaShopLogger::addLog(
-                '[SpedisciQui] Carrier già esistente, skip: ' . $carrierData['code'],
+                '[SpedisciQui] Carrier già esistente, skip: ' . $carrierData['carrier_code'],
                 1
             );
             return 0;
@@ -152,21 +157,22 @@ class CarrierRepository
 
         try {
 
-            $carrier                    = new Carrier();
-            $carrier->name              = pSQL($carrierData['name']);
-            $carrier->active            = true;
-            $carrier->deleted           = false;
+            $carrier = new Carrier();
+            $carrier->name = pSQL($carrierData['carrier_name']);
+            $carrier->active = true;
+            $carrier->deleted = false;
             $carrier->shipping_handling = false;
-            $carrier->range_behavior    = 0;
+            $carrier->range_behavior = 0;
             $carrier->shipping_external = 1;
-            $carrier->shipping_method   = 1; // per peso
-            $carrier->is_module         = true;
+            $carrier->shipping_method = 1; // per peso
+            $carrier->is_module = true;
             $carrier->external_module_name = 'spedisciquishipping';
-            $carrier->need_range        = true;
+            $carrier->need_range = true;
 
             foreach (Language::getLanguages() as $lang) {
-                $carrier->delay[(int) $lang['id_lang']] = $carrierData['service_title'] ?? $carrierData['name'];
-            };
+                $carrier->delay[(int) $lang['id_lang']] = $carrierData['service_name'] ?? $carrierData['service_name'];
+            }
+            ;
 
             if (!$carrier->add()) {
                 $this->module->displayError($this->module->l('Errore durante la creazione del corriere'));
@@ -183,7 +189,7 @@ class CarrierRepository
             }
 
             // creazione range di peso per ogni zona
-            $rangeWeightId = $this->insertRangeWeightSafe((int)$carrier->id, 0, 999);
+            $rangeWeightId = $this->insertRangeWeightSafe((int) $carrier->id, 0, 999);
             if (!$rangeWeightId) {
                 PrestaShopLogger::addLog(
                     '[SpedisciQui] RangeWeight fallito per carrier: ' . $carrier->id,
@@ -212,16 +218,16 @@ class CarrierRepository
 
             // 5. Tax rules group per ogni shop 
             $shops = Shop::getShops(true);
-            $idModule = (int)Module::getModuleIdByName('spedisciquishipping');
+            $idModule = (int) Module::getModuleIdByName('spedisciquishipping');
 
             foreach ($shops as $shop) {
 
-                $idShop = (int)$shop['id_shop'];
+                $idShop = (int) $shop['id_shop'];
 
                 // carrier_shop
                 $db->insert(
                     'carrier_shop',
-                    ['id_carrier' => (int)$carrier->id, 'id_shop' => $idShop],
+                    ['id_carrier' => (int) $carrier->id, 'id_shop' => $idShop],
                     false,
                     true,
                     Db::INSERT_IGNORE
@@ -231,9 +237,9 @@ class CarrierRepository
                 $db->insert(
                     'carrier_tax_rules_group_shop',
                     [
-                        'id_carrier'         => (int)$carrier->id,
+                        'id_carrier' => (int) $carrier->id,
                         'id_tax_rules_group' => 0,
-                        'id_shop'            => (int)$shop['id_shop'],
+                        'id_shop' => (int) $shop['id_shop'],
                     ],
                     false,
                     true,
@@ -246,9 +252,9 @@ class CarrierRepository
                 $db->insert(
                     'module_carrier',
                     [
-                        'id_module'   => $idModule,
-                        'id_shop'     => $shop['id_shop'],
-                        'id_reference' => (int)$carrier->id_reference, // ← campo corretto
+                        'id_module' => $idModule,
+                        'id_shop' => $shop['id_shop'],
+                        'id_reference' => (int) $carrier->id_reference, // ← campo corretto
                     ],
                     false,
                     true,
@@ -268,8 +274,8 @@ class CarrierRepository
 
             PrestaShopLogger::addLog(
                 '[SpedisciQui] Carrier creato — id: ' . $carrier->id
-                    . ' | ref: ' . $carrier->id_reference
-                    . ' | name: ' . $carrier->name,
+                . ' | ref: ' . $carrier->id_reference
+                . ' | name: ' . $carrier->name,
                 1
             );
 
@@ -342,29 +348,29 @@ class CarrierRepository
         ) ? 1 : 0;
 
         $extraData = json_encode([
-            'type'        => $carrierData['type']        ?? null,
-            'origin'      => $carrierData['origin']      ?? null,
+            'type' => $carrierData['type'] ?? null,
+            'origin' => $carrierData['origin'] ?? null,
             'destination' => $carrierData['destination'] ?? null,
-            'logo_url'    => $carrierData['logo_url']    ?? null,
+            'logo_url' => $carrierData['logo_url'] ?? null,
         ]);
 
         return (bool) Db::getInstance()->insert(
             'spedisciqui_carrier',
             [
-                'id_carrier'      => (int) $carrier->id,
-                'carrier_code'    => pSQL($carrierData['code']),
-                'carrier_name'    => pSQL($carrierData['name']),
-                'service_code'    => pSQL($carrierData['code']),
-                'service_name'    => pSQL($carrierData['service_title'] ?? $carrierData['name']),
-                'logo'            => pSQL($carrierData['logo_url'] ?? ''),
-                'delay'           => pSQL($carrierData['delivery_days'] ?? ''),
+                'id_carrier' => (int) $carrier->id,
+                'carrier_code' => pSQL($carrierData['carrier_code']),
+                'carrier_name' => pSQL($carrierData['carrier_name']),
+                'service_code' => pSQL($carrierData['service_code']),
+                'service_name' => pSQL($carrierData['service_name'] ?? $carrierData['service_name']),
+                'logo' => pSQL($carrierData['logo'] ?? ''),
+                'delay' => pSQL($carrierData['delay'] ?? ''),
                 'is_pickup_point' => $isPickupPoint,
-                'is_courier'      => 1,
-                'position'        => 0,
-                'is_active'       => 1,
-                'extra_data'      => pSQL($extraData),
-                'date_add'        => date('Y-m-d H:i:s'),
-                'date_upd'        => date('Y-m-d H:i:s'),
+                'is_courier' => 1,
+                'position' => 0,
+                'is_active' => 1,
+                'extra_data' => pSQL($extraData),
+                'date_add' => date('Y-m-d H:i:s'),
+                'date_upd' => date('Y-m-d H:i:s'),
             ],
             false,
             true,
@@ -572,7 +578,7 @@ class CarrierRepository
     {
         try {
             $sql = new DbQuery();
-            $sql->select('c.*, sc.carrier_name, sc.carrier_code, sc.service_name,
+            $sql->select('c.*, sc.carrier_name, sc.carrier_code, sc.service_name, sc.service_code,
                           sc.logo, sc.delay, sc.is_pickup_point, sc.date_add, sc.date_upd')
                 ->from('carrier', 'c')
                 ->leftJoin(
@@ -637,10 +643,10 @@ class CarrierRepository
     // HELPER PER PRESTALOGGER
     // =================================================
     private function log(
-        string  $message,
-        int     $severity = 3,
-        string  $objectType = '',
-        int     $objectId = 0
+        string $message,
+        int $severity = 3,
+        string $objectType = '',
+        int $objectId = 0
     ): void {
         PrestaShopLogger::addLog(
             '[SpedisciQui] ' . $message,

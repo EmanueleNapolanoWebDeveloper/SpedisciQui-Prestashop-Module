@@ -37,7 +37,7 @@ class CarrierRenderer
     public function renderCarrierForm(string $formAction, array $carriers): string
     {
 
-        $this->addCss('carrier_init_styles.css');        
+        $this->addCss('carrier_init_styles.css');
 
         $this->context->smarty->assign([
             'carriers' => $carriers ?? [],
@@ -107,10 +107,10 @@ class CarrierRenderer
     // RENDERIZZA CONFIGURAZIONE CORREIRE - INIZIO
     // =============================================
     public function renderCarrierTariffConfig(
-        string $carrierCode
+        string $carrierCode,
+        string $formAction
     ): string {
-
-        // recupero dati carrier
+        // 1. Recupero dati carrier
         $carrier = $this->carrierRepo->getCarrierByCode($carrierCode);
 
         if (empty($carrier)) {
@@ -121,43 +121,24 @@ class CarrierRenderer
                 'SpedisciQuiShipping'
             );
             $this->context->smarty->assign('sq_errors', ['Carrier non trovato.']);
-            return $this->renderCarrierDash();
+            return $this->renderCarrierDash(); // Assicurati che questo metodo esista nel renderer se fallisce
         }
 
-        PrestaShopLogger::addLog(
-            '[SpedisciQui] carrier trovato: ' . print_r($carrier, true),
-            1,
-            null,
-            'SpedisciQuiShipping'
-        );
-
-        // recupera tariffe esistenti tramite CarrierService
+        // 2. Recupera tariffe esistenti tramite CarrierService
         $tariffRows = $this->carrierService->getTariffByCarrierId(
             (int) $carrier['id_carrier'],
-            $carrier['service_code'],
+            $carrier['carrier_code'],
             null
         );
 
-        PrestaShopLogger::addLog(
-            '[SpedisciQui] tariffe trovato: ' . print_r($tariffRows, true),
-            1,
-            null,
-            'SpedisciQuiShipping'
-        );
+        // Recuperiamo il token nativo del nostro Controller specifico
+        $controllerToken = Tools::getAdminTokenLite('AdminSpedisciQuiCarriers');
 
-        $token = Tools::getAdminTokenLite('AdminModules');
+        // 3. Costruiamo gli URL corretti per non uscire dal flusso del Controller custom
+        $actionUrl = $formAction . '&token=' . $controllerToken . '&carrier_code=' . urlencode($carrierCode);
+        $backLink = $formAction . '&token=' . $controllerToken;
 
-        // URL action
-        $actionUrl = AdminController::$currentIndex
-            . '&configure=' . $this->module->name
-            . '&token=' . $token
-            . '&carrier_code=' . urlencode($carrierCode);
-
-        // backLink
-        $backLink = AdminController::$currentIndex
-            . '&configure=' . $this->module->name
-            . '&token=' . Tools::getAdminTokenLite('AdminModules');
-
+        // 4. Passiamo TUTTE le variabili a Smarty (incluso il token richiesto dal TPL)
         $this->context->smarty->assign([
             'carrier_code' => $carrier['carrier_code'],
             'carrier_name' => $carrier['carrier_name'],
@@ -165,13 +146,13 @@ class CarrierRenderer
             'tariff_rows' => $tariffRows,
             'action' => $actionUrl,
             'backLink' => $backLink,
+            'token' => $controllerToken, // 🔥 FONDAMENTALE per il form nel TPL!
             'sq_errors' => [],
             'sq_confirmation' => [],
         ]);
 
-        return $this->module->display(
-            $this->module->getLocalPath(),
-            'views/templates/admin/_partials/_carrier/components/config_tariffs.tpl'
+        return $this->context->smarty->fetch(
+            _PS_MODULE_DIR_ . 'spedisciquishipping/views/templates/admin/_partials/_carrier/components/config_tariffs.tpl'
         );
     }
     // =============================================

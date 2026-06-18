@@ -137,28 +137,6 @@ class SQMigrations
     }
 
     //==========================================
-    // TABELLA CART CUSTOM
-    //==========================================
-    private function createSpedisciQuiCart(): bool
-    {
-        $sql = 'CREATE TABLE IF NOT EXISTS ' . bqSQL(_DB_PREFIX_ . 'spedisciqui_cart') . ' (
-            `id_cart`         INT UNSIGNED NOT NULL,
-            `id_carrier`      INT UNSIGNED NOT NULL,
-            `service_code`    VARCHAR(64) NOT NULL,
-            `has_insurance`   TINYINT(1) NOT NULL DEFAULT 0,
-            `insurance_value` DECIMAL(10,2) DEFAULT NULL,
-            `has_cod`         TINYINT(1) NOT NULL DEFAULT 0,
-            `cod_amount`      DECIMAL(10,2) DEFAULT NULL,
-            `date_add`        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            `date_upd`        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id_cart`),
-            KEY `idx_carrier` (`id_carrier`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
-
-        return (bool) Db::getInstance()->execute($sql);
-    }
-
-    //==========================================
     // TABELLA RANGE PESO/TARIFFE
     //==========================================
     private function createSpedisciQuiRangeWeightPrice(): bool
@@ -273,10 +251,9 @@ class SQMigrations
             'createApiCredentialsTable',
             'createSpedisciQuiPackageTable',
             'createSenderAddressTable',
-            'createSpedisciQuiCarriers',          // ← prima delle tabelle con FK verso carrier
-            'createSpedisciQuiCart',
-            'createSpedisciQuiRangeWeightPrice',  // ← dopo carrier
-            'createSpedisciQuiShipments',         // ← dopo carrier
+            'createSpedisciQuiCarriers',          
+            'createSpedisciQuiRangeWeightPrice',  
+            'createSpedisciQuiShipments',         
         ];
 
         foreach ($steps as $method) {
@@ -301,7 +278,6 @@ class SQMigrations
             $tables = [
                 'spedisciqui_shipments',       // prima le tabelle con FK
                 'spedisciqui_weight_tariffs',  // prima le tabelle con FK
-                'spedisciqui_cart',
                 'spedisciqui_carrier',         // poi la tabella referenziata
                 'spedisciqui_sender_address',
                 'spedisciqui_package',

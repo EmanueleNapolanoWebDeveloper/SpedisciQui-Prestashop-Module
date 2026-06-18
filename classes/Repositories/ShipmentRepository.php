@@ -35,16 +35,18 @@ class ShipmentRepository
     ];
 
     private const DATE_MAP = [
-        'picked_up'  => 'shipped_at',
+        'picked_up' => 'shipped_at',
         'in_transit' => 'shipped_at',
-        'delivered'  => 'delivered_at',
+        'delivered' => 'delivered_at',
     ];
 
 
     //==========================================
     // COSTRUTTORE
     //==========================================
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     public function setShipmentService(ShipmentServices $shipmentService): void
     {
@@ -72,7 +74,7 @@ class ShipmentRepository
         // 2. Query sicura
         try {
             $sql = new DbQuery();
-           $sql->select('id, 
+            $sql->select('id, 
                  id_order, 
                  status, 
                  carrier_code, 
@@ -99,15 +101,15 @@ class ShipmentRepository
             }
 
             // normalizza link per path
-            $labelPath = $row['label_path'] ? (string)$row['label_path'] : null;
+            $labelPath = $row['label_path'] ? (string) $row['label_path'] : null;
 
             // 4. Normalizzazione dati (opzionale ma utile)
             return [
-                'id_shipment'            => (int) $row['id'],
-                'id_order'      => (int) $row['id_order'],
-                'status'        => (string) $row['status'],
-                'carrier_code'  => $row['carrier_code'] ? (string) $row['carrier_code'] : null,
-                'service_code'  => $row['service_code'] ? (string) $row['service_code'] : null,
+                'id_shipment' => (int) $row['id'],
+                'id_order' => (int) $row['id_order'],
+                'status' => (string) $row['status'],
+                'carrier_code' => $row['carrier_code'] ? (string) $row['carrier_code'] : null,
+                'service_code' => $row['service_code'] ? (string) $row['service_code'] : null,
                 'weight' => $row['weight'] ? (float) $row['weight'] : null,
                 'shipping_cost' => $row['shipping_cost'] ? (string) $row['shipping_cost'] : null,
                 'tracking_number' => $row['tracking_number'] ? (string) $row['tracking_number'] : null,
@@ -140,13 +142,13 @@ class ShipmentRepository
     //====================================================
 
     public function getShipments(
-        int    $idShop = 1,
+        int $idShop = 1,
         string $statusFilter = '',
-        int    $limit = 50,
-        int    $offset = 0
+        int $limit = 50,
+        int $offset = 0
     ): array {
 
-        $limit  = max(1, min($limit, 200));
+        $limit = max(1, min($limit, 200));
         $offset = max(0, $offset);
 
         if ($idShop <= 0) {
@@ -226,7 +228,7 @@ class ShipmentRepository
 
             if (empty($rows)) {
                 return [];
-            }
+            }            
 
             return is_array($rows) ? $rows : [];
         } catch (Exception $e) {
@@ -273,30 +275,30 @@ class ShipmentRepository
 
 
             $insert = [
-                'id_order'               => (int)   ($data['id_order'] ?? 0),
-                'id_shop'                => (int)   ($data['id_shop'] ?? 1),
+                'id_order' => (int) ($data['id_order'] ?? 0),
+                'id_shop' => (int) ($data['id_shop'] ?? 1),
                 'id_spedisciqui_carrier' => !empty($data['id_spedisciqui_carrier'])
                     ? (int) $data['id_spedisciqui_carrier']
                     : null,
-                'shipment_type'          => pSQL($data['shipment_type'] ?? 'outbound'),
-                'carrier_code'           => pSQL($data['carrier_code'] ?? ''),
-                'service_code'           => pSQL($data['service_code'] ?? ''),
-                'status'                 => pSQL($data['status'] ?? 'pending'),
-                'delivery_firstname'     => pSQL($data['delivery_firstname'] ?? ''),
-                'delivery_lastname'      => pSQL($data['delivery_lastname'] ?? ''),
-                'delivery_address1'      => pSQL($data['delivery_address1'] ?? ''),
-                'delivery_address2'      => pSQL($data['delivery_address2'] ?? ''),
-                'delivery_postcode'      => pSQL($data['delivery_postcode'] ?? ''),
-                'delivery_city'          => pSQL($data['delivery_city'] ?? ''),
-                'delivery_country_iso'   => pSQL($data['delivery_country_iso'] ?? ''),
-                'weight'                 => (float) ($data['weight'] ?? 0),
-                'length'                 => (float) ($data['length'] ?? 0),
-                'width'                  => (float) ($data['width'] ?? 0),
-                'height'                 => (float) ($data['height'] ?? 0),
-                'shipping_cost'          => (float) ($data['shipping_cost'] ?? 0),
-                'shipping_currency'      => pSQL($data['shipping_currency'] ?? 'EUR'),
-                'insurance_enabled'      => pSQL($data['insurance_enabled'] ?? 0),
-                'insurance_value'        => pSQL($data['insurance_value'] ?? 0)
+                'shipment_type' => pSQL($data['shipment_type'] ?? 'outbound'),
+                'carrier_code' => pSQL($data['carrier_code'] ?? ''),
+                'service_code' => pSQL($data['service_code'] ?? ''),
+                'status' => pSQL($data['status'] ?? 'pending'),
+                'delivery_firstname' => pSQL($data['delivery_firstname'] ?? ''),
+                'delivery_lastname' => pSQL($data['delivery_lastname'] ?? ''),
+                'delivery_address1' => pSQL($data['delivery_address1'] ?? ''),
+                'delivery_address2' => pSQL($data['delivery_address2'] ?? ''),
+                'delivery_postcode' => pSQL($data['delivery_postcode'] ?? ''),
+                'delivery_city' => pSQL($data['delivery_city'] ?? ''),
+                'delivery_country_iso' => pSQL($data['delivery_country_iso'] ?? ''),
+                'weight' => (float) ($data['weight'] ?? 0),
+                'length' => (float) ($data['length'] ?? 0),
+                'width' => (float) ($data['width'] ?? 0),
+                'height' => (float) ($data['height'] ?? 0),
+                'shipping_cost' => (float) ($data['shipping_cost'] ?? 0),
+                'shipping_currency' => pSQL($data['shipping_currency'] ?? 'EUR'),
+                'insurance_enabled' => pSQL($data['insurance_enabled'] ?? 0),
+                'insurance_value' => pSQL($data['insurance_value'] ?? 0)
             ];
 
             $result = $db->insert('spedisciqui_shipments', $insert);
@@ -356,7 +358,7 @@ class ShipmentRepository
                 'spedisciqui_shipments',
                 [
                     'insurance_enabled' => (int) $insurance_enabled,
-                    'insurance_value' => (float)$insurance_value,
+                    'insurance_value' => (float) $insurance_value,
                     'date_upd' => date('Y-m-d H:i:s')
                 ],
                 '`id` = ' . (int) $id
@@ -412,8 +414,8 @@ class ShipmentRepository
                 'spedisciqui_shipments',
                 [
                     'tracking_number' => pSQL($trackingNumber),
-                    'tracking_url'    => pSQL($trackingUrl),
-                    'status'          => 'label_created',
+                    'tracking_url' => pSQL($trackingUrl),
+                    'status' => 'label_created',
                     'label_path' => pSQL($labelPath),
                     'label_generated' => 1,
                 ],
@@ -484,7 +486,7 @@ class ShipmentRepository
             $result = Db::getInstance()->update(
                 'spedisciqui_shipments',
                 $updateData,
-                '`id` = ' . (int)$id,
+                '`id` = ' . (int) $id,
 
             );
 
@@ -513,10 +515,10 @@ class ShipmentRepository
     // HELPER PER PRESTALOGGER
     // =================================================
     private function log(
-        string  $message,
-        int     $severity = 3,
-        string  $objectType = '',
-        int     $objectId = 0
+        string $message,
+        int $severity = 3,
+        string $objectType = '',
+        int $objectId = 0
     ): void {
         PrestaShopLogger::addLog(
             '[SpedisciQui] ' . $message,

@@ -59,11 +59,9 @@
       {* data di aggiunta *}
       <td>
           <div class="sq-meta">
-              <div><span
-                      class="sq-meta-label">{l s='Aggiunto:' mod='spedisciquishipping'}</span>{$sc.date_add|escape:'htmlall':'UTF-8'|truncate:10:''}
+              <div><span class="sq-meta-label">{l s='Aggiunto:' mod='spedisciquishipping'}</span>{$sc.date_add|escape:'htmlall':'UTF-8'|truncate:10:''}
               </div>
-              <div><span
-                      class="sq-meta-label">{l s='Aggiornato:' mod='spedisciquishipping'}</span>{$sc.date_upd|escape:'htmlall':'UTF-8'|truncate:10:''}
+              <div><span class="sq-meta-label">{l s='Aggiornato:' mod='spedisciquishipping'}</span>{$sc.date_upd|escape:'htmlall':'UTF-8'|truncate:10:''}
               </div>
           </div>
       </td>
@@ -73,22 +71,15 @@
 
 
               {* configura *}
-              <form method="GET" action="index.php" style="display:inline; margin:0;">
-                  <input type="hidden" name="controller" value="AdminModules">
-                  <input type="hidden" name="configure" value="spedisciquishipping">
-                  <input type="hidden" name="token" value="{$smarty.get.token|escape:'htmlall':'UTF-8'}">
-                  <input type="hidden" name="carrier_code" value="{$sc.carrier_code|escape:'htmlall':'UTF-8'}">
-                  <button type="submit" class="sq-btn sq-btn-configure">
-                      <i class="icon-cog"></i>
-                      {l s='Configura' mod='spedisciquishipping'}
-                  </button>
-              </form>
+              <a href="{$action|escape:'htmlall':'UTF-8'}&carrier_code={$sc.carrier_code|escape:'htmlall':'UTF-8'}" class="sq-btn sq-btn-configure" style="display: inline-block; text-decoration: none;">
+                  <i class="icon-cog"></i>
+                  {l s='Configura' mod='spedisciquishipping'}
+              </a>
 
               {* rimuovi *}
               <form method="POST" action="{$action|escape:'htmlall':'UTF-8'}">
                   <input type="hidden" name="carrier_code" value="{$sc.carrier_code|escape:'htmlall':'UTF-8'}">
-                  <button type="submit" name="removeSpedisciQuiCarriers" class="sq-btn sq-btn-remove"
-                      onclick="return confirm('{l s='Rimuovere il corriere?' mod='spedisciquishipping' js=1}');">
+                  <button type="submit" name="removeSpedisciQuiCarriers" class="sq-btn sq-btn-remove" onclick="return confirm('{l s='Rimuovere il corriere?' mod='spedisciquishipping' js=1}');">
                       <i class="icon-trash"></i>
                       {l s='Rimuovi' mod='spedisciquishipping'}
                   </button>
@@ -97,4 +88,4 @@
           </div>
       </td>
 
-</tr>
+  </tr>

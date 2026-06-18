@@ -110,7 +110,7 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
         // in caso di Setup Completato, redirect al controller principale
         if ($currentStep === SetupSteps::DONE) {
             Tools::redirectAdmin(
-                $this->context->link->getAdminLink('AdminSpedisciQuiDashboard')
+                $this->context->link->getAdminLink('AdminSpedisciQuiCarriers')
             );
             return;
         }
@@ -323,7 +323,7 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
 
         $toSave = array_values(array_filter(
             $allCarriers,
-            fn($c) => in_array($c['code'], $selectedCodes, true)
+            fn($c) => in_array($c['carrier_code'], $selectedCodes, true)
         ));
 
         if (empty($toSave)) {
@@ -339,7 +339,7 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
                 $saved++;
             } else {
                 $errors++;
-                PrestaShopLogger::addLog('[SpedisciQui] saveCarrierInPS fallito per: ' . $carrierData['code'], 3);
+                PrestaShopLogger::addLog('[SpedisciQui] saveCarrierInPS fallito per: ' . $carrierData['carrier_code'], 3);
             }
         }
 
@@ -352,7 +352,7 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
             $this->confirmations[] = sprintf($this->module->l('%d corriere/i attivato/i correttamente.'), $saved);
 
             // ─── REDIRECT DIRETTO ALLA DASHBOARD ───
-            Tools::redirectAdmin($this->context->link->getAdminLink('AdminSpedisciQuiDashboard'));
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminSpedisciQuiCarriers'));
             return;
         } elseif ($saved > 0) {
             $this->confirmations[] = sprintf($this->module->l('%d corriere/i attivato/i parzialmente con errori.'), $saved);

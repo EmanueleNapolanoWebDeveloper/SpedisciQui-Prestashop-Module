@@ -54,10 +54,10 @@
                         <tr>
 
                             <td class="sq-logo-col">
-                                {if $carrier.logo_url}
+                                {if $carrier.logo}
                                     <div class="sq-logo-box">
-                                        <img src="{$carrier.logo_url|escape:'htmlall':'UTF-8'}"
-                                            alt="{$carrier.name|escape:'htmlall':'UTF-8'}">
+                                        <img src="{$carrier.logo|escape:'htmlall':'UTF-8'}"
+                                            alt="{$carrier.carrier_name|escape:'htmlall':'UTF-8'}">
                                     </div>
                                 {else}
                                     <div class="sq-logo-placeholder">
@@ -67,60 +67,32 @@
                             </td>
 
                             <td>
-                                <p class="sq-carrier-name">{$carrier.name|escape:'htmlall':'UTF-8'}</p>
-                                <span class="sq-carrier-code">{$carrier.code|escape:'htmlall':'UTF-8'}</span>
+                                <p class="sq-carrier-carrier_name">{$carrier.carrier_name|escape:'htmlall':'UTF-8'}</p>
+                                <span class="sq-carrier-code">{$carrier.carrier_code|escape:'htmlall':'UTF-8'}</span>
                             </td>
 
                             <td>
-                                <p class="sq-service-title">{$carrier.service_title|escape:'htmlall':'UTF-8'}</p>
+                                <p class="sq-service-title">{$carrier.service_name|escape:'htmlall':'UTF-8'}</p>
                             </td>
 
                             <td>
                                 <span class="sq-delivery-badge">
                                     <i class="icon-time"></i>
-                                    {$carrier.delivery_days|escape:'htmlall':'UTF-8'} {l s='gg' mod='spedisciquishipping'}
+                                    {$carrier.delay|escape:'htmlall':'UTF-8'} {l s='gg' mod='spedisciquishipping'}
                                 </span>
                             </td>
 
                             <td>
-                                {if $carrier.type === 'national'}
-                                    <span class="sq-badge sq-badge-national">
-                                        <i class="icon-flag"></i>
-                                        {l s='Nazionale' mod='spedisciquishipping'}
-                                    </span>
-                                {else}
-                                    <span class="sq-badge sq-badge-intl">
-                                        <i class="icon-globe"></i>
-                                        {l s='Internazionale' mod='spedisciquishipping'}
-                                    </span>
-                                {/if}
-                            </td>
-
-                            <td>
-                                {if $carrier.destination === 'home'}
-                                    <span class="sq-badge sq-badge-home">
-                                        <i class="icon-home"></i>
-                                        {l s='Domicilio' mod='spedisciquishipping'}
-                                    </span>
-                                {else}
-                                    <span class="sq-badge sq-badge-pickup">
-                                        <i class="icon-map-marker"></i>
-                                        {l s='Punto ritiro' mod='spedisciquishipping'}
-                                    </span>
-                                {/if}
-                            </td>
-
-                            <td>
-                                {if in_array($carrier.code, $savedCodes)}
+                                {if in_array($carrier.carrier_code, $savedCodes)}
                                     <span class="sq-badge sq-badge-installed">
                                         <i class="icon-check"></i>
                                         {l s='Installato' mod='spedisciquishipping'}
                                     </span>
                                 {else}
                                     <form method="POST" action="{$action|escape:'htmlall':'UTF-8'}">
-                                        <input type="hidden" name="selected_carriers[]"
-                                            value="{$carrier.code|escape:'htmlall':'UTF-8'}">
-                                        <button type="submit" name="submitSpedisciQuiCarriers" class="sq-btn-add">
+                                        <input type="hidden" carrier_name="selected_carriers[]"
+                                            value="{$carrier.carrier_code|escape:'htmlall':'UTF-8'}">
+                                        <button type="submit" carrier_name="submitSpedisciQuiCarriers" class="sq-btn-add">
                                             <i class="icon-plus"></i>
                                             {l s='Aggiungi' mod='spedisciquishipping'}
                                         </button>

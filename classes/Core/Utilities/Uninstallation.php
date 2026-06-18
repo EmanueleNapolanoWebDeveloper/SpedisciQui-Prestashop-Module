@@ -77,22 +77,36 @@ class Uninstallation
     //=============================================
     private function uninstallTabs(): bool
     {
-        // I nomi esatti delle classi dei tuoi controller da rimuovere
         $classNames = [
+            'AdminSpedisciQuiCarriers',
+            'AdminSpedisciQuiShipments',
+            'AdminSpedisciQuiSettings',
+            'AdminSpedisciQuiSetup',
+            // legacy — rimossi nel refactor ma potrebbero esistere in installazioni precedenti
             'AdminSpedisciQuiDashboard',
-            'AdminSpedisciQuiSetup'
         ];
 
         foreach ($classNames as $className) {
-            $idTab = (int) \Tab::getIdFromClassName($className);
+            $idTab = (int) Tab::getIdFromClassName($className);
 
-            // Se il Tab esiste nel database, lo eliminiamo
-            if ($idTab > 0) {
-                $tab = new \Tab($idTab);
-                if (!$tab->delete()) {
-                    return false;
-                }
+            if ($idTab <= 0) {
+                continue;
             }
+
+            $tab = new Tab($idTab);
+
+            if (!$tab->delete()) {
+                PrestaShopLogger::addLog(
+                    sprintf('[SpedisciQui UNINSTALL] Impossibile eliminare il tab %s.', $className),
+                    2
+                );
+                return false;
+            }
+
+            PrestaShopLogger::addLog(
+                sprintf('[SpedisciQui UNINSTALL] Tab %s rimosso.', $className),
+                1
+            );
         }
 
         return true;
