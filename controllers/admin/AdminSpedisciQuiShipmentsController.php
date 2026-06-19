@@ -205,6 +205,8 @@ class AdminSpedisciQuiShipmentsController extends ModuleAdminController
             return;
         }
 
+        
+
         // da implementare nel service
         $this->confirmations[] = $this->module->l('Spedizione annullata correttamente.');
     }

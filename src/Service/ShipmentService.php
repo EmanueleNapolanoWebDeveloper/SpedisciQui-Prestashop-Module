@@ -238,8 +238,8 @@ class ShipmentServices
         $labelUrl = '';
         if (!empty($row['label_path'])) {
             $labelUrl = str_replace(
-                _PS_ROOT_DIR_,                    // /var/www/html/prestatest
-                Context::getContext()->shop->getBaseURL(true), // https://tuodominio.com/
+                _PS_ROOT_DIR_,
+                Context::getContext()->shop->getBaseURL(true),
                 $row['label_path']
             );
         }
@@ -405,6 +405,7 @@ class ShipmentServices
                 ),
                 'shipping_cost' => (float) ($shipment['shipping_cost'] ?? 0),
                 'tracking_number' => $shipment['tracking_number'] ?? '',
+                'tracking_url' => $shipment['tracking_url'] ?? '',
                 'label_path' => $row['label_path'] ?? null,
                 'label_url' => $labelUrl,
                 'insurance_enabled' => (bool) ($shipment['insurance_enabled'] ?? false),

@@ -16,14 +16,14 @@
 
     {elseif $vm.shipment.status === 'request_send'}
         <div class="sq-action-group">
-            <form action="{$back_url}" method="post" class="sq-inline-form">
+            {* <form action="{$back_url}" method="post" class="sq-inline-form">
                 <input type="hidden" name="token" value="{$token}" />
                 <input type="hidden" name="id_shipment" value="{$vm.form.id_shipment|intval}" />
                 <button type="submit" name="cancelShipment" class="sq-btn-cancel-shipment" onclick="return confirm('{l s='Confermi di voler annullare questa spedizione?' mod='spedisciquishipping' js=1}')">
                     <i class="icon-remove"></i>
                     {l s='Annulla' mod='spedisciquishipping'}
                 </button>
-            </form>
+            </form> *}
 
             <form action="{$back_url}" method="post" class="sq-inline-form">
                 <input type="hidden" name="token" value="{$token}" />

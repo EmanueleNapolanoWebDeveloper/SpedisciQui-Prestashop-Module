@@ -17,12 +17,12 @@ class AdminSpedisciQuiSenderController extends ModuleAdminController
 
         parent::__construct();
 
-        $configRepo      = new ConfigRepositories($this->context);
-        $apiClient       = new ApiClient($configRepo);
+        $configRepo = new ConfigRepositories($this->context);
+        $apiClient = new ApiClient($configRepo);
         $credentialsRepo = new CredentialsRepositories($this->context, $apiClient);
 
-        $this->setupManager  = new SetupManager($configRepo, $credentialsRepo);
-        $this->senderRepo    = new SenderRepository($this->context);
+        $this->setupManager = new SetupManager($configRepo, $credentialsRepo);
+        $this->senderRepo = new SenderRepository($this->context);
         $this->senderService = new SenderServices();
         $this->senderRenderer = new SenderRenderer($this->module, $this->context);
     }
@@ -63,11 +63,11 @@ class AdminSpedisciQuiSenderController extends ModuleAdminController
     // =========================================================
     public function postProcess(): void
     {
-        $formAction = $this->context->link->getAdminLink('AdminSpedisciQuiSettings');
+        $formAction = $this->context->link->getAdminLink('AdminSpedisciQuiSender');
 
-        if (Tools::isSubmit('submitSpedisciQuiSender') || Tools::isSubmit('updateSpedisciQuiSender')) {
+        if (Tools::isSubmit('submitSpedisciQuiSender')) {
             $this->processSenderSave();
-            Tools::redirectAdmin($formAction);
+            //Tools::redirectAdmin($formAction);
             return;
         }
 
@@ -79,8 +79,15 @@ class AdminSpedisciQuiSenderController extends ModuleAdminController
     // =========================================================
     private function processSenderSave(): void
     {
-        $data   = $this->senderService->extractFromRequest();
+        $data = $this->senderService->extractFromRequest();
         $errors = $this->senderService->validate($data);
+
+        PrestaShopLogger::addLog(
+            print_r($data, true),
+            1
+        );
+
+        $idSender = (int) Tools::getValue('id_sender');
 
         if (!empty($errors)) {
             foreach ($errors as $error) {
@@ -89,12 +96,20 @@ class AdminSpedisciQuiSenderController extends ModuleAdminController
             return;
         }
 
-        if (!$this->senderRepo->save($data)) {
+        if ($idSender > 0) {
+            $data['id'] = $idSender;
+            $success = $this->senderRepo->updateSenderAddress($data);
+        } else {
+            $success = $this->senderRepo->save($data);
+        }
+
+        if (!$success) {
             $this->errors[] = $this->module->l('Errore durante il salvataggio del mittente.');
-            return;
         }
 
         $this->confirmations[] = $this->module->l('Indirizzo mittente aggiornato con successo.');
+
+        $this->context->smarty->assign('data', ['success' => true]);
     }
 
     // =========================================================
