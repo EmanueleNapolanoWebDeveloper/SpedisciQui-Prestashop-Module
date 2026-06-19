@@ -19,7 +19,7 @@
             {foreach $shipments as $shipment}
                 {include
             file="module:spedisciquishipping/views/templates/admin/_partials/_shipment/components/shipment_panel_shipment_row.tpl"
-            row=$shipment
+            shipment=$shipment
         }
             {/foreach}
         </tbody>

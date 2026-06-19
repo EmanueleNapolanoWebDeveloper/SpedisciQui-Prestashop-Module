@@ -14,34 +14,35 @@ use SpedisciQui\DTO\ApiResponse;
 class ApiClient
 {
     // ─── Cache token ─────────────────────────────────────────────────────────
-    private const TOKEN_CACHE_KEY     = 'sq_token_valid_until';
+    private const TOKEN_CACHE_KEY = 'sq_token_valid_until';
     private const TOKEN_CACHE_KEY_EXP = 'sq_token_valid_until_exp';
-    private const TOKEN_CACHE_TTL     = 300;
+    private const TOKEN_CACHE_TTL = 300;
 
     // ─── Timeout (secondi) ───────────────────────────────────────────────────
-    private const TIMEOUT_DEFAULT  = 10;
-    private const TIMEOUT_LABEL    = 30;
+    private const TIMEOUT_DEFAULT = 10;
+    private const TIMEOUT_LABEL = 30;
     private const TIMEOUT_VALIDATE = 5;
 
     // ─── Retry ───────────────────────────────────────────────────────────────
-    private const MAX_RETRIES      = 3;
-    private const RETRY_STATUSES   = [429, 502, 503, 504];
-    private const RETRY_BASE_US    = 500000; // 0.5s — raddoppia ad ogni tentativo
+    private const MAX_RETRIES = 3;
+    private const RETRY_STATUSES = [429, 502, 503, 504];
+    private const RETRY_BASE_US = 500000; // 0.5s — raddoppia ad ogni tentativo
 
     // ─── Rate limit client-side ──────────────────────────────────────────────
-    private const RATE_LIMIT_MAX    = 60;
+    private const RATE_LIMIT_MAX = 60;
     private const RATE_LIMIT_WINDOW = 60; // secondi
 
     // endpoints
     private const ALLOWED_ENDPOINTS = [
         '/api/auth/verify',
         '/api/v1/create_shipment',
+        '/api/v1/shipment/{id}/label',
         '/api/getCarriers',
     ];
 
     private string $baseUrl;
     private Client $client;
-    private array  $requestTimestamps = [];
+    private array $requestTimestamps = [];
 
 
     //============================================
@@ -55,9 +56,9 @@ class ApiClient
 
         $this->client = new Client([
             'base_uri' => rtrim($this->baseUrl, '/') . '/',
-            'timeout'  => 10,
-            'headers'  => [
-                'Accept'       => 'application/json',
+            'timeout' => 10,
+            'headers' => [
+                'Accept' => 'application/json',
                 'Content-Type' => 'application/json',
             ],
         ]);
@@ -227,7 +228,7 @@ class ApiClient
 
             return ApiResponse::success($statusCode, $data);
         } catch (ClientException $e) {
-            $response   = $e->getResponse();
+            $response = $e->getResponse();
             $statusCode = $response ? $response->getStatusCode() : 0;
             $body = $response ? trim($response->getBody()->getContents()) : '';
             $data = json_decode($body, true);
@@ -236,8 +237,8 @@ class ApiClient
                 $statusCode === 401 => 'auth',
                 $statusCode === 403 => 'forbidden',
                 $statusCode === 422 => 'validation',
-                $statusCode >= 500  => 'server',
-                default             => 'client',
+                $statusCode >= 500 => 'server',
+                default => 'client',
             };
 
             PrestaShopLogger::addLog('[SPEDISCIQUI] ClientException (HTTP ' . $statusCode . '): ' . $this->sanitizeMessage($e->getMessage()), 3);
@@ -266,11 +267,16 @@ class ApiClient
     // VALIDAZIONE ENDPOINT
     private function validateEndPoint(string $endpoint): void
     {
-        if (!in_array($endpoint, self::ALLOWED_ENDPOINTS, true)) {
-            throw new InvalidArgumentException(
-                '[SpedisciQui] Endpoint non autorizzato: ' . $endpoint
-            );
+        foreach (self::ALLOWED_ENDPOINTS as $pattern) {
+            
+            $regexPattern = preg_replace('/\\\{[a-zA-Z_]+\\\}/', '[^/]+', preg_quote($pattern, '#'));
+            $regex = '#^' . $regexPattern . '$#';
+
+            if (preg_match($regex, $endpoint)) {
+                return;
+            }
         }
+        throw new InvalidArgumentException('[SpedisciQui] Endpoint non autorizzato: ' . $endpoint);
     }
 
     // CONTROLLO RATE LIMITS

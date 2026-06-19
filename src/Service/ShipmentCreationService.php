@@ -6,8 +6,8 @@ use SpedisciQui\DTO\ShipmentCreationResult;
 class ShipmentCreationService
 {
     private const ENDPOINT_CREATE = '/api/v1/create_shipment';
-    private const ENDPOINT_GET_LABEL = '/v1/shipment/%s/label';
-    
+    private const ENDPOINT_GET_LABEL = '/api/v1/shipment/%s/label';
+
     public const STATUS_PENDING = 'pending';
     public const STATUS_REQUEST_SENT = 'request_send';
     public const STATUS_LABEL_CREATED = 'label_created';
@@ -83,7 +83,7 @@ class ShipmentCreationService
             }
 
             $weight = (float) ($parcelData['weights'][0] ?? 0);
-            $width  = (float) ($parcelData['widths'][0] ?? 0);
+            $width = (float) ($parcelData['widths'][0] ?? 0);
             $length = (float) ($parcelData['lengths'][0] ?? 0);
             $height = (float) ($parcelData['heights'][0] ?? 0);
 
@@ -92,9 +92,9 @@ class ShipmentCreationService
             }
 
             $insuranceEnabled = !empty($extraOptions['insurance_enabled']);
-            $insuranceValue   = $insuranceEnabled ? round((float) ($extraOptions['insurance_value'] ?? 0), 2) : 0.0;
+            $insuranceValue = $insuranceEnabled ? round((float) ($extraOptions['insurance_value'] ?? 0), 2) : 0.0;
 
-            $isCod    = ($order->module === 'ps_cashondelivery' || !empty($extraOptions['cod_enabled']));
+            $isCod = ($order->module === 'ps_cashondelivery' || !empty($extraOptions['cod_enabled']));
             $codValue = $isCod ? round((float) $order->total_paid_tax_incl, 2) : 0.0;
 
             return [
@@ -132,10 +132,10 @@ class ShipmentCreationService
                 ]
             ];
         } catch (\InvalidArgumentException $e) {
-            \PrestaShopLogger::addLog('[SpedisciQui] Validazione fallita Ordine #' . (int)$order->id . ': ' . $e->getMessage(), 2, null, 'Order', (int)$order->id, true);
+            \PrestaShopLogger::addLog('[SpedisciQui] Validazione fallita Ordine #' . (int) $order->id . ': ' . $e->getMessage(), 2, null, 'Order', (int) $order->id, true);
             throw $e;
         } catch (\Throwable $e) {
-            \PrestaShopLogger::addLog('[SpedisciQui] Errore critico payload Ordine #' . (int)$order->id . ': ' . $e->getMessage(), 3, null, 'Order', (int)$order->id, true);
+            \PrestaShopLogger::addLog('[SpedisciQui] Errore critico payload Ordine #' . (int) $order->id . ': ' . $e->getMessage(), 3, null, 'Order', (int) $order->id, true);
             throw new \Exception('Errore tecnico interno durante la preparazione dei dati di spedizione.');
         }
     }
@@ -191,6 +191,12 @@ class ShipmentCreationService
             return ShipmentCreationResult::failure($e->getMessage());
         }
 
+
+        PrestaShopLogger::addLog(
+            'payload da inviare alla creazioen shipment: ' . print_r($payload, true),
+            1
+        );
+
         $tokenData = $this->credentialRepo->get();
         $token = (string) ($tokenData['access_token'] ?? '');
 
@@ -201,7 +207,8 @@ class ShipmentCreationService
         }
 
         $responseData = $apiResponse->getData();
-        $remoteShipmentId = $responseData['shipment_id'] ?? null;
+        $innerData = $responseData['data'] ?? [];
+        $remoteShipmentId = $innerData['shipment_id'] ?? null;
 
         if (empty($remoteShipmentId)) {
             return $this->handleApiFailure($apiResponse, $idShipment, $shipment, 'Risposta API priva di ID remoto.');
@@ -209,20 +216,16 @@ class ShipmentCreationService
 
         // Salva lo stato intermedio e aggancia l'ID remoto
         $updated = $this->shipmentRepo->updateStatus($idShipment, self::STATUS_REQUEST_SENT, [
-            'remote_shipment_id' => $remoteShipmentId,
-            'insurance_enabled'  => $insuranceEnabled ? 1 : 0,
-            'insurance_value'    => $insuranceValue
+            'api_shipment_id' => $remoteShipmentId,
+            'insurance_enabled' => $insuranceEnabled ? 1 : 0,
+            'insurance_value' => $insuranceValue
         ]);
 
         if (!$updated) {
             return ShipmentCreationResult::failure('Richiesta inviata su API ma fallito aggiornamento stato locale.');
         }
 
-        return ShipmentCreationResult::success([
-            'id_shipment' => $idShipment,
-            'remote_shipment_id' => $remoteShipmentId,
-            'status' => self::STATUS_REQUEST_SENT,
-        ]);
+        return ShipmentCreationResult::success('', $remoteShipmentId);
     }
 
     //==================================================
@@ -230,6 +233,7 @@ class ShipmentCreationService
     //==================================================
     public function fetchShipmentDataAndLabel(int $idShipment): ShipmentCreationResult
     {
+
         if ($idShipment <= 0) {
             return ShipmentCreationResult::failure('ID Spedizione non valido.');
         }
@@ -239,35 +243,84 @@ class ShipmentCreationService
             return ShipmentCreationResult::failure('Spedizione locale non trovata.');
         }
 
-        $remoteShipmentId = $shipment['remote_shipment_id'] ?? null;
+        $remoteShipmentId = $shipment['api_shipment_id'] ?? null;
         if (empty($remoteShipmentId)) {
+            \PrestaShopLogger::addLog(
+                sprintf('[SpedisciQui] fetchShipmentDataAndLabel: remote_shipment_id mancante per spedizione #%d', $idShipment),
+                3
+            );
             return ShipmentCreationResult::failure('ID spedizione remoto mancante. Impossibile richiedere la label.');
         }
+
 
         $credentials = $this->credentialRepo->get();
         $token = $credentials['access_token'] ?? '';
 
+        if (empty($token)) {
+            \PrestaShopLogger::addLog(
+                '[SpedisciQui] fetchShipmentDataAndLabel: token di accesso vuoto/mancante prima della chiamata API',
+                2
+            );
+        }
+
         $endpoint = sprintf(self::ENDPOINT_GET_LABEL, $remoteShipmentId);
-        $apiResponse = $this->apiClient->get($endpoint, [], $token);
+
+
+        $apiResponse = $this->apiClient->request('GET', $endpoint, $token);
 
         if ($apiResponse === null || !$apiResponse->isSuccess()) {
+            \PrestaShopLogger::addLog(
+                sprintf(
+                    '[SpedisciQui] fetchShipmentDataAndLabel: chiamata API fallita | HTTP=%s | errore=%s',
+                    $apiResponse ? $apiResponse->getStatusCode() : 'null',
+                    $apiResponse ? $apiResponse->getErrorMessage() : 'Nessuna risposta'
+                ),
+                3
+            );
             return $this->handleApiFailure($apiResponse, $idShipment, $shipment, 'Impossibile recuperare la vettura dal server.');
         }
 
         $responseData = $apiResponse->getData();
-        $innerData = $responseData['data'] ?? [];
 
+
+        $innerData = $responseData['data'] ?? [];
         $trackingNumber = (string) ($innerData['tracking_number'] ?? '');
-        $labelBase64    = (string) ($innerData['label_pdf'] ?? '');
+        $labelBase64 = (string) ($innerData['label_pdf'] ?? '');
 
         if (empty($trackingNumber) || empty($labelBase64)) {
+            \PrestaShopLogger::addLog(
+                sprintf(
+                    '[SpedisciQui] fetchShipmentDataAndLabel: dati mancanti nella risposta | tracking_vuoto=%s | label_vuota=%s',
+                    empty($trackingNumber) ? 'si' : 'no',
+                    empty($labelBase64) ? 'si' : 'no'
+                ),
+                3
+            );
             return $this->handleApiFailure($apiResponse, $idShipment, $shipment, 'Risposta di download corrotta (Dati mancanti).');
         }
 
-        $savedLabelPath = $this->labelService->saveLabelPdf($labelBase64, $trackingNumber, (int)$shipment['id_order']);
+        $savedLabelPath = $this->labelService->saveLabelPdf($labelBase64, $trackingNumber, (int) $shipment['id_order']);
+
         if (!$savedLabelPath) {
-            \PrestaShopLogger::addLog(sprintf('SpedisciQui: Impossibile salvare fisicamente il PDF dello shipment #%d', $idShipment), 3, null, 'Order', (int)$shipment['id_order'], true);
+            \PrestaShopLogger::addLog(
+                sprintf('SpedisciQui: Impossibile salvare fisicamente il PDF dello shipment #%d', $idShipment),
+                3,
+                null,
+                'Order',
+                (int) $shipment['id_order'],
+                true
+            );
+        } else {
+            \PrestaShopLogger::addLog(
+                sprintf('[SpedisciQui] fetchShipmentDataAndLabel: PDF salvato correttamente | path=%s', $savedLabelPath),
+                1
+            );
         }
+
+        \PrestaShopLogger::addLog(
+            sprintf('[SpedisciQui] fetchShipmentDataAndLabel: avvio persistSuccess | id_shipment=%d', $idShipment),
+            1
+        );
 
         return $this->persistSuccess(
             $idShipment,
@@ -296,7 +349,7 @@ class ShipmentCreationService
         $db->execute('START TRANSACTION');
 
         try {
-            if (!$this->shipmentRepo->updateTracking($idShipment, $remoteShipmentId, $trackingNumber, $pdfPath)) {
+            if (!$this->shipmentRepo->updateTracking($idShipment, $trackingNumber, $pdfPath, '')) {
                 throw new RuntimeException("updateTracking fallito.");
             }
 
@@ -310,18 +363,13 @@ class ShipmentCreationService
 
             $db->execute('COMMIT');
 
-            \PrestaShopLogger::addLog(sprintf('[SpedisciQui] Spedizione #%d completata con successo. Tracking: %s', $idShipment, $trackingNumber), 1, null, 'Order', (int)$shipment['id_order'], true);
+            \PrestaShopLogger::addLog(sprintf('[SpedisciQui] Spedizione #%d completata con successo. Tracking: %s', $idShipment, $trackingNumber), 1, null, 'Order', (int) $shipment['id_order'], true);
 
-            return ShipmentCreationResult::success([
-                'id_shipment' => $idShipment,
-                'remote_shipment_id' => $remoteShipmentId,
-                'tracking_number' => $trackingNumber,
-                'label_pdf_path' => $pdfPath, // Corretto: usava una variabile inesistente
-                'status' => self::STATUS_LABEL_CREATED,
-            ]);
+            return ShipmentCreationResult::success($trackingNumber, $remoteShipmentId);
+
         } catch (RuntimeException $e) {
             $db->execute('ROLLBACK');
-            \PrestaShopLogger::addLog('[SpedisciQui] ROLLBACK spedizione #' . $idShipment . ': ' . $e->getMessage(), 3, null, 'Order', (int)$shipment['id_order'], true);
+            \PrestaShopLogger::addLog('[SpedisciQui] ROLLBACK spedizione #' . $idShipment . ': ' . $e->getMessage(), 3, null, 'Order', (int) $shipment['id_order'], true);
             return ShipmentCreationResult::failure($e->getMessage());
         }
     }
@@ -335,12 +383,11 @@ class ShipmentCreationService
         array $shipment,
         string $contextMessage
     ): ShipmentCreationResult {
-        $apiError = $apiResponse !== null 
+        $apiError = $apiResponse !== null
             ? sprintf('HTTP %d | %s', $apiResponse->getStatusCode(), $apiResponse->getErrorMessage())
             : 'Nessuna risposta dal server remoto.';
-
         $logMsg = sprintf('[SpedisciQui] Fallimento su Spedizione #%d: %s. Dettaglio: %s', $idShipment, $contextMessage, $apiError);
-        \PrestaShopLogger::addLog($logMsg, 3, null, 'Order', (int)$shipment['id_order'], true);
+        \PrestaShopLogger::addLog($logMsg, 3, null, 'Order', (int) $shipment['id_order'], true);
 
         $this->shipmentRepo->updateStatus($idShipment, self::STATUS_FAILED, [
             'error_message' => $apiResponse ? $apiResponse->getErrorMessage() : 'Timeout API',

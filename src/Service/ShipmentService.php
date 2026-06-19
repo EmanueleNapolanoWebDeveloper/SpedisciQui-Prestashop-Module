@@ -373,7 +373,7 @@ class ShipmentServices
 
         $backUrl = AdminController::$currentIndex
             . '&configure=' . $this->module->name
-            . '&token=' . Tools::getAdminTokenLite('AdminModules')
+            . '&token=' . Tools::getAdminTokenLite('AdminSpedisciQuiShipments')
             . '&action=list';
 
         // url per mostrare/scaericare label
@@ -407,6 +407,8 @@ class ShipmentServices
                 'tracking_number' => $shipment['tracking_number'] ?? '',
                 'label_path' => $row['label_path'] ?? null,
                 'label_url' => $labelUrl,
+                'insurance_enabled' => (bool) ($shipment['insurance_enabled'] ?? false),
+                'insurance_value' => (float) ($shipment['insurance_value'] ?? 0),
                 'date_add' => $shipment['date_add'] ?? '',
                 'note' => $shipment['note'] ?? '',  // opzionale
             ],

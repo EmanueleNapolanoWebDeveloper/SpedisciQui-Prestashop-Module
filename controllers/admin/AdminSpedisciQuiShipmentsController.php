@@ -17,16 +17,16 @@ class AdminSpedisciQuiShipmentsController extends ModuleAdminController
 
         parent::__construct();
 
-        $configRepo      = new ConfigRepositories($this->context);
-        $apiClient       = new ApiClient($configRepo);
+        $configRepo = new ConfigRepositories($this->context);
+        $apiClient = new ApiClient($configRepo);
         $credentialsRepo = new CredentialsRepositories($this->context, $apiClient);
-        $carrierApi      = new CarrierApi($apiClient);
+        $carrierApi = new CarrierApi($apiClient);
 
-        $this->setupManager  = new SetupManager($configRepo, $credentialsRepo);
-        $this->shipmentRepo  = new ShipmentRepository();
+        $this->setupManager = new SetupManager($configRepo, $credentialsRepo);
+        $this->shipmentRepo = new ShipmentRepository();
 
-        $carrierRepo     = new CarrierRepository($carrierApi, $credentialsRepo, $this->module);
-        $carrierService  = new CarrierServices($carrierRepo);
+        $carrierRepo = new CarrierRepository($carrierApi, $credentialsRepo, $this->module);
+        $carrierService = new CarrierServices($carrierRepo);
 
         $shipmentService = new ShipmentServices(
             $carrierRepo,
@@ -70,12 +70,6 @@ class AdminSpedisciQuiShipmentsController extends ModuleAdminController
             false
         );
 
-        $this->addCSS(
-            $this->module->getPathUri() . 'views/css/admin/shipment/shipment_detail_styles.css',
-            'all',
-            null,
-            false
-        );
 
         if ($this->setupManager->current() !== SetupSteps::DONE) {
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminSpedisciQuiSetup'));
@@ -97,7 +91,13 @@ class AdminSpedisciQuiShipmentsController extends ModuleAdminController
                 return;
             }
 
-            $this->content = $this->shipmentRenderer->renderShipmentDetail($idShipment);
+            $extraParams = [
+                'token' => $this->token, // Il token di questo controller specifico
+                'sq_ajax_url' => $this->context->link->getAdminLink('AdminSpedisciQuiShipments') . '&ajax=1',
+                'back_url' => $formAction
+            ];
+
+            $this->content = $this->shipmentRenderer->renderShipmentDetail($idShipment, $extraParams);
             $this->context->smarty->assign('content', $this->content);
             return;
         }
@@ -141,9 +141,9 @@ class AdminSpedisciQuiShipmentsController extends ModuleAdminController
     // =========================================================
     private function processShipmentCreation(): void
     {
-        $idShipment       = (int) Tools::getValue('id_shipment');
+        $idShipment = (int) Tools::getValue('id_shipment');
         $insuranceEnabled = (bool) Tools::getValue('insurance_enabled');
-        $insuranceValue   = (float) Tools::getValue('insurance_value');
+        $insuranceValue = (float) Tools::getValue('insurance_value');
 
         if ($idShipment <= 0) {
             $this->errors[] = $this->module->l('ID spedizione non valido.');
@@ -180,10 +180,9 @@ class AdminSpedisciQuiShipmentsController extends ModuleAdminController
             return;
         }
 
-        $data = $labelResult->getData();
         $this->confirmations[] = sprintf(
             $this->module->l('Lettera di vettura scaricata con successo! Tracking assegnato: %s'),
-            $data['tracking_number']
+            $labelResult->getTrackingNumber()
         );
     }
 
@@ -205,16 +204,17 @@ class AdminSpedisciQuiShipmentsController extends ModuleAdminController
     // =========================================================
     private function renderShipmentsPage(string $formAction): void
     {
-        $page         = (int) Tools::getValue('page', 1);
-        $limit        = 20;
+        $page = (int) Tools::getValue('page', 1);
+        $limit = 20;
         $statusFilter = Tools::getValue('status_filter', '');
 
         $this->context->smarty->assign([
-            'formAction'   => $formAction,
-            'token'        => $this->token,
+            'formAction' => $formAction,
+            'token' => $this->token,
             'statusFilter' => $statusFilter,
-            'searchText'   => Tools::getValue('search_text', ''),
+            'searchText' => Tools::getValue('search_text', ''),
             'orderDetailsLink' => $this->context->link->getAdminLink('AdminOrders'),
+            'back_url' => $formAction
         ]);
 
         $this->content = $this->shipmentRenderer->renderShipmentLists($page, $limit, $statusFilter);

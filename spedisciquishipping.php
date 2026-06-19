@@ -197,10 +197,6 @@ class spedisciquishipping extends CarrierModule
         $cart = $params;
         $carrierId = (int) $this->id_carrier;
 
-        PrestaShopLogger::addLog(
-            'entrato in getorderShippingCost',
-            1
-        );
 
         if ($carrierId <= 0) {
             PrestaShopLogger::addLog(

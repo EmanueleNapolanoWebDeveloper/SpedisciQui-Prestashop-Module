@@ -7,7 +7,7 @@
 
      {* Ordine *}
      <td>
-         <a href="{$orderDetailLink}&id_order={$shipment.id_order}" target="_blank" class="sq-order-id">
+         <a href="{$orderDetailsLink}&id_order={$shipment.id_order}" target="_blank" class="sq-order-id">
              #{$shipment.id_order}
              <i class="icon-external-link" style="font-size:10px; opacity:0.6;"></i>
          </a>
@@ -87,16 +87,14 @@
      <td>
          {if $shipment.status === 'pending'}
              <div class="sq-action-wrap">
-                 <a href="{$action}&action=shipmentReview&id_shipment={$shipment.id_shipment}"
-                     class="sq-btn-review">
+                 <a href="{$action}&action=shipmentReview&id_shipment={$shipment.id_shipment}" class="sq-btn-review">
                      <i class="icon-search"></i>
                      {l s='Crea spedizione' mod='spedisciquishipping'}
                  </a>
              </div>
          {else}
              <div class="sq-action-wrap">
-                 <a href="{$action}&action=shipmentDetail&id_shipment={$shipment.id_shipment}"
-                     class="sq-btn-detail">
+                 <a href="{$action}&action=ShipmentDetails&id_shipment={$shipment.id_shipment}" class="sq-btn-detail">
                      <i class="icon-list-alt"></i>
                      {l s='Dettagli' mod='spedisciquishipping'}
                  </a>
@@ -104,4 +102,4 @@
          {/if}
      </td>
 
-</tr>
+ </tr>

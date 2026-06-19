@@ -56,8 +56,7 @@
                             <td class="sq-logo-col">
                                 {if $carrier.logo}
                                     <div class="sq-logo-box">
-                                        <img src="{$carrier.logo|escape:'htmlall':'UTF-8'}"
-                                            alt="{$carrier.carrier_name|escape:'htmlall':'UTF-8'}">
+                                        <img src="{$carrier.logo|escape:'htmlall':'UTF-8'}" alt="{$carrier.carrier_name|escape:'htmlall':'UTF-8'}">
                                     </div>
                                 {else}
                                     <div class="sq-logo-placeholder">
@@ -90,9 +89,11 @@
                                     </span>
                                 {else}
                                     <form method="POST" action="{$action|escape:'htmlall':'UTF-8'}">
-                                        <input type="hidden" carrier_name="selected_carriers[]"
-                                            value="{$carrier.carrier_code|escape:'htmlall':'UTF-8'}">
-                                        <button type="submit" carrier_name="submitSpedisciQuiCarriers" class="sq-btn-add">
+                                        <input type="hidden" name="token" value="{$token|escape:'htmlall':'UTF-8'}">
+
+                                        <input type="hidden" name="selected_carriers[]" value="{$carrier.carrier_code|escape:'htmlall':'UTF-8'}">
+
+                                        <button type="submit" name="submitSpedisciQuiCarriers" class="sq-btn-add">
                                             <i class="icon-plus"></i>
                                             {l s='Aggiungi' mod='spedisciquishipping'}
                                         </button>

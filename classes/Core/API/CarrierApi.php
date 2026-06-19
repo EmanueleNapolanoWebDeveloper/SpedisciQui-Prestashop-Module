@@ -25,11 +25,6 @@ class CarrierApi
     public function getCarriers(string $token): ?array
     {
 
-        PrestaShopLogger::addLog(
-            'entrato in funzione getCarriers',
-            1
-        );
-
         $exp = (int) ConfigRepositories::get(self::CARRIER_CACHE_KEY_EXP, 0);
         $cached = \ConfigRepositories::get(self::CARRIER_CACHE_KEY, '');
 
@@ -53,11 +48,6 @@ class CarrierApi
 
         $data = $response->getData();
         $carriers = $data['carriers'] ?? null;
-
-        PrestaShopLogger::addLog(
-            '[funzione recupero shipments: ' . print_r($carriers, true),
-            1
-        );
 
         // salvo in cache
         if (is_array($carriers) && !empty($carriers)) {

@@ -228,7 +228,7 @@ class ShipmentRepository
 
             if (empty($rows)) {
                 return [];
-            }            
+            }
 
             return is_array($rows) ? $rows : [];
         } catch (Exception $e) {
