@@ -111,6 +111,16 @@ class AdminSpedisciQuiShipmentsController extends ModuleAdminController
     public function postProcess(): void
     {
         $formAction = $this->context->link->getAdminLink('AdminSpedisciQuiShipments');
+        $statusFilter = Tools::getValue('status_filter', '');
+        $searchText = Tools::getValue('search_text', '');
+
+        if (!empty($statusFilter)) {
+            $formAction .= '&status_filter=' . urlencode($statusFilter);
+        }
+
+        if (!empty($searchText)) {
+            $formAction .= '&search_text=' . urlencode($searchText);
+        }
 
         // Creazione spedizione
         if (Tools::isSubmit('submitShipmentCreation')) {
@@ -207,17 +217,26 @@ class AdminSpedisciQuiShipmentsController extends ModuleAdminController
         $page = (int) Tools::getValue('page', 1);
         $limit = 20;
         $statusFilter = Tools::getValue('status_filter', '');
+        $searchText = Tools::getValue('search_text', '');
+
+        if (!empty($statusFilter)) {
+            $formAction .= '&status_filter=' . urlencode($statusFilter);
+        }
+
+        if (!empty($searchText)) {
+            $formAction .= '&search_text=' . urlencode($searchText);
+        }
 
         $this->context->smarty->assign([
             'formAction' => $formAction,
             'token' => $this->token,
             'statusFilter' => $statusFilter,
-            'searchText' => Tools::getValue('search_text', ''),
+            'searchText' => $searchText,
             'orderDetailsLink' => $this->context->link->getAdminLink('AdminOrders'),
             'back_url' => $formAction
         ]);
 
-        $this->content = $this->shipmentRenderer->renderShipmentLists($page, $limit, $statusFilter);
+        $this->content = $this->shipmentRenderer->renderShipmentLists($page, $limit, $statusFilter, $searchText);
 
         $this->context->smarty->assign('content', $this->content);
     }

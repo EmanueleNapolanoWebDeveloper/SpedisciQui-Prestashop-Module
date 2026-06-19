@@ -39,16 +39,15 @@ class ShipmentRenderer
     public function renderShipmentLists(
         int $page = 1,
         int $limit = 20,
-        string $statusFilter = ''
+        string $statusFilter = '',
+        string $searchText = '',
     ) {
 
         $idShop = (int) Context::getContext()->shop->id ?: 1;
         $limit = max(1, min(100, $limit));
         $offset = ($page - 1) * $limit;
 
-        $shipments = $this->shipmentRepo->getShipments();
-
-        PrestaShopLogger::addLog('shipments :', print_r($shipments, true));
+        $shipments = $this->shipmentRepo->getShipments($idShop, $statusFilter, $searchText, $limit, $offset);
 
         $totalShipments = $this->shipmentService->countShipments($idShop, $statusFilter);
 
@@ -70,6 +69,7 @@ class ShipmentRenderer
             'currentPage' => $page,
             'limit' => $limit,
             'statusFilter' => $statusFilter,
+            'statusText' => $searchText,
             'action' => $this->buildAdminLink(),
             'back_url' => $adminLink,
             'token' => Tools::getAdminTokenLite('AdminSpedisciQuiShipments'),

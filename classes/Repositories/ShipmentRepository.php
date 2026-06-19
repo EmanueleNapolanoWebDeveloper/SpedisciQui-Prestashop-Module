@@ -144,6 +144,7 @@ class ShipmentRepository
     public function getShipments(
         int $idShop = 1,
         string $statusFilter = '',
+        string $searchText = '',
         int $limit = 50,
         int $offset = 0
     ): array {
@@ -217,12 +218,25 @@ class ShipmentRepository
             $query->where('sh.`id_shop` = ' . (int) $idShop);
 
             // Filtro status opzionale
-            if ($statusFilter !== '') {
+            if (!empty($statusFilter)) {
                 $query->where('sh.`status` = \'' . pSQL($statusFilter) . '\'');
             }
 
+            // filtro ricerca testuale
+            if (!empty($searchText)) {
+                $escapedSearch = pSQL($searchText);
+                $query->where('
+                sh.`tracking_number` LIKE "%' . $escapedSearch . '%" OR 
+                    sh.`id_order` = ' . (int) $searchText . ' OR 
+                    sh.`id` = ' . (int) $searchText . ' OR
+                    sh.`delivery_firstname` LIKE "%' . $escapedSearch . '%" OR 
+                    sh.`delivery_lastname` LIKE "%' . $escapedSearch . '%" OR
+                    c.`lastname` LIKE "%' . $escapedSearch . '%"
+                ');
+            }
+
             $query->orderBy('sh.`date_add` DESC');
-            $query->limit($limit, $offset);
+            $query->limit((int) $limit, (int) $offset);
 
             $rows = $db->executeS($query);
 

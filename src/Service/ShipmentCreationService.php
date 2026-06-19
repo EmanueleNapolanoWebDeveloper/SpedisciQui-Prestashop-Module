@@ -192,11 +192,6 @@ class ShipmentCreationService
         }
 
 
-        PrestaShopLogger::addLog(
-            'payload da inviare alla creazioen shipment: ' . print_r($payload, true),
-            1
-        );
-
         $tokenData = $this->credentialRepo->get();
         $token = (string) ($tokenData['access_token'] ?? '');
 
@@ -317,10 +312,6 @@ class ShipmentCreationService
             );
         }
 
-        \PrestaShopLogger::addLog(
-            sprintf('[SpedisciQui] fetchShipmentDataAndLabel: avvio persistSuccess | id_shipment=%d', $idShipment),
-            1
-        );
 
         return $this->persistSuccess(
             $idShipment,
