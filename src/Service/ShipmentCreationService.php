@@ -145,6 +145,7 @@ class ShipmentCreationService
     //==================================================
     public function sendShipmentRequest(int $idShipment, bool $insuranceEnabled, float $insuranceValue): ShipmentCreationResult
     {
+        // main
         if ($idShipment <= 0) {
             return ShipmentCreationResult::failure('ID spedizione non valido.');
         }
@@ -259,7 +260,6 @@ class ShipmentCreationService
         }
 
         $endpoint = sprintf(self::ENDPOINT_GET_LABEL, $remoteShipmentId);
-
 
         $apiResponse = $this->apiClient->request('GET', $endpoint, $token);
 

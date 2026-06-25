@@ -107,7 +107,7 @@ class AdminSpedisciQuiCarriersController extends ModuleAdminController
                 ? $formAction . '&carrier_code=' . urlencode($carrierCode)
                 : $formAction;
 
-            Tools::redirectAdmin($redirectUrl);
+            //Tools::redirectAdmin($redirectUrl);
             
             return;
         }

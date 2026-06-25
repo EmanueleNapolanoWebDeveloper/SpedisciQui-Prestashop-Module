@@ -32,6 +32,8 @@ class ShipmentRepository
         'error_message',
         'shipped_at',
         'delivered_at',
+        'insurance_enabled',
+        'insurance_value',
     ];
 
     private const DATE_MAP = [
@@ -115,6 +117,8 @@ class ShipmentRepository
                 'tracking_number' => $row['tracking_number'] ? (string) $row['tracking_number'] : null,
                 'label_path' => $labelPath,
                 'api_shipment_id' => $row['api_shipment_id'] ? (string) $row['api_shipment_id'] : null,
+                'insurance_enabled' => $row['insurance_enabled'] ? (bool) $row['insurance_enabled'] : 0,
+                'insurance_value' => $row['insurance_value'] ? (float) $row['insurance_value'] : null
             ];
         } catch (Exception $e) {
             // 5. Gestione errori DB
@@ -262,6 +266,11 @@ class ShipmentRepository
 
     public function createShipment(array $data): int|false
     {
+
+        PrestaShopLogger::addLog(
+            'Data di createShipment : ' . print_r($data, true),
+            1
+        );
 
         // Validazione preliminare PRIMA di aprire la transazione
         $idOrder = (int) ($data['id_order'] ?? 0);

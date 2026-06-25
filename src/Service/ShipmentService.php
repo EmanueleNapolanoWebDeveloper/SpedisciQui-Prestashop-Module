@@ -279,6 +279,7 @@ class ShipmentServices
         return match ($status) {
             'pending' => 'In attesa',
             'label_created' => 'Label creata',
+            'request_send' => 'Richiesta Inviata',
             'picked_up' => 'Ritirato',
             'in_transit' => 'In transito',
             'out_for_delivery' => 'In consegna',
@@ -331,6 +332,11 @@ class ShipmentServices
     {
         // ─── SHIPMENT ────────────────────────────────────────────────────────────
         $shipment = $this->shipmentRepo->getShipmentById($shipmentId);
+
+        PrestaShopLogger::addLog(
+            '[SpedisciQUi] Shipment entrato in build: ' . print_r($shipment, true),
+            1
+        );
 
         if (!$shipment) {
             return null;
