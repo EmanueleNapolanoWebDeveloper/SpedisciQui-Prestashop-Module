@@ -15,7 +15,7 @@
 
     <form method="POST" action="{$action|escape:'html':'UTF-8'}" id="sq-sender-update-form">
 
-        <input type="hidden" name="id_sender" value="{$sender.id|intval}">
+        <input type="hidden" name="id_sender" value="{$sender.id_sender|intval}">
 
         {* ── SEZIONE 1 — Identificazione ── *}
         <div class="sq-form-section">
@@ -203,7 +203,7 @@
 
         {* ── Actions con NAME Valorizzato per aggancio su PHP ── *}
         <div class="sq-form-actions">
-            <button type="submit" name="submitSpedisciQuiSender" class="btn btn-primary sq-btn sq-btn-primary" id="sq-sender-submit">
+            <button type="submit" name="submitUpdateSender" class="btn btn-primary sq-btn sq-btn-primary" id="sq-sender-submit">
                 <i class="icon-save"></i>
                 {l s='Salva modifiche' mod='spedisciquishipping'}
             </button>

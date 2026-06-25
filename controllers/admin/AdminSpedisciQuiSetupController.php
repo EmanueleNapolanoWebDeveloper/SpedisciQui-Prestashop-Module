@@ -397,7 +397,8 @@ class AdminSpedisciQuiSetupController extends ModuleAdminController
     private function renderSenderStep(): string
     {
         $existing = $this->senderRepo->getDefault();
-        $sender = $this->senderService->normalizeForView($existing ?? []);
+        // Se non trova record restituisce array vuoto, processato poi in sicurezza dal preFillSenderKeys
+        $sender = $existing ? (array) $existing : [];
         $formAction = $this->context->link->getAdminLink('AdminSpedisciQuiSetup');
 
         return $this->senderRenderer->renderSenderForm($sender, $formAction);

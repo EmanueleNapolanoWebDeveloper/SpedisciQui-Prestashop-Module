@@ -216,7 +216,7 @@
                     <div class="sq-toggle-wrap">
                         <label class="sq-toggle-label" for="sender_default">
                             <input type="hidden" name="SQ_SENDER_IS_DEFAULT" value="0">
-                            <input type="checkbox" id="sender_default" name="SQ_SENDER_IS_DEFAULT" value="1" {if $sender.is_default}checked{/if}>
+                            <input type="checkbox" id="is_default" name="SQ_SENDER_IS_DEFAULT" value="1" {if $sender.is_default}checked{/if}>
                             <span class="sq-toggle-text">
                                 {l s='Mittente predefinito' mod='spedisciquishipping'}
                             </span>
@@ -231,7 +231,7 @@
                     <div class="sq-toggle-wrap">
                         <label class="sq-toggle-label" for="sender_active">
                             <input type="hidden" name="SQ_SENDER_IS_ACTIVE" value="0">
-                            <input type="checkbox" id="sender_active" name="SQ_SENDER_IS_ACTIVE" value="1" {if $sender.is_active|default:1}checked{/if}>
+                            <input type="checkbox" id="is_active" name="SQ_SENDER_IS_ACTIVE" value="1" {if $sender.is_active|default:1}checked{/if}>
                             <span class="sq-toggle-text">
                                 {l s='Mittente attivo' mod='spedisciquishipping'}
                             </span>
@@ -250,10 +250,17 @@
 
         {* ── Actions ── *}
         <div class="sq-form-actions">
-            <button type="submit" class="sq-btn sq-btn-primary" id="sq-sender-init-submit">
-                <i class="icon-arrow-right"></i>
-                {l s='Salva e continua' mod='spedisciquishipping'}
-            </button>
+            {if isset($id_shop)}
+                <button type="submit" name="submitCreateSender" class="sq-btn sq-btn-primary" id="sq-sender-init-submit">
+                    <i class="icon-save"></i>
+                    {l s='Salva Mittente' mod='spedisciquishipping'}
+                </button>
+            {else}
+                <button type="submit" name="submitSpedisciQuiSender" class="sq-btn sq-btn-primary" id="sq-sender-init-submit">
+                    <i class="icon-arrow-right"></i>
+                    {l s='Salva e continua' mod='spedisciquishipping'}
+                </button>
+            {/if}
         </div>
 
     </form>
