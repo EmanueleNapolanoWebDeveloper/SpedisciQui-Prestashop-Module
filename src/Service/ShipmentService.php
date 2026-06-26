@@ -333,11 +333,6 @@ class ShipmentServices
         // ─── SHIPMENT ────────────────────────────────────────────────────────────
         $shipment = $this->shipmentRepo->getShipmentById($shipmentId);
 
-        PrestaShopLogger::addLog(
-            '[SpedisciQUi] Shipment entrato in build: ' . print_r($shipment, true),
-            1
-        );
-
         if (!$shipment) {
             return null;
         }

@@ -26,6 +26,8 @@ require __DIR__ . '/classes/Repositories/SenderRepository.php';
 require __DIR__ . '/classes/Repositories/CarrierRepository.php';
 require __DIR__ . '/classes/Repositories/ShipmentRepository.php';
 require __DIR__ . '/classes/Repositories/PackageRepository.php';
+require __DIR__ . '/classes/Repositories/SenderProductRepository.php';
+
 
 // Services
 require __DIR__ . '/src/Service/CredentialServices.php';
@@ -62,6 +64,8 @@ class spedisciquishipping extends CarrierModule
     protected ShipmentServices $shipmentService; // Corretto nome classe (Services)
     protected ShipmentRepository $shipmentRepo;
     protected PackageRepository $packRepo;
+
+    protected SenderRepository $senderRepo;
     public int $id_carrier = 0;
 
     // ================================================================
@@ -98,8 +102,8 @@ class spedisciquishipping extends CarrierModule
 
             $this->packRepo = new PackageRepository();
             $this->carrierService = new CarrierServices($this->carrierRepo);
-            $this->shipmentRepo = new ShipmentRepository();
 
+            $this->shipmentRepo = new ShipmentRepository();
             $this->shipmentService = new ShipmentServices(
                 $this->carrierRepo,
                 $this->carrierService,
@@ -109,14 +113,17 @@ class spedisciquishipping extends CarrierModule
                 $this
             );
 
-            $this->shipmentRepo->setShipmentService($this->shipmentService);
+            $this->senderRepo = new SenderRepository($context);
+
+
 
             $this->installedHooks = new InstalledHooks(
                 $this,
                 $this->carrierRepo,
                 $this->apiClient,
                 $this->packRepo,
-                $this->shipmentService
+                $this->shipmentService,
+                $this->senderRepo,
             );
         } catch (Exception $e) {
             PrestaShopLogger::addLog(
@@ -221,6 +228,9 @@ class spedisciquishipping extends CarrierModule
         return $this->getOrderShippingCost($params, 0);
     }
 
+
+
+
     // ================================================================
     // HOOKS
     // ================================================================
@@ -234,13 +244,15 @@ class spedisciquishipping extends CarrierModule
         return $this->installedHooks->hookActionValidateOrder($params);
     }
 
-    // public function hookDisplayBackOfficeHeader($params)
-    // {
-    //     if (!$this->installedHooks) {
-    //         PrestaShopLogger::addLog('[SpedisciQui] installedHooks è NULL', 3);
-    //         return '';
-    //     }
 
-    //     return $this->installedHooks->hookDisplayBackOfficeHeader($params);
-    // }
+    public function hookActionProductFormBuilderModifier($params)
+    {
+
+        if (!$this->installedHooks) {
+            PrestaShopLogger::addLog('[SpedisciQui] installedHooks è NULL', 3);
+            return '';
+        }
+
+        return $this->installedHooks->hookActionProductFormBuilderModifier($params);
+    }
 }

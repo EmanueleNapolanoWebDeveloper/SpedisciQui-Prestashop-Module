@@ -85,16 +85,6 @@ class ApiClient
                 ],
             ]);
 
-            PrestaShopLogger::addLog(
-                '[SQ] validateToken REQUEST: ' . json_encode([
-                    'url' => $this->baseUrl . '/api/auth/verify',
-                    'token_first_chars' => substr($token, 0, 15) . '...',
-                ]),
-                1
-            );
-
-
-
             $statusCode = $response->getStatusCode();
 
             if ($statusCode !== 200) {
@@ -105,11 +95,6 @@ class ApiClient
             }
 
             $responseBody = (string) $response->getBody();
-
-            PrestaShopLogger::addLog(
-                '[SpedisciQui] Risposta API - Stato: ' . $statusCode . ' - Body: ' . $responseBody,
-                1
-            );
 
             $isValid = $statusCode === 200;
 
@@ -219,12 +204,6 @@ class ApiClient
             if ($data === null) {
                 return null;
             }
-
-
-            PrestaShopLogger::addLog(
-                '[SPEDISCIQUI] RAW RESPONSE: ' . $body,
-                1
-            );
 
             return ApiResponse::success($statusCode, $data);
         } catch (ClientException $e) {

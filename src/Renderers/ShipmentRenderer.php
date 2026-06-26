@@ -97,10 +97,6 @@ class ShipmentRenderer
         // Recuperiamo il ViewModel dal Service
         $vm = $this->shipmentService->buildViewModel($shipmentId);
 
-        PrestaShopLogger::addLog(
-            '[buildViewModel di spedisciqui per shipment details: ' . print_r($vm, true),
-            1
-        );
 
         if ($vm === null) {
             PrestaShopLogger::addLog('Ordine non trovato per : ' . $shipmentId, 3);

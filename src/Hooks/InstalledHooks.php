@@ -1,5 +1,7 @@
 <?php
 
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -14,12 +16,15 @@ class InstalledHooks
     private PackageRepository $packageRepo;
     private ShipmentServices $shipmentService;
 
+    private SenderRepository $senderRepo;
+
     public function __construct(
         spedisciquishipping $module,
         CarrierRepository $carrierRepo,
         ApiClient $apiClient,
         PackageRepository $packageRepo,
-        ShipmentServices $shipmentService
+        ShipmentServices $shipmentService,
+        SenderRepository $senderRepo,
     ) {
         $this->module = $module;
         $this->context = Context::getContext();
@@ -27,6 +32,7 @@ class InstalledHooks
         $this->apiClient = $apiClient;
         $this->packageRepo = $packageRepo;
         $this->shipmentService = $shipmentService;
+        $this->senderRepo = $senderRepo;
     }
 
 
@@ -133,11 +139,8 @@ class InstalledHooks
     public function hookActionValidateOrder(array $params): void
     {
         try {
-            /** @var Order     $order  */
-            /** @var Cart      $cart   */
-            /** @var Customer  $customer */
-            $order    = $params['order']    ?? null;
-            $cart     = $params['cart']     ?? null;
+            $order = $params['order'] ?? null;
+            $cart = $params['cart'] ?? null;
 
             // Guard — params obbligatori
             if (!$order instanceof Order || !$cart instanceof Cart) {
@@ -204,31 +207,31 @@ class InstalledHooks
             $dimensions = $this->shipmentService->calculatePackageDimensions($cart, $defaultPackage);
 
             $idShipment = $shipmentRepo->createShipment([
-                'id_order'               => (int)    $order->id,
-                'id_shop'                => (int)    $order->id_shop,
+                'id_order' => (int) $order->id,
+                'id_shop' => (int) $order->id_shop,
                 'id_spedisciqui_carrier' => !empty($carrierData['id_spedisciqui_carrier'])
                     ? (int) $carrierData['id_spedisciqui_carrier']
                     : null,
-                'shipment_type'          => 'outbound',
-                'carrier_code'           => (string) ($carrierData['carrier_code'] ?? ''),
-                'service_code'           => (string) ($carrierData['service_code'] ?? ''),
-                'status'                 => 'pending',
+                'shipment_type' => 'outbound',
+                'carrier_code' => (string) ($carrierData['carrier_code'] ?? ''),
+                'service_code' => (string) ($carrierData['service_code'] ?? ''),
+                'status' => 'pending',
 
                 // Indirizzo di consegna
-                'delivery_firstname'    => (string) ($address->firstname ?? ''),
-                'delivery_lastname'     => (string) ($address->lastname  ?? ''),
-                'delivery_address1'     => (string) ($address->address1  ?? ''),
-                'delivery_address2'     => (string) ($address->address2  ?? ''),
-                'delivery_postcode'     => (string) ($address->postcode  ?? ''),
-                'delivery_city'         => (string) ($address->city      ?? ''),
-                'delivery_country_iso'  => (string) ($country->iso_code  ?? ''),
+                'delivery_firstname' => (string) ($address->firstname ?? ''),
+                'delivery_lastname' => (string) ($address->lastname ?? ''),
+                'delivery_address1' => (string) ($address->address1 ?? ''),
+                'delivery_address2' => (string) ($address->address2 ?? ''),
+                'delivery_postcode' => (string) ($address->postcode ?? ''),
+                'delivery_city' => (string) ($address->city ?? ''),
+                'delivery_country_iso' => (string) ($country->iso_code ?? ''),
 
                 // Peso e costo
-                'weight'            => (float) $cart->getTotalWeight(),
+                'weight' => (float) $cart->getTotalWeight(),
                 'length' => $dimensions['length'],
-                'width'  => $dimensions['width'],
+                'width' => $dimensions['width'],
                 'height' => $dimensions['height'],
-                'shipping_cost'     => (float) $order->total_shipping,
+                'shipping_cost' => (float) $order->total_shipping,
                 'shipping_currency' => $this->getCurrencyIso((int) $order->id_currency),
             ]);
 
@@ -274,52 +277,68 @@ class InstalledHooks
 
 
 
-
     // ======================================================
-    // HOOK PER INIEZIONE CSS E JS IN COMPOENNTI - INIZIO
+    // HOOK PER VISUALIZAZZIONE MITTENTE PER PRODOTTO - inizio
     // ======================================================
-    // public function hookDisplayBackOfficeHeader(): string
-    // {
-    //     if (Tools::getValue('configure') !== $this->module->name) {
-    //         return '';
-    //     }
+    public function hookActionProductFormBuilderModifier(array $params): void
+    {
+        $formBuilder = $params['form_builder'] ?? null;
+        $idProduct = (int) ($params['id'] ?? 0);
 
-    //     /** @var \AdminControllerCore $controller */
-    //     $controller = $this->context->controller;
+        if (!$formBuilder) {
+            PrestaShopLogger::addLog(
+                '[SpedisciQui] hookActionProductFormBuilderModifier — form_builder mancante',
+                2,
+                null,
+                null,
+                true
+            );
+            return;
+        }
 
-    //     $css = $this->module->getPathUri() . 'views/css/';
-    //     $js  = $this->module->getPathUri() . 'views/js/';
+        // recupero senders
+        $senders = $this->senderRepo->getAllSenders();
 
-    //     $controller->addCSS($css . 'common.css',                    'all', null, false);
+        // costruzione delle scelte
+        $choices = [];
+        foreach ($senders as $sender) {
+            $label = $sender['label'] . ' - ' . $sender['company'] . ' - ' . $sender['city'];
+            $choices[$label] = (int) $sender['id_sender'];
+        }
 
-    //     // caricamento styles Init
-    //     $controller->addCss($css . 'admin/initial/carrier_init_styles.css', 'all', null, false);
-    //     $controller->addCss($css . 'admin/initial/shipment_init_styles.css', 'all', null, false);
-    //     $controller->addCss($css . 'admin/initial/credential_init_styles.css', 'all', null, false);
-    //     $controller->addCss($css . 'admin/initial/package_init_styles.css', 'all', null, false);
-    //     $controller->addCss($css . 'admin/initial/sender_init_styles.css', 'all', null, false);
+        // recupera sender associato al prodotto
+        // $currentSenderId = 0;
+        // if ($idProduct > 0) {
+        //     $currentSenderId = $this->senderProductRepo->findByProduct($idProduct);
+        // }
 
-    //     // css shipments
-    //     $controller->addCSS($css . 'admin/shipment/shipment_styles.css',          'all', null, false);
+        // aggiungi campo 
+        $formBuilder->get('shipping')->add(
+            'spedisciqui_sender',
+            ChoiceType::class,
+            [
+                'label' => $this->module->l('Mittente Spedizione'),
+                'choices' => $choices,
+                'required' => false,
+                'placeholder' => $this->module->l('-- Nessun Mittente --'),
+                // 'data'        => $currentSenderId,
+            ]
+        );
 
-    //     // css Carriers Dash
-    //     $controller->addCSS($css . 'admin/carriers/carriers_styles.css', 'all', null, false);
-
-    //     // css Settings Dash
-    //     $controller->addCSS($css . 'admin/settings/settings_styles.css',   'all', null, false);
-
-
-    //     // CARICAMENTI JS SCRIPTS
-    //     $controller->addJS($js . 'admin/shipment/shipment_scripts.js', false);
-    //     $controller->addJS($js . 'admin/shipment/shipment_review.js', false);
-    //     $controller->addJS($js . 'admin/carriers/carriers_scripts.js',          false);
-    //     $controller->addJS($js . 'admin/settings/settings_scripts.js',         false);
-
-
-    //     return '';
-    // }
+        PrestaShopLogger::addLog(
+            sprintf(
+                '[SpedisciQui] hookActionProductFormBuilderModifier — campo aggiunto | id_product=%d | sender corrente=%s',
+                $idProduct,
+                $currentSenderId ?? 'null'
+            ),
+            1,
+            null,
+            null,
+            true
+        );
+    }
     // ======================================================
-    // HOOK PER INIEZIONE CSS E JS IN COMPOENNTI - FINE
+    // HOOK PER VISUALIZAZZIONE MITTENTE PER PRODOTTO - fine
     // ======================================================
 
 

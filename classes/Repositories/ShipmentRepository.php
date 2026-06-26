@@ -43,21 +43,6 @@ class ShipmentRepository
     ];
 
 
-    //==========================================
-    // COSTRUTTORE
-    //==========================================
-    public function __construct()
-    {
-    }
-
-    public function setShipmentService(ShipmentServices $shipmentService): void
-    {
-        $this->shipmentService = $shipmentService;
-    }
-
-
-
-
     // ==============================================
     // RECUPERO SHIPMENT DA ID
     // ============================================

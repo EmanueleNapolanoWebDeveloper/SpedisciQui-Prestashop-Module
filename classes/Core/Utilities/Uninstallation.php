@@ -122,7 +122,7 @@ class Uninstallation
     {
         $hooks = [
             'actionValidateOrder',
-            //'displayBackOfficeHeader'
+            'actionProductFormBuilderModifier',
             //'displayCarrierExtraContent',
         ];
 

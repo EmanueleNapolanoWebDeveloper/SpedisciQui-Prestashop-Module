@@ -241,6 +241,24 @@ class SQMigrations
         return (bool) Db::getInstance()->execute($sql);
     }
 
+
+    private function createSpedisciQuiSenderProduct(): bool
+    {
+
+        $sql = 'CREATE TABLE IF NOT EXISTS ' . bqSQL(_DB_PREFIX_ . 'spedisciqui_sender_product') . '(
+    `id`         INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id_product` INT(11) UNSIGNED NOT NULL,
+    `id_sender`  INT(11) UNSIGNED NOT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_product` (`id_product`),
+    KEY `idx_sender` (`id_sender`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;';
+
+        return (bool) Db::getInstance()->execute($sql);
+    }
+
     //==========================================
     // ESEGUI TUTTE LE MIGRATION
     //==========================================
@@ -251,9 +269,10 @@ class SQMigrations
             'createApiCredentialsTable',
             'createSpedisciQuiPackageTable',
             'createSenderAddressTable',
-            'createSpedisciQuiCarriers',          
-            'createSpedisciQuiRangeWeightPrice',  
-            'createSpedisciQuiShipments',         
+            'createSpedisciQuiCarriers',
+            'createSpedisciQuiRangeWeightPrice',
+            'createSpedisciQuiSenderProduct',
+            'createSpedisciQuiShipments',
         ];
 
         foreach ($steps as $method) {
@@ -283,6 +302,7 @@ class SQMigrations
                 'spedisciqui_package',
                 'spedisciqui_api_credentials',
                 'spedisciqui_config',
+                'spedisciqui_sender_product'
             ];
 
             $db = Db::getInstance();

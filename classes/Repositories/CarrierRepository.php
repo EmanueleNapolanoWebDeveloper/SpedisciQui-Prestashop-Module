@@ -36,11 +36,6 @@ class CarrierRepository
     {
         $credentials = $this->credentialsRepo->get();
 
-        PrestaShopLogger::addLog(
-            '[SpedisciQui] getCarriers — credentials: ' . print_r($credentials, true),
-            1
-        );
-
         $token = $credentials['access_token'] ?? '';
 
         if (empty($token)) {
@@ -271,13 +266,6 @@ class CarrierRepository
             if (!$db->execute('COMMIT')) {
                 throw new RuntimeException('COMMIT fallito per carrier: ' . $carrierData['code']);
             }
-
-            PrestaShopLogger::addLog(
-                '[SpedisciQui] Carrier creato — id: ' . $carrier->id
-                . ' | ref: ' . $carrier->id_reference
-                . ' | name: ' . $carrier->name,
-                1
-            );
 
             return true;
         } catch (Exception $e) {
