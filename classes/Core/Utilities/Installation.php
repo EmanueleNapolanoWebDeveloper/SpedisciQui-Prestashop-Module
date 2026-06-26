@@ -156,8 +156,10 @@ class Installation
     private function registerModuleHooks(): void
     {
         $hooks = [
-            'actionValidateOrder',
-            'actionProductFormBuilderModifier',
+            'actionValidateOrder', // hook per validazione ordine
+            'actionProductFormBuilderModifier', //hook per visualizazzione mittenti in Tab Spedizione
+            'actionAfterCreateProductFormHandler', //hook per salvataggio sender->product dopo che prodotto è stato salvato
+            'actionAfterUpdateProductFormHandler', //hook per salvataggio sender->product quando prodotto viene modificato
             //'displayCarrierExtraContent',
         ];
 

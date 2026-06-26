@@ -6,14 +6,16 @@ if (!defined('_PS_VERSION_')) {
 
 class SenderRepository
 {
-    private Context $context;
 
     private const TABLE = 'spedisciqui_sender_address';
 
-    public function __construct(Context $context)
+    private Context $context;
+
+    public function __construct()
     {
-        $this->context = $context;
+        $this->context = Context::getContext();
     }
+
 
     //=============================================
     // RECUPERO SENDER DEFAULT

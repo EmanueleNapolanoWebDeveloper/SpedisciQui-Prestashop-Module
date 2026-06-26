@@ -123,6 +123,8 @@ class Uninstallation
         $hooks = [
             'actionValidateOrder',
             'actionProductFormBuilderModifier',
+            'actionAfterCreateProductFormHandler',
+            'actionAfterUpdateProductFormHandler',
             //'displayCarrierExtraContent',
         ];
 

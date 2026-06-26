@@ -15,8 +15,9 @@ class InstalledHooks
     private ApiClient $apiClient;
     private PackageRepository $packageRepo;
     private ShipmentServices $shipmentService;
-
     private SenderRepository $senderRepo;
+
+    private SenderProductRepository $senderProductRepo;
 
     public function __construct(
         spedisciquishipping $module,
@@ -25,6 +26,7 @@ class InstalledHooks
         PackageRepository $packageRepo,
         ShipmentServices $shipmentService,
         SenderRepository $senderRepo,
+        SenderProductRepository $senderProductRepo,
     ) {
         $this->module = $module;
         $this->context = Context::getContext();
@@ -33,6 +35,7 @@ class InstalledHooks
         $this->packageRepo = $packageRepo;
         $this->shipmentService = $shipmentService;
         $this->senderRepo = $senderRepo;
+        $this->senderProductRepo = $senderProductRepo;
     }
 
 
@@ -307,10 +310,10 @@ class InstalledHooks
         }
 
         // recupera sender associato al prodotto
-        // $currentSenderId = 0;
-        // if ($idProduct > 0) {
-        //     $currentSenderId = $this->senderProductRepo->findByProduct($idProduct);
-        // }
+        $currentSenderId = 0;
+        if ($idProduct > 0) {
+            $currentSenderId = $this->senderProductRepo->findByProduct($idProduct);
+        }
 
         // aggiungi campo 
         $formBuilder->get('shipping')->add(
@@ -321,25 +324,39 @@ class InstalledHooks
                 'choices' => $choices,
                 'required' => false,
                 'placeholder' => $this->module->l('-- Nessun Mittente --'),
-                // 'data'        => $currentSenderId,
+                'data' => $currentSenderId,
             ]
-        );
-
-        PrestaShopLogger::addLog(
-            sprintf(
-                '[SpedisciQui] hookActionProductFormBuilderModifier — campo aggiunto | id_product=%d | sender corrente=%s',
-                $idProduct,
-                $currentSenderId ?? 'null'
-            ),
-            1,
-            null,
-            null,
-            true
         );
     }
     // ======================================================
     // HOOK PER VISUALIZAZZIONE MITTENTE PER PRODOTTO - fine
     // ======================================================
+
+
+    public function hookActionAfterCreateProductFormHandler(array $params): void
+    {
+
+        PrestaShopLogger::addLog(
+            'avvio hookActionAfterCreateProductFormHandler',
+            1
+        );
+
+        $idProduct = $params['id'];
+        $data = $params['form_data'];
+
+
+
+        $idSender = $data['shipping']['spedisciqui_sender'] ?? null;
+
+        if ($idSender) {
+            $this->senderProductRepo->save($idProduct, $idSender);
+        }
+    }
+
+    public function hookActionAfterUpdateProductFormHandler($params): void
+    {
+        $this->hookActionAfterCreateProductFormHandler($params);
+    }
 
 
 

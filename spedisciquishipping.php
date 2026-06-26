@@ -64,8 +64,9 @@ class spedisciquishipping extends CarrierModule
     protected ShipmentServices $shipmentService; // Corretto nome classe (Services)
     protected ShipmentRepository $shipmentRepo;
     protected PackageRepository $packRepo;
-
     protected SenderRepository $senderRepo;
+
+    protected SenderProductRepository $senderProductRepo;
     public int $id_carrier = 0;
 
     // ================================================================
@@ -113,8 +114,8 @@ class spedisciquishipping extends CarrierModule
                 $this
             );
 
-            $this->senderRepo = new SenderRepository($context);
-
+            $this->senderRepo = new SenderRepository();
+            $this->senderProductRepo = new SenderProductRepository();
 
 
             $this->installedHooks = new InstalledHooks(
@@ -124,8 +125,9 @@ class spedisciquishipping extends CarrierModule
                 $this->packRepo,
                 $this->shipmentService,
                 $this->senderRepo,
+                $this->senderProductRepo,
             );
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             PrestaShopLogger::addLog(
                 '[SpedisciQui] COSTRUTTORE CRASH: ' . $e->getMessage()
                 . ' in ' . $e->getFile() . ':' . $e->getLine(),
@@ -254,5 +256,25 @@ class spedisciquishipping extends CarrierModule
         }
 
         return $this->installedHooks->hookActionProductFormBuilderModifier($params);
+    }
+
+    public function hookActionAfterCreateProductFormHandler(array $params)
+    {
+        if (!$this->installedHooks) {
+            PrestaShopLogger::addLog('[SpedisciQui] installedHooks è NULL', 3);
+            return '';
+        }
+
+        $this->installedHooks->hookActionAfterUpdateProductFormHandler($params);
+    }
+
+    public function hookActionAfterUpdateProductFormHandler($params)
+    {
+        if (!$this->installedHooks) {
+            PrestaShopLogger::addLog('[SpedisciQui] installedHooks è NULL', 3);
+            return '';
+        }
+
+        $this->installedHooks->hookActionAfterUpdateProductFormHandler($params);
     }
 }
