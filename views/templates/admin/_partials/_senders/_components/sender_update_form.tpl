@@ -180,8 +180,8 @@
                 <div class="sq-form-group sq-col-half">
                     <div class="sq-toggle-wrap">
                         <label class="sq-toggle-label" for="sq-sender-default">
-                            <input type="hidden" name="is_default" value="0">
-                            <input type="checkbox" id="sq-sender-default" name="is_default" value="1" {if $sender.is_default}checked{/if}>
+                            <input type="hidden" name="SQ_SENDER_IS_DEFAULT" value="0">
+                            <input type="checkbox" id="sq-sender-default" name="SQ_SENDER_IS_DEFAULT" value="1" {if $sender.is_default}checked{/if}>
                             <span class="sq-toggle-text">{l s='Mittente predefinito' mod='spedisciquishipping'}</span>
                         </label>
                         <p class="sq-form-hint">{l s='Verrà usato come mittente di default per le nuove spedizioni.' mod='spedisciquishipping'}</p>
@@ -191,8 +191,8 @@
                 <div class="sq-form-group sq-col-half">
                     <div class="sq-toggle-wrap">
                         <label class="sq-toggle-label" for="sq-sender-active">
-                            <input type="hidden" name="is_active" value="0">
-                            <input type="checkbox" id="sq-sender-active" name="is_active" value="1" {if $sender.is_active}checked{/if}>
+                            <input type="hidden" name="SQ_SENDER_IS_ACTIVE" value="0">
+                            <input type="checkbox" id="sq-sender-active" name="SQ_SENDER_IS_ACTIVE" value="1" {if $sender.is_active}checked{/if}>
                             <span class="sq-toggle-text">{l s='Mittente attivo' mod='spedisciquishipping'}</span>
                         </label>
                         <p class="sq-form-hint">{l s='I mittenti inattivi non vengono proposti nella creazione spedizioni.' mod='spedisciquishipping'}</p>

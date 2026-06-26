@@ -62,6 +62,8 @@ class SenderServices
             'country_iso' => Tools::getValue('SQ_SENDER_COUNTRY_ISO', 'IT'),
             'id_country' => (int) Tools::getValue('SQ_SENDER_ID_COUNTRY', 110),
             'vat_number' => Tools::getValue('SQ_SENDER_VAT_NUMBER', ''),
+            'is_default' => Tools::getValue('SQ_SENDER_IS_DEFAULT' , ''),
+            'is_active' => Tools::getValue('SQ_SENDER_IS_ACTIVE', ''),
         ];
     }
 
