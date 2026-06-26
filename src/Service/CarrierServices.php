@@ -124,12 +124,18 @@ class CarrierServices
         $idCarrier = (int) $carrier['id_carrier'];
 
 
-        $serviceCode = !empty($carrier['carrier_code']) ? $carrier['carrier_code'] : $carrier['service_code'];
-        $serviceCodeEscaped = pSQL($serviceCode);
+        $serviceCode = !empty($carrier['carrier_code'])
+            ? $carrier['carrier_code']
+            : $carrier['service_code'];
+
+
+        // normalizza dati in entrata
+        $normalizedRow = $this->normalizeRows($data);
+
 
         // Validazione
         try {
-            $this->validateRows($data, $serviceCodeEscaped);
+            $this->validateRows($normalizedRow, $serviceCode);
         } catch (Exception $e) {
             PrestaShopLogger::addLog(
                 '[SpedisciQui] saveTariffs validazione fallita: ' . $e->getMessage(),
@@ -140,46 +146,59 @@ class CarrierServices
             return false;
         }
 
+        // recuper sender coinvolti
+        $senderIds = array_unique(array_column($normalizedRow, 'id_sender'));
+
+        PrestaShopLogger::addLog(
+            'sendersId: ' . print_r($senderIds, true),
+            1
+        );
+
         $this->db->execute('START TRANSACTION');
 
         try {
-            // Elimina fasce esistenti
-            $this->db->execute(
-                'DELETE FROM `' . _DB_PREFIX_ . 'spedisciqui_weight_tariffs`'
-                . ' WHERE `id_carrier` = ' . $idCarrier
-            );
+            // Elimina fasce dei sender esistenti
+            foreach ($senderIds as $idSender) {
+                $this->db->execute(
+                    'DELETE FROM `' . _DB_PREFIX_ . 'spedisciqui_weight_tariffs`'
+                    . ' WHERE `id_carrier` = ' . (int) $idCarrier
+                    . ' AND `id_sender` = ' . (int) $idSender
+                );
+            }
+
+            $now = date('Y-m-d H:i:s');
+
 
             // Inserimento nuove fasce
-            foreach ($data as $row) {
-                $weightFrom = (float) str_replace(',', '.', $row['weight_from'] ?? 0);
-                $weightTo = (float) str_replace(',', '.', $row['weight_to'] ?? 0);
-
-                // 🔥 CORREZIONE BUG 1: Cerchiamo 'price' (come definito nel TPL) o 'tariff' come fallback
-                $priceValue = isset($row['price']) ? $row['price'] : ($row['tariff'] ?? 0);
-                $tariff = (float) str_replace(',', '.', $priceValue);
-
-                // 🔥 CORREZIONE BUG 2: Forziamo a 1 (Attivo) se non è specificato nel form, così il checkout lo vede subito
-                $active = (isset($row['is_active']) && $row['is_active'] !== '') ? (int) (bool) $row['is_active'] : 1;
-
-                $now = date('Y-m-d H:i:s');
+            foreach ($normalizedRow as $row) {
 
                 $inserted = $this->db->insert(
                     'spedisciqui_weight_tariffs',
                     [
                         'id_carrier' => $idCarrier,
-                        'service_code' => $serviceCodeEscaped,
-                        'weight_from' => number_format($weightFrom, 6, '.', ''),
-                        'weight_to' => number_format($weightTo, 6, '.', ''),
-                        'tariff' => number_format($tariff, 3, '.', ''),
-                        'is_active' => $active,
+                        'id_sender' => $row['id_sender'],
+                        'service_code' => pSQL($serviceCode),
+                        'weight_from' => $row['weight_from'],
+                        'weight_to' => $row['weight_to'],
+                        'tariff' => $row['tariff'],
+                        'is_active' => $row['is_active'],
                         'date_add' => $now,
                         'date_upd' => $now,
                     ]
+
                 );
 
                 if (!$inserted) {
-                    throw new RuntimeException('Errore nell\'inserimento della tariffa');
+                    throw new RuntimeException(
+                        sprintf(
+                            'Inserimento fallito: sender %d, fascia [%.2f-%.2f]',
+                            $row['id_sender'],
+                            $row['weight_from'],
+                            $row['weight_to']
+                        )
+                    );
                 }
+
             }
 
             $this->db->execute('COMMIT');
@@ -226,56 +245,116 @@ class CarrierServices
         );
     }
 
+
+    // =========================================================================
+    // PRIVATE — NORMALIZZAZIONE
+    // =========================================================================
+
+    /**
+     * Converte i valori grezzi del POST in tipi e formati coerenti.
+     * Gestisce sia 'price' (chiave TPL) sia 'tariff' (chiave interna).
+     */
+    private function normalizeRows(array $data): array
+    {
+        $rows = [];
+
+        foreach ($data as $row) {
+            $priceValue = $row['price'] ?? $row['tariff'] ?? 0;
+
+            $rows[] = [
+                'id_sender' => (int) ($row['id_sender'] ?? 0),
+                'weight_from' => (float) number_format(
+                    (float) str_replace(',', '.', $row['weight_from'] ?? 0),
+                    6,
+                    '.',
+                    ''
+                ),
+                'weight_to' => (float) number_format(
+                    (float) str_replace(',', '.', $row['weight_to'] ?? 0),
+                    6,
+                    '.',
+                    ''
+                ),
+                'tariff' => (float) number_format(
+                    (float) str_replace(',', '.', $priceValue),
+                    3,
+                    '.',
+                    ''
+                ),
+                'is_active' => isset($row['is_active']) && $row['is_active'] !== ''
+                    ? (int) (bool) $row['is_active']
+                    : 1,
+            ];
+        }
+
+        return $rows;
+    }
+
+
     // =========================================================================
     // PRIVATE — VALIDAZIONE RIGHE
     // =========================================================================
 
-    private function validateRows(array $rows, string $serviceCode)
+    private function validateRows(array $rows, string $serviceCode): void
     {
         if (empty($rows)) {
             return;
         }
 
-        $ranges = [];
-
+        // --- Validazione scalare per riga ---
         foreach ($rows as $i => $row) {
-            $label = 'Fascia #' . ($i + 1) . ' [' . $serviceCode . ']';
-            $weightFrom = (float) str_replace(',', '.', $row['weight_from'] ?? '');
-            $weightTo = (float) str_replace(',', '.', $row['weight_to'] ?? '');
-            $tariff = (float) str_replace(',', '.', $row['tariff'] ?? '');
+            $label = sprintf('Fascia #%d [%s] (mittente %d)', $i + 1, $serviceCode, $row['id_sender']);
 
-            if ($weightFrom < 0 || $weightTo < 0) {
-                throw new InvalidArgumentException(($label . ':pesi non possono essere negativi'));
+            if ($row['id_sender'] <= 0) {
+                throw new InvalidArgumentException($label . ': id_sender non valido.');
             }
 
-            if ($tariff < 0) {
-                throw new InvalidArgumentException(($label . ':la tariffa non può essere negativa'));
+            if ($row['weight_from'] < 0 || $row['weight_to'] < 0) {
+                throw new InvalidArgumentException($label . ': i pesi non possono essere negativi.');
             }
 
-            if ($weightFrom >= $weightTo) {
+            if ($row['weight_from'] >= $row['weight_to']) {
                 throw new InvalidArgumentException(
-                    $label . ': "weight_from" deve essere minore di "weight_to".'
+                    $label . ': weight_from deve essere minore di weight_to.'
                 );
             }
 
-            $ranges[] = ['from' => $weightFrom, 'to' => $weightTo, 'label' => $label];
+            if ($row['tariff'] < 0) {
+                throw new InvalidArgumentException($label . ': la tariffa non può essere negativa.');
+            }
         }
 
-        // controllo sovrapposizioni
-        $n = count($ranges);
+        // --- Controllo sovrapposizioni raggruppato per sender ---
+        $bySender = [];
+        foreach ($rows as $row) {
+            $bySender[$row['id_sender']][] = $row;
+        }
 
-        for ($a = 0; $a < $n; $a++) {
-            for ($b = $a + 1; $b < $n; $b++) {
-                if (
-                    $ranges[$a]['from'] < $ranges[$b]['to']
-                    && $ranges[$b]['from'] < $ranges[$a]['to']
-                ) {
-                    throw new InvalidArgumentException(
-                        'Sovrapposizione tra ' . $ranges[$a]['label']
-                        . ' e ' . $ranges[$b]['label'] . '.'
-                    );
+        foreach ($bySender as $idSender => $senderRows) {
+            $count = count($senderRows);
+
+            for ($a = 0; $a < $count; $a++) {
+                for ($b = $a + 1; $b < $count; $b++) {
+                    $ra = $senderRows[$a];
+                    $rb = $senderRows[$b];
+
+                    if ($ra['weight_from'] < $rb['weight_to'] && $rb['weight_from'] < $ra['weight_to']) {
+                        throw new InvalidArgumentException(
+                            sprintf(
+                                'Sovrapposizione per mittente %d [%s]: '
+                                . 'fascia [%.2f-%.2f] si sovrappone a [%.2f-%.2f].',
+                                $idSender,
+                                $serviceCode,
+                                $ra['weight_from'],
+                                $ra['weight_to'],
+                                $rb['weight_from'],
+                                $rb['weight_to']
+                            )
+                        );
+                    }
                 }
             }
         }
     }
+
 }

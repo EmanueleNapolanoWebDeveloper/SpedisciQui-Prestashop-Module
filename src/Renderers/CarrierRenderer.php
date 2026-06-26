@@ -110,8 +110,15 @@ class CarrierRenderer
         string $carrierCode,
         string $formAction
     ): string {
+
+        // aggiungo js
+        $this->addJs('tariff.js');
+
+
         // 1. Recupero dati carrier
         $carrier = $this->carrierRepo->getCarrierByCode($carrierCode);
+        $senderRepo = new SenderRepository();
+        $senders = $senderRepo->getAllSenders();
 
         if (empty($carrier)) {
             PrestaShopLogger::addLog(
@@ -121,7 +128,7 @@ class CarrierRenderer
                 'SpedisciQuiShipping'
             );
             $this->context->smarty->assign('sq_errors', ['Carrier non trovato.']);
-            return $this->renderCarrierDash(); // Assicurati che questo metodo esista nel renderer se fallisce
+            return $this->renderCarrierDash();
         }
 
         // 2. Recupera tariffe esistenti tramite CarrierService
@@ -140,13 +147,14 @@ class CarrierRenderer
 
         // 4. Passiamo TUTTE le variabili a Smarty (incluso il token richiesto dal TPL)
         $this->context->smarty->assign([
+            'senders' => $senders,
             'carrier_code' => $carrier['carrier_code'],
             'carrier_name' => $carrier['carrier_name'],
             'service_code' => $carrier['service_code'],
             'tariff_rows' => $tariffRows,
             'action' => $actionUrl,
             'backLink' => $backLink,
-            'token' => $controllerToken, // 🔥 FONDAMENTALE per il form nel TPL!
+            'token' => $controllerToken,
             'sq_errors' => [],
             'sq_confirmation' => [],
         ]);
@@ -168,5 +176,11 @@ class CarrierRenderer
     {
         $cssPath = $this->module->getPathUri() . 'views/css/admin/initial/';
         $this->context->controller->addCSS($cssPath . $filename, 'all', null, false);
+    }
+
+    private function addJs(string $filename): void
+    {
+        $jsPath = $this->module->getPathUri() . 'views/js/admin/carriers/';
+        $this->context->controller->addJS($jsPath . $filename, 'all', null, false);
     }
 }

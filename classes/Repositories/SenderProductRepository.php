@@ -62,22 +62,41 @@ class SenderProductRepository
         );
 
         try {
-            $sql = 'INSERT INTO `' . _DB_PREFIX_ . self::TABLE_NAME . '`
-                    (`id_product`, `id_sender`, `created_at`, `updated_at`)
-                VALUES
-                    (' . (int) $idProduct . ', ' . (int) $idSender . ', NOW(), NOW())
-                ON DUPLICATE KEY UPDATE
-                    `id_sender`  = ' . (int) $idSender . ',
-                    `updated_at` = NOW()';
+            $db = Db::getInstance();
 
-            return (bool) Db::getInstance()->execute($sql);
+            // Prova prima un update
+            $exists = (int) $db->getValue(
+                'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . self::TABLE_NAME . '`
+             WHERE `id_product` = ' . (int) $idProduct
+            );
+
+            if ($exists) {
+                return (bool) $db->update(
+                    self::TABLE_NAME,
+                    [
+                        'id_sender' => (int) $idSender,
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ],
+                    '`id_product` = ' . (int) $idProduct
+                );
+            }
+
+            return (bool) $db->insert(
+                self::TABLE_NAME,
+                [
+                    'id_product' => (int) $idProduct,
+                    'id_sender' => (int) $idSender,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]
+            );
 
         } catch (\Throwable $e) {
             PrestaShopLogger::addLog(
                 '[SpedisciQui] SenderProductRepository::save() ERRORE: ' . $e->getMessage(),
                 3
             );
-            return false; // non rilanciare — lascia che il chiamante gestisca il false
+            return false;
         }
     }
 
@@ -87,32 +106,24 @@ class SenderProductRepository
     // ===================================
     // ELIMINA RECORD TABELLA ASSOCIATIVA PRODOTTO-SENDER
     // ===================================
-    public function delete(int $idProduct)
+    public function delete(int $idProduct): bool
     {
-
         if (!$idProduct) {
-            throw new InvalidArgumentException('ID Prodotto richiesto per questa operazione!');
+            throw new \InvalidArgumentException('ID Prodotto richiesto per questa operazione!');
         }
 
         try {
+            return (bool) Db::getInstance()->delete(
+                self::TABLE_NAME,
+                '`id_product` = ' . (int) $idProduct
+            );
 
-            $sql = new DbQuery();
-
-            $sql->from(self::TABLE_NAME)
-                ->where('id_product = ' . (int) $idProduct);
-
-            return (bool) Db::getInstance()->execute($sql);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             PrestaShopLogger::addLog(
-                '[SpedisciQui] Error deleting product sender: ' . $e->getMessage(),
+                '[SpedisciQui] SenderProductRepository::delete() ERRORE: ' . $e->getMessage(),
                 3
             );
-
-            throw new Exception(
-                'Errore durante la cancellazione del sender del prodotto',
-                0,
-                $e
-            );
+            return false;
         }
     }
 }

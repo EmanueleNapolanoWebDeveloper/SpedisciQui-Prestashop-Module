@@ -144,6 +144,7 @@ class SQMigrations
         $sql = 'CREATE TABLE IF NOT EXISTS ' . bqSQL(_DB_PREFIX_ . 'spedisciqui_weight_tariffs') . ' (
             `id_tariff`    INT UNSIGNED NOT NULL AUTO_INCREMENT,
             `id_shop`      INT UNSIGNED NOT NULL DEFAULT 1,
+            `id_sender`    INT UNSIGNED NOT NULL,
             `id_carrier`   INT UNSIGNED NOT NULL,
             `service_code` VARCHAR(64) NOT NULL,
             `weight_from`  DECIMAL(20,6) NOT NULL DEFAULT 0.000 COMMENT \'kg incluso\',
@@ -156,6 +157,7 @@ class SQMigrations
             PRIMARY KEY (`id_tariff`),
             KEY `idx_shop`        (`id_shop`),
             KEY `idx_carrier`     (`id_carrier`),
+            KEY `idx_sender`       (`id_sender`),
             KEY `idx_service`     (`service_code`),
             KEY `idx_weight_range`(`weight_from`, `weight_to`),
             KEY `idx_active`      (`is_active`),

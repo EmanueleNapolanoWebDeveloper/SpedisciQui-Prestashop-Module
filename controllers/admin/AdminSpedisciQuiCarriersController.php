@@ -108,7 +108,7 @@ class AdminSpedisciQuiCarriersController extends ModuleAdminController
                 : $formAction;
 
             //Tools::redirectAdmin($redirectUrl);
-            
+
             return;
         }
 
@@ -173,38 +173,125 @@ class AdminSpedisciQuiCarriersController extends ModuleAdminController
         $carrierCode = Tools::getValue('carrier_code', '');
 
         if (empty($carrierCode)) {
-            $this->context->controller->errors[] = $this->module->l('Impossibile associare le tariffe: codice corriere vuoto.');
+            $this->errors[] = $this->module->l('Impossibile associare le tariffe: codice corriere vuoto.');
             return;
         }
 
         $weightFromArr = Tools::getValue('weight_from', []);
         $weightToArr = Tools::getValue('weight_to', []);
-        $priceArr = Tools::getValue('price', []);
+        $pricesBySender = Tools::getValue('price', []);
 
-        if (!is_array($weightFromArr)) {
-            $weightFromArr = [];
+        if (!is_array($weightFromArr) || !is_array($weightToArr)) {
+            $this->errors[] = $this->module->l('Dati peso non validi.');
+            return;
         }
+
+        if (!is_array($pricesBySender) || empty($pricesBySender)) {
+            $this->errors[] = $this->module->l('Impossibile associare le tariffe: nessun mittente ricevuto.');
+            return;
+        }
+
+        $rowCount = count($weightFromArr);
+
+        if ($rowCount === 0 || $rowCount !== count($weightToArr)) {
+            $this->errors[] = $this->module->l('Mismatch tra righe peso: weight_from e weight_to hanno lunghezze diverse.');
+            return;
+        }
+
+        $weightFromArr = array_values($weightFromArr);
+        $weightToArr = array_values($weightToArr);
 
         $rows = [];
-        foreach (array_keys($weightFromArr) as $i) {
-            $rows[] = [
-                'weight_from' => $weightFromArr[$i] ?? '0',
-                'weight_to' => $weightToArr[$i] ?? '0',
-                'tariff' => $priceArr[$i] ?? '0',
-                'is_active' => 1,
-            ];
+
+        // iterazione per ogni sender
+        foreach ($pricesBySender as $idSender => $prices) {
+            $idSender = (int) $idSender;
+
+            if ($idSender <= 0) {
+                continue;
+            }
+
+            if (!is_array($prices)) {
+                continue;
+            }
+
+            $prices = array_values($prices);
+
+            if (count($prices) !== $rowCount) {
+                $this->errors[] = sprintf(
+                    $this->module->l('Mismatch tariffe: il mittente %d ha %d prezzi ma ci sono %d righe peso.'),
+                    $idSender,
+                    count($prices),
+                    $rowCount
+                );
+                return;
+            }
+
+            for ($i = 0; $i < $rowCount; $i++) {
+                $from = (float) $weightFromArr[$i];
+                $to = (float) $weightToArr[$i];
+                $tariff = (float) ($prices[$i] ?? 0);
+
+                if ($from < 0 || $to <= 0 || $from >= $to) {
+                    $this->errors[] = sprintf(
+                        $this->module->l('Intervallo peso non valido alla riga %d: [%.2f, %.2f].'),
+                        $i + 1, // 1-based per l'utente
+                        $from,
+                        $to
+                    );
+                    return;
+                }
+
+                if ($tariff < 0) {
+                    $this->errors[] = sprintf(
+                        $this->module->l('Tariffa negativa non consentita (mittente %d, riga %d).'),
+                        $idSender,
+                        $i + 1
+                    );
+                    return;
+                }
+
+                $rows[] = [
+                    'id_sender' => $idSender,
+                    'weight_from' => $from,
+                    'weight_to' => $to,
+                    'tariff' => $tariff,
+                ];
+            }
         }
 
-        if ($this->carrierService->saveTariffs($carrierCode, $rows)) {
-            $this->carrierApi->invalidateCache();
-
-            // 🔥 Usa i cookie di sistema per fare in modo che il messaggio sopravviva al redirectAdmin()
-            $this->context->cookie->redirect_errors = null; // Pulisce vecchi errori
-            $this->context->cookie->conf = 4; // Codice nativo PrestaShop per "Aggiornamento riuscito"
-
-        } else {
-            $this->context->controller->errors[] = $this->module->l('Errore durante il salvataggio delle tariffe.');
+        if (empty($rows)) {
+            $this->errors[] = $this->module->l('Nessuna tariffa da salvare.');
+            return;
         }
+
+
+        try {
+            $saved = $this->carrierService->saveTariffs($carrierCode, $rows);
+        } catch (Throwable $e) {
+            $this->errors[] = $this->module->l('Errore interno durante il salvataggio delle tariffe.');
+            PrestaShopLogger::addLog(
+                'processTariffsSave error: ' . $e->getMessage(),
+                PrestaShopLogger::LOG_SEVERITY_ERROR,
+                null,
+                'SpedisciQui'
+            );
+            return;
+        }
+
+        if (!$saved) {
+            $this->errors[] = $this->module->l('Errore durante il salvataggio delle tariffe.');
+            return;
+        }
+
+        // in caso di successo invalido cache
+        $this->carrierApi->invalidateCache();
+
+        Tools::redirectAdmin(
+            $this->context->link->getAdminLink('AdminSpedisciQuiCarriers')
+            . '&carrier_code=' . urlencode($carrierCode)
+            . '&conf=4'
+        );
     }
 
     // =========================================================
@@ -223,7 +310,6 @@ class AdminSpedisciQuiCarriersController extends ModuleAdminController
 
         // Mappiamo accuratamente tutte le variabili richieste da carrier_panel.tpl
         $this->context->smarty->assign([
-            'formAction' => $formAction, // Usato nel controller
             'action' => $formAction, // Richiesto da carrier_active_dash.tpl
             'formAction' => $formAction, // Richiesto da carrier_list_dash.tpl (attento al case-sensitive)
             'module_action_url' => $formAction, // Fallback se usato all'interno dei componenti
