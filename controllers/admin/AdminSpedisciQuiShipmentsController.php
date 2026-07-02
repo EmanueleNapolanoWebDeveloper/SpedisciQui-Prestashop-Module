@@ -37,8 +37,6 @@ class AdminSpedisciQuiShipmentsController extends ModuleAdminController
             $this->module
         );
 
-        $this->shipmentRepo->setShipmentService($shipmentService);
-
         $this->shipmentRenderer = new ShipmentRenderer(
             $this->shipmentRepo,
             $this->module,
