@@ -129,6 +129,13 @@ class AdminSpedisciQuiShipmentsController extends ModuleAdminController
             return;
         }
 
+        // Creazione reso
+        if (Tools::isSubmit('submitRefundCreation')) {
+            $this->processShipmentRefund();
+            Tools::redirectAdmin($formAction);
+            return;
+        }
+
         // Download label
         if (Tools::isSubmit('fetchShipmentLabel')) {
             $this->processShipmentLabelDownload();
@@ -167,7 +174,7 @@ class AdminSpedisciQuiShipmentsController extends ModuleAdminController
         );
 
         if (!$requestResult->isSuccess()) {
-            $this->errors[] = $this->module->l('Fase 1 fallita: ') . $requestResult->getErrorMessage();
+            $this->errors[] = $this->module->l('Richiesta di spedizione fallita: ') . $requestResult->getErrorMessage();
             return;
         }
 
@@ -196,6 +203,32 @@ class AdminSpedisciQuiShipmentsController extends ModuleAdminController
         );
     }
 
+    private function processShipmentRefund(): void
+    {
+        $idShipment = (int) Tools::getValue('id_shipment');
+        $insuranceEnabled = (bool) Tools::getValue('insurance_enabled');
+        $insuranceValue = (float) Tools::getValue('insurance_value');
+
+        if ($idShipment <= 0) {
+            $this->errors[] = $this->module->l('ID spedizione non valido per il richiedere reso.');
+            return;
+        }
+
+        $requestResult = $this->shipmentCreationService->sendShipmentRequest(
+            $idShipment,
+            $insuranceEnabled,
+            $insuranceValue,
+            $isRefund = true,
+        );
+
+        if (!$requestResult->isSuccess()) {
+            $this->errors[] = $this->module->l('Richiesta di spedizione fallita: ') . $requestResult->getErrorMessage();
+            return;
+        }
+
+        $this->confirmations[] = $this->module->l('Richiesta di Reso inviata con successo! La spedizione è ora pronta per il download della label.');
+    }
+
     private function processShipmentCancellation(): void
     {
         $idShipment = (int) Tools::getValue('id_shipment');
@@ -205,7 +238,7 @@ class AdminSpedisciQuiShipmentsController extends ModuleAdminController
             return;
         }
 
-        
+
 
         // da implementare nel service
         $this->confirmations[] = $this->module->l('Spedizione annullata correttamente.');

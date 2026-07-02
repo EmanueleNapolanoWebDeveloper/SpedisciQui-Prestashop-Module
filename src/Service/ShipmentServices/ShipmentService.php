@@ -333,10 +333,6 @@ class ShipmentServices
         // ─── SHIPMENT ────────────────────────────────────────────────────────────
         $shipment = $this->shipmentRepo->getShipmentById($shipmentId);
 
-        PrestaShopLogger::addLog(
-            '[SpedisciQUi] Shipment entrato in build: ' . print_r($shipment, true),
-            1
-        );
 
         if (!$shipment) {
             return null;
@@ -595,10 +591,8 @@ class ShipmentServices
             return ['value' => 0.0, 'error' => $this->module->l('Ordine non trovato.')];
         }
 
-        $orderTotal = (float) $order->total_paid; // o total_products, dipende dalla tua logica
+        $orderTotal = (float) $order->total_paid;
         if ($value > $orderTotal) {
-            // Correggi silenziosamente al massimo (stesso comportamento del JS)
-            // Oppure restituisci errore: scelta tua in base all'UX desiderata
             $value = $orderTotal;
         }
 

@@ -28,12 +28,12 @@ require __DIR__ . '/classes/Repositories/ShipmentRepository.php';
 require __DIR__ . '/classes/Repositories/PackageRepository.php';
 
 // Services
-require __DIR__ . '/src/Service/CredentialServices.php';
-require __DIR__ . '/src/Service/PackageServices.php';
-require __DIR__ . '/src/Service/CarrierServices.php';
-require __DIR__ . '/src/Service/SenderServices.php';
-require __DIR__ . '/src/Service/ShipmentService.php';
-require __DIR__ . '/src/Service/ShipmentCreationService.php';
+require __DIR__ . '/src/Service/CredentialService.php';
+require __DIR__ . '/src/Service/PackageService.php';
+require __DIR__ . '/src/Service/CarrierService.php';
+require __DIR__ . '/src/Service/SenderService.php';
+require __DIR__ . '/src/Service/ShipmentServices/ShipmentService.php';
+require __DIR__ . '/src/Service/ShipmentServices/ShipmentCreationService.php';
 require __DIR__ . '/src/Service/LabelService.php';
 
 // Renderers (Solo quelli effettivamente utilizzati)

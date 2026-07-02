@@ -133,6 +133,8 @@ class ShipmentRenderer
         $js = $this->module->getPathUri() . 'views/js/';
 
         $this->context->controller->addCSS($css . 'admin/shipment/shipment_detail_styles.css', 'all', null, false);
+        $this->context->controller->addCSS($css . 'admin/shipment/shipment_detail_action_styles.css', 'all', null, false);
+
         $this->context->controller->addJS($js . 'admin/shipment/shipment_review.js', 'all', null, false);
 
 

@@ -7,6 +7,9 @@ class ShipmentCreationService
 {
     private const ENDPOINT_CREATE = '/api/v1/create_shipment';
     private const ENDPOINT_GET_LABEL = '/api/v1/shipment/%s/label';
+    private const ENDPOINT_CREATE_REFUND = '/api/v1/shipment/%s/refund';
+
+    private const ENDPOINT_REFUND_LABEL = '/api/v1/shipment/%s/refund_label';
 
     public const STATUS_PENDING = 'pending';
     public const STATUS_REQUEST_SENT = 'request_send';
@@ -36,6 +39,9 @@ class ShipmentCreationService
         $this->labelService = $labelService;
     }
 
+
+
+
     //==================================================
     // GENERAZIONE PAYLOAD DI SPEDIZIONE
     //==================================================
@@ -43,7 +49,9 @@ class ShipmentCreationService
         \Order $order,
         array $parcelData,
         string $carrierCode,
-        array $extraOptions = []
+        array $extraOptions = [],
+        bool $isRefund = false,
+        ?string $apiShipmentId = null,
     ): array {
         try {
             $deliveryAddress = new \Address((int) $order->id_address_delivery);
@@ -56,6 +64,7 @@ class ShipmentCreationService
 
             $recipientName = trim($deliveryAddress->firstname . ' ' . $deliveryAddress->lastname);
             $recipientPhone = !empty($deliveryAddress->phone_mobile) ? $deliveryAddress->phone_mobile : $deliveryAddress->phone;
+            $cleanedPhone = preg_replace('/[^0-9+]/', '', (string) $recipientPhone);
 
             if (empty($recipientName)) {
                 throw new \InvalidArgumentException('Il nome del destinatario è vuoto o non valido.');
@@ -94,28 +103,36 @@ class ShipmentCreationService
             $insuranceEnabled = !empty($extraOptions['insurance_enabled']);
             $insuranceValue = $insuranceEnabled ? round((float) ($extraOptions['insurance_value'] ?? 0), 2) : 0.0;
 
-            $isCod = ($order->module === 'ps_cashondelivery' || !empty($extraOptions['cod_enabled']));
+            $isCod = !$isRefund && ($order->module === 'ps_cashondelivery' || !empty($extraOptions['cod_enabled']));
             $codValue = $isCod ? round((float) $order->total_paid_tax_incl, 2) : 0.0;
+
+            $shopDataBlock = [
+                'name' => substr((string) $sender['firstname'], 0, 64),
+                'surname' => substr((string) $sender['lastname'], 0, 64),
+                'address' => substr((string) $sender['address1'], 0, 100),
+                'city' => (string) $sender['city'],
+                'postcode' => (string) $sender['postcode'],
+                'country' => !empty($sender['country_iso']) ? strtoupper((string) $sender['country_iso']) : 'IT',
+                'phone' => preg_replace('/[^0-9+]/', '', (string) ($sender['phone'] ?? ''))
+            ];
+
+            $customerDataBlock = [
+                'name' => substr((string) $deliveryAddress->firstname, 0, 64),
+                'surname' => substr((string) $deliveryAddress->lastname, 0, 64),
+                'address' => substr($deliveryAddress->address1 . ' ' . $deliveryAddress->address2, 0, 100),
+                'city' => $deliveryAddress->city,
+                'postcode' => $deliveryAddress->postcode,
+                'country' => $country_iso,
+                'phone' => $cleanedPhone,
+            ];
 
             return [
                 'carrier_code' => $carrierCode,
                 'order_reference' => $order->reference,
-                'sender' => [
-                    'name' => substr((string) $sender['firstname'], 0, 64),
-                    'surname' => substr((string) $sender['lastname'], 0, 64),
-                    'address' => substr((string) $sender['address1'], 0, 100),
-                    'city' => (string) $sender['city'],
-                    'postcode' => (string) $sender['postcode'],
-                    'country' => !empty($sender['country_iso']) ? strtoupper((string) $sender['country_iso']) : 'IT',
-                ],
-                'recipient' => [
-                    'name' => substr($recipientName, 0, 64),
-                    'address' => substr($deliveryAddress->address1 . ' ' . $deliveryAddress->address2, 0, 100),
-                    'city' => $deliveryAddress->city,
-                    'postcode' => $deliveryAddress->postcode,
-                    'country' => $country_iso,
-                    'phone' => preg_replace('/[^0-9+]/', '', $recipientPhone),
-                ],
+                'is_return' => $isRefund,
+                'api_shipment_id' => $apiShipmentId,
+                'sender' => !$isRefund ? $shopDataBlock : $customerDataBlock,
+                'recipient' => !$isRefund ? $customerDataBlock : $shopDataBlock,
                 'parcel' => [
                     'width' => $width,
                     'length' => $length,
@@ -141,10 +158,14 @@ class ShipmentCreationService
     }
 
     //==================================================
-    // STEP 1: INVIO RICHIESTA CREAZIONE SPEDIZIONE
+    // INVIO RICHIESTA CREAZIONE SPEDIZIONE
     //==================================================
-    public function sendShipmentRequest(int $idShipment, bool $insuranceEnabled, float $insuranceValue): ShipmentCreationResult
-    {
+    public function sendShipmentRequest(
+        int $idShipment,
+        bool $insuranceEnabled,
+        float $insuranceValue,
+        bool $isRefund = false,
+    ): ShipmentCreationResult {
         // main
         if ($idShipment <= 0) {
             return ShipmentCreationResult::failure('ID spedizione non valido.');
@@ -155,12 +176,18 @@ class ShipmentCreationService
             return ShipmentCreationResult::failure('Spedizione non trovata.');
         }
 
-        if ($shipment['status'] !== self::STATUS_PENDING) {
+        if ($shipment['status'] !== self::STATUS_PENDING || $shipment['status'] !== self::STATUS_LABEL_CREATED) {
             return ShipmentCreationResult::failure(sprintf('Stato non valido per l\'invio. Stato attuale: %s', $shipment['status']));
         }
 
         if (empty($shipment['carrier_code'])) {
             return ShipmentCreationResult::failure('Nessun corriere associato a questo ordine.');
+        }
+
+        if ($isRefund) {
+            if (empty($shipment['api_shipment_id'])) {
+                return ShipmentCreationResult::failure('Questa spedizione non ha il codice ID di conferma!.');
+            }
         }
 
         $order = new Order((int) $shipment['id_order']);
@@ -184,10 +211,17 @@ class ShipmentCreationService
         }
 
         try {
-            $payload = $this->buildShipmentPayload($order, $parcelData, $shipment['carrier_code'], [
-                'insurance_enabled' => $insuranceEnabled,
-                'insurance_value' => $insuranceValue,
-            ]);
+            $payload = $this->buildShipmentPayload(
+                $order,
+                $parcelData,
+                $shipment['carrier_code'],
+                [
+                    'insurance_enabled' => $insuranceEnabled,
+                    'insurance_value' => $insuranceValue,
+                ],
+                true,
+                $shipment['api_shipment_id']
+            );
         } catch (\Exception $e) {
             return ShipmentCreationResult::failure($e->getMessage());
         }
@@ -196,7 +230,16 @@ class ShipmentCreationService
         $tokenData = $this->credentialRepo->get();
         $token = (string) ($tokenData['access_token'] ?? '');
 
-        $apiResponse = $this->apiClient->request('POST', self::ENDPOINT_CREATE, $token, $payload);
+        $endpoint = $isRefund
+            ? sprintf(self::ENDPOINT_CREATE_REFUND, $shipment['api_shipment_id'])
+            : self::ENDPOINT_CREATE;
+
+        PrestaShopLogger::addLog(
+            '[SpedisciQui] endpoint per reuqest: ' . $endpoint,
+            1
+        );
+
+        $apiResponse = $this->apiClient->request('POST', $endpoint, $token, $payload);
 
         if ($apiResponse === null || !$apiResponse->isSuccess()) {
             return $this->handleApiFailure($apiResponse, $idShipment, $shipment, 'Errore durante l\'invio della richiesta.');
@@ -225,7 +268,7 @@ class ShipmentCreationService
     }
 
     //==================================================
-    // STEP 2: DOWNLOAD ETICHETTA E GENERAZIONE TRACKING
+    // DOWNLOAD ETICHETTA E GENERAZIONE TRACKING
     //==================================================
     public function fetchShipmentDataAndLabel(int $idShipment): ShipmentCreationResult
     {
